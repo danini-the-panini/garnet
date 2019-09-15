@@ -1,6 +1,8 @@
-require "ruby_ruby/version"
+# frozen_string_literal: true
 
 module RubyRuby
   class Error < StandardError; end
-  # Your code goes here...
 end
+
+require "ruby_ruby/version"
+require "ruby_ruby/lexer"
