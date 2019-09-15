@@ -3,4 +3,4 @@
 require "bundler/setup"
 require "ruby_ruby"
 
-pp RubyRuby::Lexer.new(ARGF.read).all_tokens
+puts RubyRuby::Lexer.new(ARGF.read).tokens
