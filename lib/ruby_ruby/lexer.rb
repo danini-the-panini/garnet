@@ -6,8 +6,8 @@ module RubyRuby
   class Lexer
     class Error < RubyRuby::Error; end
 
-    def initialize(input)
-      @pointer = Pointer.new(input, 0, 1, 1)
+    def initialize(input, filename)
+      @pointer = Pointer.new(input, 0, 1, 1, filename)
       @tokens = []
     end
 
@@ -22,8 +22,10 @@ module RubyRuby
       number
       operator
       space
+      comma
       newline
       comment
+      global_variable
 
       left_parenthesis
       right_parenthesis
@@ -57,7 +59,7 @@ module RubyRuby
       end
     end
 
-    class Pointer < Struct.new(:input, :position, :line, :column)
+    class Pointer < Struct.new(:input, :position, :line, :column, :filename)
       def character
         self[position]
       end
@@ -116,6 +118,8 @@ module RubyRuby
           recognise_comment
         when /\s/
           recognise_whitespace
+        when '$'
+          recognise_global_variable
         when /[_a-zA-Z]/
           recognise_identifier
         when /[0-9]/
@@ -130,8 +134,10 @@ module RubyRuby
           recognise_string
         when '"'
           recognise_template_string
+        when ','
+          recognise_comma
         else
-          raise Error.new("Unrecognised character #{character} at #{@line}:#{@column}")
+          raise Error.new("Unrecognised character #{character.inspect} at #{@pointer.filename}:#{@pointer.line}:#{@pointer.column}")
         end
       end
 
@@ -162,32 +168,33 @@ module RubyRuby
         line = @pointer.line
         column = @pointer.column
 
-        result = @pointer.remaining_input.partition(/(\n|\r\n)/)
+        result = @pointer.remaining_input.partition(/(\n|\r\n)/).first
 
         @pointer.move_position(result.length)
 
         @tokens << Token.new(:comment, result, line, column)
       end
 
-      def recognise_identifier
-        position = @pointer.position
+      def recognise_global_variable
         line = @pointer.line
         column = @pointer.column
-        identifier = @pointer[position]
 
-        position += 1
-        while position < @pointer.input.length
-          character = @pointer[position]
-
-          break if character !~ /[a-zA-Z0-9_]/
-
-          identifier += character
-          position += 1
+        if @pointer.remaining_input =~ /\$([a-zA-Z_][a-zA-Z0-9_]*|[0-9:\*\$\/\\\?_&])/
+          identifier = $&
+          @pointer.move_position(identifier.length)
+          @tokens << Token.new(:global_variable, identifier, line, column)
         end
+      end
 
-        @pointer.move_position(identifier.length)
+      def recognise_identifier
+        line = @pointer.line
+        column = @pointer.column
 
-        @tokens << Token.new(:identifier, identifier, line, column)
+        if @pointer.remaining_input =~ /[a-zA-Z_][a-zA-Z0-9_]*/
+          identifier = $&
+          @pointer.move_position(identifier.length)
+          @tokens << Token.new(:identifier, identifier, line, column)
+        end
       end
 
       def recognise_number
@@ -412,6 +419,16 @@ module RubyRuby
         @tokens << Token.new(:template_string_start, character, line, column)
 
         StringLexer.new(@pointer, @tokens, character, true).lex
+      end
+
+      def recognise_comma
+        character = @pointer.character
+        line = @pointer.line
+        column = @pointer.column
+
+        @pointer.next_position
+
+        @tokens << Token.new(:comma, character, line, column)
       end
     end
 

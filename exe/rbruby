@@ -3,4 +3,10 @@
 require "bundler/setup"
 require "ruby_ruby"
 
-puts RubyRuby::Lexer.new(ARGF.read).tokens
+if ARGV.empty?
+  input, filename = STDIN.read, "$stdin"
+else
+  input, filename = File.read(ARGV.first), ARGV.first
+end
+
+puts RubyRuby::Lexer.new(input, filename).tokens
