@@ -23,9 +23,12 @@ module RubyRuby
       operator
       space
       comma
+      semicolon
       newline
       comment
       global_variable
+      instance_variable
+      class_variable
 
       left_parenthesis
       right_parenthesis
@@ -41,6 +44,15 @@ module RubyRuby
       string_end
       template_string_start
       template_string_end
+      regexp_start
+      regexp_end
+      subshell_start
+      subshell_end
+      words_start
+      word_boundary
+      words_end
+      symbols_start
+      symbols_end
       interpolation_start
       interpolation_end
 
@@ -118,12 +130,22 @@ module RubyRuby
           recognise_comment
         when /\s/
           recognise_whitespace
+        when ','
+          recognise_comma
+        when ';'
+          recognise_semicolon
         when '$'
           recognise_global_variable
+        when '@'
+          recognise_instance_or_class_variable
         when /[_a-zA-Z]/
           recognise_identifier
         when /[0-9]/
           recognise_number
+        when '%'
+          recognise_sigil
+        when '/'
+          recognise_regexp
         when %r{[#{OPERATORS.keys.map{|x|"\\#{x}"}.join}]}
           recognise_operator
         when /[()\[\]]/
@@ -134,8 +156,8 @@ module RubyRuby
           recognise_string
         when '"'
           recognise_template_string
-        when ','
-          recognise_comma
+        when '`'
+          recognise_subshell_string
         else
           raise Error.new("Unrecognised character #{character.inspect} at #{@pointer.filename}:#{@pointer.line}:#{@pointer.column}")
         end
@@ -175,6 +197,26 @@ module RubyRuby
         @tokens << Token.new(:comment, result, line, column)
       end
 
+      def recognise_comma
+        character = @pointer.character
+        line = @pointer.line
+        column = @pointer.column
+
+        @pointer.next_position
+
+        @tokens << Token.new(:comma, character, line, column)
+      end
+
+      def recognise_semicolon
+        character = @pointer.character
+        line = @pointer.line
+        column = @pointer.column
+
+        @pointer.next_position
+
+        @tokens << Token.new(:semicolon, character, line, column)
+      end
+
       def recognise_global_variable
         line = @pointer.line
         column = @pointer.column
@@ -183,6 +225,85 @@ module RubyRuby
           identifier = $&
           @pointer.move_position(identifier.length)
           @tokens << Token.new(:global_variable, identifier, line, column)
+        end
+      end
+
+      def recognise_instance_or_class_variable
+        line = @pointer.line
+        column = @pointer.column
+
+        lookahead = @pointer.lookahead(1)
+
+        if lookahead == '@'
+          @pointer.remaining_input =~ /@@[a-zA-Z_][a-zA-Z0-9_]*/
+          identifier = $&
+          @pointer.move_position(identifier.length)
+          @tokens << Token.new(:class_variable, identifier, line, column)
+        else
+          @pointer.remaining_input =~ /@[a-zA-Z_][a-zA-Z0-9_]*/
+          identifier = $&
+          @pointer.move_position(identifier.length)
+          @tokens << Token.new(:instance_variable, identifier, line, column)
+        end
+      end
+
+      def recognise_sigil
+        line = @pointer.line
+        column = @pointer.column
+
+        lookahead1 = @pointer.lookahead(1)
+        lookahead2 = @pointer.lookahead(2)
+
+        case lookahead1
+        when '='
+          recognise_operator
+          return
+        when /[^a-zA-Z0-9\s]/
+          boundry = sigil_boundry(lookahead1)
+          lex_string(:string, "%#{lookahead1}", boundry, true, false)
+          return
+        when /q/i
+          if lookahead2 =~ /[^a-zA-Z0-9\s]/
+            boundry = sigil_boundry(lookahead2)
+            lex_string(:string, "%#{lookahead1}#{lookahead2}", boundry, lookahead1 == 'Q', false)
+            return
+          end
+        when /w/i
+          if lookahead2 =~ /[^a-zA-Z0-9\s]/
+            boundry = sigil_boundry(lookahead2)
+            lex_string(:words, "%#{lookahead1}#{lookahead2}", boundry, lookahead1 == 'W', true)
+            return
+          end
+        when /i/i
+          if lookahead2 =~ /[^a-zA-Z0-9\s]/
+            boundry = sigil_boundry(lookahead2)
+            lex_string(:symbols, "%#{lookahead1}#{lookahead2}", boundry, lookahead1 == 'I', true)
+            return
+          end
+        when 'r'
+          if lookahead2 =~ /[^a-zA-Z0-9\s]/
+            boundry = sigil_boundry(lookahead2)
+            lex_string(:regexp, "%#{lookahead1}#{lookahead2}", boundry, true, false, /#{boundry}[a-zA-Z]*/)
+            return
+          end
+        when 'x'
+          if lookahead2 =~ /[^a-zA-Z0-9\s]/
+            boundry = sigil_boundry(lookahead2)
+            lex_string(:subshell, "%#{lookahead1}#{lookahead2}", boundry, true, false)
+            return
+          end
+        end
+
+        recognise_operator
+      end
+
+      def sigil_boundry(sigil_start)
+        case sigil_start
+        when '{' then '}'
+        when '(' then ')'
+        when '[' then ']'
+        when '<' then '>'
+        else sigin_start
         end
       end
 
@@ -273,48 +394,6 @@ module RubyRuby
         end
       end
 
-      def recognise_operator
-        character = @pointer.character
-
-        position = @pointer.position
-        line = @pointer.line
-        column = @pointer.column
-
-        @pointer.next_position
-
-        lookahead1 = @pointer.lookahead(1)
-        lookahead2 = @pointer.lookahead(2)
-
-        first_match = OPERATORS[character]
-        value = character
-
-        if lookahead1 && (second_match = first_match[lookahead1])
-          @pointer.next_position
-          value += lookahead1
-
-          if second_match.is_a?(Hash)
-            if lookahead2 && (third_match = second_match[lookahead2])
-              @pointer.next_position
-              value += lookahead2
-
-              third_match
-            else
-              second_match[nil]
-            end
-          else
-            second_match
-          end
-        else
-          first_match[nil]
-        end
-
-        @tokens << Token.new(:operator, value, line, column)
-      end
-
-      def find_operator_match(match, lookahead)
-        match[lookahead] || match[nil]
-      end
-
       def recognise_parenthesis
         character = @pointer.character
         line = @pointer.line
@@ -351,6 +430,47 @@ module RubyRuby
             @tokens << Token.new(:right_brace, '{', line, column)
           end
         end
+      end
+
+      def recognise_operator
+        character = @pointer.character
+
+        line = @pointer.line
+        column = @pointer.column
+
+        lookahead1 = @pointer.lookahead(1)
+        lookahead2 = @pointer.lookahead(2)
+
+        @pointer.next_position
+
+        first_match = OPERATORS[character]
+        value = character
+
+        if lookahead1 && (second_match = first_match[lookahead1])
+          @pointer.next_position
+          value += lookahead1
+
+          if second_match.is_a?(Hash)
+            if lookahead2 && (third_match = second_match[lookahead2])
+              @pointer.next_position
+              value += lookahead2
+
+              third_match
+            else
+              second_match[nil]
+            end
+          else
+            second_match
+          end
+        else
+          first_match[nil]
+        end
+
+        @tokens << Token.new(:operator, value, line, column)
+      end
+
+      def find_operator_match(match, lookahead)
+        match[lookahead] || match[nil]
       end
 
       OPERATORS = {
@@ -399,46 +519,55 @@ module RubyRuby
 
       def recognise_string
         character = @pointer.character
-        line = @pointer.line
-        column = @pointer.column
-
-        @pointer.next_position
-
-        @tokens << Token.new(:string_start, character, line, column)
-
-        StringLexer.new(@pointer, @tokens, character, false).lex
+        lex_string(:string, character, character, false, false)
       end
 
       def recognise_template_string
         character = @pointer.character
-        line = @pointer.line
-        column = @pointer.column
-
-        @pointer.next_position
-
-        @tokens << Token.new(:template_string_start, character, line, column)
-
-        StringLexer.new(@pointer, @tokens, character, true).lex
+        lex_string(:template_string, character, character, true, false)
       end
 
-      def recognise_comma
+      def recognise_regexp
         character = @pointer.character
+        lookahead = @pointer.lookahead(1)
+
+        if lookahead =~ /\s/
+          recognise_operator
+          return
+        end
+
+        if @tokens[-1]&.type == :space && @tokens[-2]&.type == :number
+          recognise_operator
+          return
+        end
+
+        lex_string(:regexp, character, character, true, false, /#{character}[a-zA-Z]*/)
+      end
+
+      def recognise_subshell_string
+        character = @pointer.character
+        lex_string(:subshell, character, character, true, false)
+      end
+
+      def lex_string(name, start_seq, end_seq, template, words, boundry_matcher = /#{end_seq}/)
         line = @pointer.line
         column = @pointer.column
-
-        @pointer.next_position
-
-        @tokens << Token.new(:comma, character, line, column)
+        @pointer.move_position(start_seq.length)
+        @tokens << Token.new(:"#{name}_start", start_seq, line, column)
+        StringLexer.new(@pointer, @tokens, end_seq, template, words, name, boundry_matcher).lex
       end
     end
 
     class StringLexer
-      def initialize(pointer, tokens, boundry, template)
+      def initialize(pointer, tokens, boundry, template, words, name, boundry_matcher)
         @pointer = pointer
         @tokens = tokens
         @finished = false
         @boundry = boundry
         @template = template
+        @words = words
+        @name = name
+        @boundry_matcher = boundry_matcher
       end
 
       def lex
@@ -456,20 +585,23 @@ module RubyRuby
           recognise_string_boundry
         when /#/
           @template ? recognise_interpolation : recognise_contents
+        when /\s/
+          @words ? recognise_word_boundary : recognise_contents
         else
           recognise_contents
         end
       end
 
       def recognise_string_boundry
-        character = @pointer.character
         line = @pointer.line
         column = @pointer.column
 
-        @pointer.next_position
-
-        @finished = true
-        @tokens << Token.new(@template ? :template_string_end : :string_end, @boundry, line, column)
+        if @pointer.remaining_input =~ @boundry_matcher
+          result = $&
+          @pointer.move_position(result.length)
+          @tokens << Token.new(:"#{@name}_end", result, line, column)
+          @finished = true
+        end
       end
 
       def recognise_contents
@@ -481,13 +613,24 @@ module RubyRuby
 
         result = fsm.run(fsm_input)
         if result
+          result = result[0...-1]
           @pointer.move_position(result.length)
           @tokens << Token.new(:string_contents, result, line, column)
         end
       end
 
+      def recognise_word_boundary
+        line = @pointer.line
+        column = @pointer.column
+
+        if @pointer.remaining_input =~ /\s+/
+          result = $&
+          @pointer.move_position(result.length)
+          @tokens << Token.new(:word_boundary, result, line, column)
+        end
+      end
+
       def recognise_interpolation
-        character = @pointer.character
         line = @pointer.line
         column = @pointer.column
 
@@ -519,23 +662,43 @@ module RubyRuby
           initial
           string
           begin_escape
+          start_interpolation
+          interpolation
+          boundry
         ]
 
-        fsm = FiniteStateMachine.new(states, :initial, %i[string]) do |current_state, character|
+        fsm = FiniteStateMachine.new(states, :initial, %i[string boundry start_interpolation]) do |current_state, character|
           case current_state
           when :string, :initial
             case character
             when @boundry
-              nil
+              :boundry
             when '\\'
               :begin_escape
             when '#'
-              @template ? nil : :string
+              @template ? :start_interpolation : :string
+            when /\s/
+              @words ? :boundry : :string
             else
               :string
             end
           when :begin_escape
             :string
+          when :start_interpolation
+            case character
+            when @boundry
+              :boundry
+            when '{'
+              nil
+            when '\\'
+              :begin_escape
+            when '#'
+              @template ? :start_interpolation : :string
+            when /\s/
+              @words ? nil : :string
+            else
+              :string
+            end
           end
         end
       end
