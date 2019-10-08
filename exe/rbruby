@@ -9,4 +9,4 @@ else
   input, filename = File.read(ARGV.first), ARGV.first
 end
 
-puts RubyRuby::Lexer.new(input, filename).tokens
+puts RubyRuby.run(input, filename)
