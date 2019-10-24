@@ -1,0 +1,52 @@
+module RubyRuby
+  def self.call_inits
+    # vm_postponed_job.init
+    # Method.init
+    # RandomSeedCore.init
+    # sym.init
+    # var_tables.init
+    RObject.init
+    # top_self.init
+    # Encoding.init
+    # Comparable.init
+    # Enumerable.init
+    RString.init
+    # Exception.init
+    # eval.init
+    # safe.init
+    # jump.init
+    # Numeric.init
+    # Bignum.init
+    # syserr.init
+    # Array.init
+    # Hash.init
+    # Struct.init
+    # Regexp.init
+    # pack.init
+    # transcode.init
+    # marshal.init
+    # Range.init
+    # IO.init
+    # Dir.init
+    # Time.init
+    # Random.init
+    # signal.init
+    # load.init
+    # Proc.init
+    # Binding.init
+    # Math.init
+    # GC.init
+    # Enumerator.init
+    # VM.init
+    # ISeq.init
+    # Thread.init
+    # process.init
+    # Cont.init
+    # Rational.init
+    # Complex.init
+    # version.init
+    # vm_trace.init
+    # vm_stack_canary.init
+    # ast.init
+  end
+end

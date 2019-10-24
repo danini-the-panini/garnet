@@ -4,9 +4,9 @@ require "bundler/setup"
 require "ruby_ruby"
 
 if ARGV.empty?
-  input, filename = STDIN.read, "$stdin"
+  source, filename = STDIN.read, "$stdin"
 else
-  input, filename = File.read(ARGV.first), ARGV.first
+  source, filename = File.read(ARGV.first), ARGV.first
 end
 
-puts RubyRuby.run(input, filename)
+puts RubyRuby.run(source, filename)
