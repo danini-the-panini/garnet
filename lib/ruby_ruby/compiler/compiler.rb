@@ -4,6 +4,11 @@ module RubyRuby
       @iseq = iseq
     end
 
+    def compile_node(node)
+      compile(node)
+      add_instruction(:leave)
+    end
+
     def compile(node)
       method_name = :"compile_#{node[0]}"
       raise "COMPILE_ERROR: Unknown Node Type #{node[0]}" unless respond_to?(method_name)

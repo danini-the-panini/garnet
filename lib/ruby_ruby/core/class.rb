@@ -3,7 +3,7 @@ module RubyRuby
     attr_reader :method_table, :super_class, :const_table
     attr_accessor :parent_subclasses, :subclasses
 
-    SubclassEntry = Struct.new(:klass, :next)
+    SubclassEntry = Struct.new(:klass, :next_entry)
 
     def initialize(klass, flags)
       super
@@ -41,8 +41,8 @@ module RubyRuby
 
       head = subclasses
       if head
-        entry.next = head
-        head.klass.parent_subclasses = entry.next
+        entry.next_entry = head
+        head.klass.parent_subclasses = entry.next_entry
       end
 
       subclasses = entry
@@ -54,8 +54,8 @@ module RubyRuby
     def remove_from_super_subclasses
       if parent_subclasses
         entry = parent_subclasses
-        @parent_subclasses = entry.next
-        entry.next.klass.parent_subclasses = parent_subclasses if entry.next
+        @parent_subclasses = entry.next_entry
+        entry.next_entry.klass.parent_subclasses = parent_subclasses if entry.next_entry
       end
       @parent_subclasses = nil
     end
