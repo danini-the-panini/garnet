@@ -24,6 +24,14 @@ end
 
 require 'ruby_ruby/version'
 
+require 'ruby_ruby/core/basic'
+require 'ruby_ruby/core/object'
+require 'ruby_ruby/core/class'
+require 'ruby_ruby/core/primitive'
+require 'ruby_ruby/core/numeric'
+require 'ruby_ruby/core/string'
+require 'ruby_ruby/core/method'
+require 'ruby_ruby/core/io'
 require 'ruby_ruby/core/core'
 
 require 'ruby_ruby/compiler/parser'

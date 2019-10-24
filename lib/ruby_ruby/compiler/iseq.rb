@@ -14,7 +14,7 @@ module RubyRuby
 
     def debug_dump_instructions
       @instructions.each do |insn|
-        puts "#{insn.type}\t#{insn.arguments.map(&:inspect).join(',')}"
+        puts "#{insn.type}\t#{insn.arguments.map(&:to_s).join(',')}"
       end
     end
   end

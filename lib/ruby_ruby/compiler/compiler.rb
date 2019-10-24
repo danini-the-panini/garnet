@@ -19,9 +19,9 @@ module RubyRuby
     def compile_lit(node)
       case node[1]
       when Integer
-        add_instruction(:put_object, node[1])
+        add_instruction(:put_object, RPrimitive.new(Core.cInteger, 0, node[1]))
       when Float
-        # TODO
+        add_instruction(:put_object, RPrimitive.new(Core.cFloat, 0, node[1]))
       when Range
         # TODO
       when Regexp

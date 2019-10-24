@@ -1,7 +1,6 @@
 module RubyRuby
   class RBasic
-    attr_accessor :klass
-    attr_reader :flags
+    attr_accessor :klass, :flags
 
     def initialize(klass, flags)
       @klass = klass

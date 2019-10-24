@@ -15,4 +15,15 @@ module RubyRuby
       @ivars[k]
     end
   end
+
+  module Core
+    def self.init_object
+      @mKernel = rb_define_module(:Kernel)
+      cObject.include_module(mKernel)
+
+      rb_define_method(mKernel, :to_s) do |obj|
+        RString.new(cString, 0, "#<#{obj.klass.name},#{obj.__id__}>")
+      end
+    end
+  end
 end

@@ -1,5 +1,13 @@
 module RubyRuby
   class VM
+    class << self
+      attr_reader :instance
+
+      def new
+        @instance ||= super
+      end
+    end
+
     def initialize
       @stack = []
       @control_frames = []
@@ -35,8 +43,9 @@ module RubyRuby
         argc = insn.arguments[1]
         args = pop_stack_multi(argc)
         target = pop_stack
-        # TODO: perform method dispatch
-        puts "CALLING #{mid}"
+        method = find_method(target, mid)
+        ret = dispatch_method(target, method, args)
+        push_stack(ret)
         control_frame.pc += 1
       else
         raise "unknown instruction: #{insn.type}"
@@ -51,16 +60,44 @@ module RubyRuby
 
     def pop_stack
       control_frame = @control_frames.last
-      obj = @stack[control_frame.sp]
+      obj = @stack[control_frame.sp - 1]
       control_frame.sp -= 1
       obj
     end
 
     def pop_stack_multi(n)
       control_frame = @control_frames.last
-      objects = @stack[control_frame.sp-n..control_frame.sp]
+      objects = @stack[(control_frame.sp - n)...control_frame.sp]
       control_frame.sp -= n
       objects
+    end
+
+    def rb_call(recv, mid, *args)
+      method = find_method(recv, mid)
+      dispatch_method(recv, method, args)
+    end
+
+    def find_method(target, mid)
+      klass = target.klass
+      method = klass.method_table[mid]
+      while method.nil?
+        klass = klass.super_class
+        if klass.nil?
+          # method_missing
+          raise "undefined method #{mid} for #{target}"
+        end
+        method = klass.method_table[mid]
+      end
+      method
+    end
+
+    def dispatch_method(target, method, args)
+      case method
+      when BuiltInMethod
+        method.block.call(target, *args)
+      else
+        raise "NOT IMPLEMENTED: #{method.class} dispatch"
+      end
     end
   end
 end
