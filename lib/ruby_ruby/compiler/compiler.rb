@@ -84,10 +84,21 @@ module RubyRuby
     def compile_or(node)
       compile(node[1])
       add_instruction(:dup)
-      jump_insn = add_instruction(:branch_if, nil)
+      branch_insn = add_instruction(:branch_if, nil)
       add_instruction(:pop)
       compile(node[2])
-      jump_insn.arguments[0] = @iseq.instructions.length
+      branch_insn.arguments[0] = @iseq.instructions.length
+    end
+
+    def compile_if(node)
+      cond, if_branch, else_branch = node[1..3]
+      compile(cond)
+      branch_insn = add_instruction(:branch_unless, nil)
+      compile(if_branch || [:nil])
+      jump_insn = add_instruction(:jump, nil)
+      branch_insn.arguments[0] = @iseq.instructions.length
+      compile(else_branch || [:nil])
+      jump_insn.arguments[0] = @iseq.instructions.length if jump_insn
     end
 
     def compile_lvar(node)

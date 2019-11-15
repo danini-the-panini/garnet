@@ -106,6 +106,19 @@ module RubyRuby
       end
     end
 
+    def exec_branch_unless(control_frame, insn, iseq)
+      cond = pop_stack
+      if cond == Q_NIL || cond == Q_FALSE
+        control_frame.pc = insn.arguments[0]
+      else
+        control_frame.pc += 1
+      end
+    end
+
+    def exec_jump(control_frame, insn, iseq)
+      control_frame.pc = insn.arguments[0]
+    end
+
     def exec_send(control_frame, insn, iseq)
       mid = insn.arguments[0]
       argc = insn.arguments[1]
