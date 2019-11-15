@@ -106,6 +106,7 @@ module RubyRuby
         init_numeric
         init_string
         init_array
+        init_hash
         init_io
       end
 

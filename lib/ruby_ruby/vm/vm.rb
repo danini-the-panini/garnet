@@ -98,6 +98,14 @@ module RubyRuby
       control_frame.pc += 1
     end
 
+    def exec_new_hash(control_frame, insn, iseq)
+      count = insn.arguments[0]
+      items = pop_stack_multi(count)
+      hash = RHash.new(Core.cHash, 0, items.each_slice(2).to_a.to_h)
+      push_stack(hash)
+      control_frame.pc += 1
+    end
+
     def exec_put_iseq(control_frame, insn, iseq)
       push_stack insn.arguments[0]
       control_frame.pc += 1

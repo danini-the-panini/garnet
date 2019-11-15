@@ -24,6 +24,7 @@ module RubyRuby
       rb_define_method(mKernel, :to_s) do |obj|
         RString.new(cString, 0, "#<#{obj.klass.name},#{obj.__id__}>")
       end
+      rb_alias_method(cObject, :inspect, :to_s)
 
       @cNilClass = rb_define_class(:NilClass)
       ::RubyRuby.const_set(:Q_NIL, RPrimitive.new(@cNilClass, 0, nil))

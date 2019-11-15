@@ -27,6 +27,8 @@ module RubyRuby
         add_instruction(:put_object, RPrimitive.new(Core.cInteger, 0, node[1]))
       when Float
         add_instruction(:put_object, RPrimitive.new(Core.cFloat, 0, node[1]))
+      when Symbol
+        add_instruction(:put_object, RSymbol.new(Core.cSymbol, 0, node[1]))
       when Range
         # TODO
       when Regexp
@@ -86,6 +88,13 @@ module RubyRuby
         compile(n)
       end
       add_instruction(:new_array, node.length - 1)
+    end
+
+    def compile_hash(node)
+      node[1..-1].each do |n|
+        compile(n)
+      end
+      add_instruction(:new_hash, node.length - 1)
     end
 
     def compile_or(node)

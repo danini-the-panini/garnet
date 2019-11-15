@@ -11,6 +11,7 @@ module RubyRuby
       rb_define_method(cInteger, :to_s) do |x, base = 10|
         RString.new(cString, 0, x.value.to_s(base))
       end
+      rb_alias_method(cInteger, :inspect, :to_s)
     end
   end
 end
