@@ -64,6 +64,23 @@ module RubyRuby
       add_instruction(:put_object, RString.new(Core.cString, 0, node[1]))
     end
 
+    def compile_dstr(node)
+      node[1..-1].each do |n|
+        case n
+        when String
+          add_instruction(:put_object, RString.new(Core.cString, 0, n))
+        else
+          compile(n)
+        end
+      end
+      add_instruction(:concat_strings, node.length - 1)
+    end
+
+    def compile_evstr(node)
+      compile(node[1])
+      add_instruction(:send, :to_s, 0)
+    end
+
     def compile_or(node)
       compile(node[1])
       add_instruction(:dup)

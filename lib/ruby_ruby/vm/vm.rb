@@ -70,6 +70,14 @@ module RubyRuby
       control_frame.pc += 1
     end
 
+    def exec_concat_strings(control_frame, insn, iseq)
+      count = insn.arguments[0]
+      strings = pop_stack_multi(count)
+      string = RString.new(Core.cString, 0, strings.map(&:string_value).join(''))
+      push_stack(string)
+      control_frame.pc += 1
+    end
+
     def exec_put_iseq(control_frame, insn, iseq)
       push_stack insn.arguments[0]
       control_frame.pc += 1
@@ -112,11 +120,17 @@ module RubyRuby
     def exec_get_local(control_frame, insn, iseq)
       name = insn.arguments[0]
       level = insn.arguments[1]
-      local_env = control_frame.environment
-      level.times do
-        local_env = local_env.previous
-      end
+      local_env = get_local_env(level)
       push_stack(local_env.locals[name])
+      control_frame.pc += 1
+    end
+
+    def exec_set_local(control_frame, insn, iseq)
+      value = pop_stack
+      name = insn.arguments[0]
+      level = insn.arguments[1]
+      local_env = get_local_env(level)
+      local_env.locals[name] = value
       control_frame.pc += 1
     end
 
@@ -194,6 +208,15 @@ module RubyRuby
       else
         raise "NOT IMPLEMENTED: #{method.class} dispatch"
       end
+    end
+
+    def get_local_env(level)
+      control_frame = @control_frames.last
+      local_env = control_frame.environment
+      level.times do
+        local_env = local_env.previous
+      end
+      local_env
     end
   end
 end
