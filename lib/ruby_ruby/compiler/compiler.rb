@@ -170,9 +170,45 @@ module RubyRuby
       add_instruction(:send, node[2], argc)
     end
 
+    def compile_op_asgn1(node)
+      add_instruction(:put_nil)
+      compile(node[1])
+      argc = compile_argslist(node[2])
+      add_instruction(:dupn, argc + 1)
+      add_instruction(:send, :[], argc)
+      case node[3]
+      when :'||', :'&&'
+        add_instruction(:dup)
+        branch_insn = add_instruction(node[3] == :'&&' ? :branch_unless : :branch_if, nil)
+        add_instruction(:pop)
+        compile(node[4])
+        add_instruction(:send, :[]=, argc + 1)
+        add_instruction(:pop)
+        jump_insn = add_instruction(:jump, nil)
+        branch_insn.arguments[0] = @iseq.instructions.length
+        add_instruction(:setn, argc + 2)
+        add_instruction(:adjust_stack, argc + 2)
+        jump_insn.arguments[0] = @iseq.instructions.length
+      else
+        compile(node[4])
+        add_instruction(:send, node[3], 1)
+        add_instruction(:setn, argc + 2)
+        add_instruction(:send, :[]=, argc + 1)
+        add_instruction(:pop)
+      end
+    end
+
     def compile_args(node)
       argc = node.length - 3
       node[3..-1].each do |n|
+        compile(n)
+      end
+      argc
+    end
+
+    def compile_argslist(node)
+      argc = node.length - 1
+      node[1..-1].each do |n|
         compile(n)
       end
       argc

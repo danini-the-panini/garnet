@@ -39,11 +39,13 @@ module RubyRuby
       insn = iseq.instructions[control_frame.pc]
 
       puts "### executing: #{insn.type}"
+      puts "STACK BEFORE: #{control_frame.stack.map(&:to_s).join(',')}"
 
       method_name = :"exec_#{insn.type}"
       raise "EXEC_ERROR: Unknown Instruction Type #{insn.type}" unless respond_to?(method_name)
 
       __send__(method_name, control_frame, insn, iseq)
+      puts "STACK AFTER: #{control_frame.stack.map(&:to_s).join(',')}"
     end
 
     def exec_leave(control_frame, insn, iseq)
@@ -157,7 +159,7 @@ module RubyRuby
     end
 
     def exec_set_local(control_frame, insn, iseq)
-      value = pop_stack
+      value = peek_stack
       name = insn.arguments[0]
       level = insn.arguments[1]
       local_env = get_local_env(level)
@@ -194,6 +196,20 @@ module RubyRuby
     def exec_setn(control_frame, insn, iseq)
       n = insn.arguments[0]
       control_frame.stack[-n - 1] = control_frame.stack.last
+      control_frame.pc += 1
+    end
+
+    def exec_dupn(control_frame, insn, iseq)
+      n = insn.arguments[0]
+      control_frame.stack[-n..-1].each do |x|
+        control_frame.stack << x
+      end
+      control_frame.pc += 1
+    end
+
+    def exec_adjust_stack(control_frame, insn, iseq)
+      n = insn.arguments[0]
+      control_frame.stack.pop(n)
       control_frame.pc += 1
     end
 
