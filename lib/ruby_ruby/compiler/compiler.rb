@@ -81,6 +81,13 @@ module RubyRuby
       add_instruction(:send, :to_s, 0)
     end
 
+    def compile_array(node)
+      node[1..-1].each do |n|
+        compile(n)
+      end
+      add_instruction(:new_array, node.length - 1)
+    end
+
     def compile_or(node)
       compile(node[1])
       add_instruction(:dup)
@@ -152,6 +159,14 @@ module RubyRuby
         add_instruction(:put_self)
       end
       argc = compile_args(node)
+      add_instruction(:send, node[2], argc)
+    end
+
+    def compile_attrasgn(node)
+      add_instruction(:put_nil)
+      compile(node[1])
+      argc = compile_args(node)
+      add_instruction(:setn, argc + 1)
       add_instruction(:send, node[2], argc)
     end
 

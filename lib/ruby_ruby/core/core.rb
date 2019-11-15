@@ -105,6 +105,7 @@ module RubyRuby
         init_symbol
         init_numeric
         init_string
+        init_array
         init_io
       end
 
@@ -174,6 +175,25 @@ module RubyRuby
 
       def rb_define_method(klass, name, &block)
         rb_add_method_cfunc(klass, name, :PUBLIC, &block)
+      end
+
+      def rb_alias_method(klass, alias_name, orig_name)
+        orig_me = search_method(klass, orig_name)
+        if !orig_me
+          raise "undefined method #{orig_name} for #{klass}"
+        end
+
+        klass.method_table[alias_name] = orig_me
+      end
+
+      def search_method(klass, name)
+        loop do
+          m = klass.method_table[name]
+          return m if m
+
+          klass = klass.super_class
+          return nil if klass.nil?
+        end
       end
 
       def rb_define_protected_method(klass, name, &block)
