@@ -19,9 +19,12 @@ module RubyRuby
   end
 
   class ISeqMethod < Method
-    def initialize(called_id, defined_class, visibility, iseq)
+    attr_reader :iseq, :environment
+
+    def initialize(called_id, defined_class, visibility, iseq, environment)
       super(called_id, defined_class, visibility)
       @iseq = iseq
+      @environment = environment
     end
   end
 end

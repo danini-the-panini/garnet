@@ -102,7 +102,9 @@ module RubyRuby
         cBasicObject.klass = cClass
 
         init_object
+        init_symbol
         init_numeric
+        init_string
         init_io
       end
 

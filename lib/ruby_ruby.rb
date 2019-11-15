@@ -11,11 +11,8 @@ module RubyRuby
     pp node
     puts '-----'
 
-    iseq = Iseq.new('<main>')
+    iseq = Iseq.new('<main>', :main)
     Compiler.new(iseq).compile_node(node)
-
-    iseq.debug_dump_instructions
-    puts '-----'
 
     vm = VM.new
     vm.execute_main(iseq)
@@ -29,6 +26,7 @@ require 'ruby_ruby/core/object'
 require 'ruby_ruby/core/class'
 require 'ruby_ruby/core/primitive'
 require 'ruby_ruby/core/numeric'
+require 'ruby_ruby/core/symbol'
 require 'ruby_ruby/core/string'
 require 'ruby_ruby/core/method'
 require 'ruby_ruby/core/io'

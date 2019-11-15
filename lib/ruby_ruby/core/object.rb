@@ -24,6 +24,15 @@ module RubyRuby
       rb_define_method(mKernel, :to_s) do |obj|
         RString.new(cString, 0, "#<#{obj.klass.name},#{obj.__id__}>")
       end
+
+      @cNilClass = rb_define_class(:NilClass)
+      ::RubyRuby.const_set(:Q_NIL, RPrimitive.new(@cNilClass, 0, nil))
+
+      @cTrueClass = rb_define_class(:TrueClass)
+      ::RubyRuby.const_set(:Q_TRUE, RPrimitive.new(@cTrueClass, 0, true))
+
+      @cFalseClass = rb_define_class(:FalseClass)
+      ::RubyRuby.const_set(:Q_FALSE, RPrimitive.new(@cFalseClass, 0, false))
     end
   end
 end

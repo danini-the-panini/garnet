@@ -13,6 +13,8 @@ module RubyRuby
           print Core.rb_funcall(arg, :to_s).string_value
           print "\n"
         end
+
+        Q_NIL
       end
     end
   end

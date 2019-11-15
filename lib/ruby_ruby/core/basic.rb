@@ -6,5 +6,9 @@ module RubyRuby
       @klass = klass
       @flags = flags
     end
+
+    def to_s
+      "<##{klass.name}>"
+    end
   end
 end

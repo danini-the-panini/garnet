@@ -9,4 +9,4 @@ else
   source, filename = File.read(ARGV.first), ARGV.first
 end
 
-puts RubyRuby.run(source, filename)
+RubyRuby.run(source, filename)

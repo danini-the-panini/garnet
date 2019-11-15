@@ -6,5 +6,9 @@ module RubyRuby
       super(klass, flags)
       @value = value
     end
+
+    def to_s
+      "Q_#{value.inspect.upcase}"
+    end
   end
 end
