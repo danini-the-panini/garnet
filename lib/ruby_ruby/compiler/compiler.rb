@@ -53,7 +53,7 @@ module RubyRuby
     end
 
     def compile_nil(node)
-      add_instruction(:put_object, Q_NIL)
+      add_instruction(:put_nil)
     end
 
     def compile_self(node)
@@ -61,7 +61,7 @@ module RubyRuby
     end
 
     def compile_str(node)
-      add_instruction(:put_object, RString.new(Core.cString, 0, node[1]))
+      add_instruction(:put_string, node[1])
     end
 
     def compile_dstr(node)

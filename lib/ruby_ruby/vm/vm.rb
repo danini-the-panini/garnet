@@ -70,6 +70,16 @@ module RubyRuby
       control_frame.pc += 1
     end
 
+    def exec_put_nil(control_frame, insn, iseq)
+      push_stack Q_NIL
+      control_frame.pc += 1
+    end
+
+    def exec_put_string(control_frame, insn, iseq)
+      push_stack RString.new(Core.cString, 0, insn.arguments[0])
+      control_frame.pc += 1
+    end
+
     def exec_concat_strings(control_frame, insn, iseq)
       count = insn.arguments[0]
       strings = pop_stack_multi(count)
