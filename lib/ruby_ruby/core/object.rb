@@ -28,6 +28,9 @@ module RubyRuby
 
       @cNilClass = rb_define_class(:NilClass)
       ::RubyRuby.const_set(:Q_NIL, RPrimitive.new(@cNilClass, 0, nil))
+      rb_define_method(cNilClass, :to_s) do |obj|
+        RString.new(cString, 0, "")
+      end
 
       @cTrueClass = rb_define_class(:TrueClass)
       ::RubyRuby.const_set(:Q_TRUE, RPrimitive.new(@cTrueClass, 0, true))

@@ -4,14 +4,21 @@ module RubyRuby
       @iseq = iseq
     end
 
-    def compile_node(node)
-      compile(node)
+    def compile_nodes(nodes)
+      nodes.each do |node|
+        compile(node)
+      end
+
       add_instruction(:leave) unless @iseq.instructions.last&.type == :leave
 
       puts "Iseq:#{@iseq.name}"
       puts "local table: #{@iseq.local_table}"
       @iseq.debug_dump_instructions
       puts
+    end
+
+    def compile_node(node)
+      compile_nodes([node])
     end
 
     def compile(node)
@@ -70,7 +77,7 @@ module RubyRuby
       node[1..-1].each do |n|
         case n
         when String
-          add_instruction(:put_object, RString.new(Core.cString, 0, n))
+          add_instruction(:put_string, n)
         else
           compile(n)
         end
@@ -152,9 +159,7 @@ module RubyRuby
       local_table = args[1..-1].map { |a| [a, :arg] }.to_h
       method_iseq = Iseq.new(mid.to_s, :method, @iseq, local_table)
       compiler = Compiler.new(method_iseq)
-      nodes.each do |n|
-        compiler.compile_node(n)
-      end
+      compiler.compile_nodes(nodes)
 
       add_instruction(:put_object, RSymbol.new(Core.cSymbol, 0, mid))
       add_instruction(:put_iseq, method_iseq)
@@ -177,6 +182,25 @@ module RubyRuby
       argc = compile_args(node)
       add_instruction(:setn, argc + 1)
       add_instruction(:send, node[2], argc)
+    end
+
+    def compile_op_asgn_or(node)
+      compile_op_asgn_or_and(node, :branch_if)
+    end
+
+    def compile_op_asgn_and(node)
+      compile_op_asgn_or_and(node, :branch_unless)
+    end
+
+    def compile_op_asgn_or_and(node, branch_type)
+      compile(node[1])
+      add_instruction(:dup)
+      branch_insn = add_instruction(branch_type, nil)
+      add_instruction(:pop)
+      compile(node[2][2])
+      add_instruction(:dup)
+      add_instruction(:set_local, node[2][1], @iseq.local_level)
+      branch_insn.arguments[0] = @iseq.instructions.length
     end
 
     def compile_op_asgn1(node)

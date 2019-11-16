@@ -22,7 +22,7 @@ module RubyRuby
 
     def debug_dump_instructions
       @instructions.each_with_index do |insn, i|
-        puts "#{i}: #{insn.type}\t#{insn.arguments.map(&:to_s).join(',')}"
+        puts "#{i}: #{insn.type}\t#{insn.arguments.map{|x|x.is_a?(String) ? x.inspect : x.to_s}.join(',')}"
       end
     end
 
