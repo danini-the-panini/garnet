@@ -23,7 +23,7 @@ module RubyRuby
 
     def compile(node)
       method_name = :"compile_#{node[0]}"
-      raise "COMPILE_ERROR: Unknown Node Type #{node[0]}" unless respond_to?(method_name)
+      raise "COMPILE_ERROR: Unknown Node Type #{node[0]} (#{node.file}:#{node.line})" unless respond_to?(method_name)
 
       __send__(method_name, node)
     end
@@ -41,7 +41,7 @@ module RubyRuby
       when Regexp
         # TODO
       else
-        raise "UNKNOWN_LITERAL: #{node[1].inspect}"
+        raise "UNKNOWN_LITERAL: #{node[1].inspect} (#{node.file}:#{node.line})"
       end
     end
 
@@ -112,6 +112,11 @@ module RubyRuby
         end
         add_instruction(:concat_array)
       end
+    end
+
+    def compile_svalue(node)
+      compile(node[1][1])
+      add_instruction(:splat_array, true)
     end
 
     def array_from_nodes(nodes)
