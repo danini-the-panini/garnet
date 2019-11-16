@@ -98,8 +98,12 @@ module RubyRuby
       control_frame.pc += 1
     end
 
-    def make_array(ary)
-      ary.is_a?(RArray) ? ary : rb_funcall(ary, :to_a)
+    def make_array(x)
+      case x
+      when RArray then x
+      when RPrimitive then RArray.new(Core.cArray, 0, [x])
+      else Core.rb_funcall(x, :to_a)
+      end
     end
 
     def dup_array(ary)
@@ -118,6 +122,35 @@ module RubyRuby
       ary = make_array(pop_stack)
       ary = dup_array(ary) if flag
       push_stack(ary)
+      control_frame.pc += 1
+    end
+
+    def exec_expand_array(control_frame, insn, iseq)
+      num, is_splat, post = insn.arguments
+      ary = make_array(pop_stack).array_value
+      len = ary.length
+      if post
+        (num - len).times { push_stack(Q_NIL) } if len < num
+        [num, len].min.times { |j| push_stack(ary[len - j - 1]) }
+        if is_splat
+          push_stack(RArray.new(Core.cArray, 0, ary[0,(len - [num, len].min)]))
+        end
+      else
+        if is_splat
+          if num > len
+            push_stack(RArray.new(Core.cArray, 0, []))
+          else
+            push_stack(RArray.new(Core.cArray, 0, ary[num..-1]))
+          end
+        end
+        (num - 1).downto(0) do |i|
+          if len <= i
+            push_stack(Q_NIL)
+          else
+            push_stack(ary[i])
+          end
+        end
+      end
       control_frame.pc += 1
     end
 
@@ -190,7 +223,7 @@ module RubyRuby
     end
 
     def exec_set_local(control_frame, insn, iseq)
-      value = peek_stack
+      value = pop_stack
       name = insn.arguments[0]
       level = insn.arguments[1]
       local_env = get_local_env(level)

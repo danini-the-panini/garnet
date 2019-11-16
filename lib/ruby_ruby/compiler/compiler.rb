@@ -126,6 +126,44 @@ module RubyRuby
       add_instruction(:new_array, nodes.count)
     end
 
+    def compile_masgn(node)
+      locals = node[1][1..-1]
+      case node[2][0]
+      when :to_ary
+        compile(node[2][1])
+        add_instruction(:dup)
+      when :splat
+        compile(node[2][1])
+        add_instruction(:splat_array, true)
+        add_instruction(:dup)
+      when :array
+        compile(node[2])
+        add_instruction(:dup)
+      end
+      i = locals.index { |l| l[0] == :splat}
+      if i.nil?
+        add_instruction(:expand_array, locals.count, false, false)
+      else
+        pre = locals[0...i]
+        splat = locals[i]
+        post = locals[(i + 1)..-1]
+
+        add_instruction(:expand_array, pre.count, true, false)
+        pre.each do |l|
+          add_instruction(:set_local, l[1], @iseq.local_level)
+        end
+        if post.empty?
+          add_instruction(:set_local, splat[1][1], @iseq.local_level)
+        else
+          add_instruction(:expand_array, post.count, true, true)
+          add_instruction(:set_local, splat[1][1], @iseq.local_level)
+          post.each do |l|
+            add_instruction(:set_local, l[1], @iseq.local_level)
+          end
+        end
+      end
+    end
+
     def compile_hash(node)
       node[1..-1].each do |n|
         compile(n)
