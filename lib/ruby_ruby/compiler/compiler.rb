@@ -87,7 +87,7 @@ module RubyRuby
 
     def compile_evstr(node)
       compile(node[1])
-      add_instruction(:send, :to_s, 0)
+      add_instruction(:send_without_block, :to_s, 0)
     end
 
     def compile_array(node)
@@ -150,15 +150,15 @@ module RubyRuby
 
         add_instruction(:expand_array, pre.count, true, false)
         pre.each do |l|
-          add_instruction(:set_local, l[1], @iseq.local_level)
+          add_set_local(l[1])
         end
         if post.empty?
-          add_instruction(:set_local, splat[1][1], @iseq.local_level)
+          add_set_local(splat[1][1])
         else
           add_instruction(:expand_array, post.count, true, true)
-          add_instruction(:set_local, splat[1][1], @iseq.local_level)
+          add_set_local(splat[1][1])
           post.each do |l|
-            add_instruction(:set_local, l[1], @iseq.local_level)
+            add_set_local(l[1])
           end
         end
       end
@@ -192,12 +192,12 @@ module RubyRuby
     end
 
     def compile_lvar(node)
-      add_instruction(:get_local, node[1], @iseq.local_level)
+      add_get_local(node[1])
     end
 
     def compile_lasgn(node)
       compile(node[2])
-      add_instruction(:set_local, node[1], @iseq.local_level)
+      add_set_local(node[1])
     end
 
     def compile_cdecl(node)
@@ -239,16 +239,39 @@ module RubyRuby
       else
         add_instruction(:put_self)
       end
-      argc = compile_args(node)
-      add_instruction(:send, node[2], argc)
+      argc = compile_call_args(node)
+      add_instruction(:send_without_block, node[2], argc)
+    end
+
+    def compile_yield(node)
+      argc = compile_args(node[1..-1])
+      add_instruction(:invoke_block, argc)
+    end
+
+    def compile_iter(node)
+      block_args = node[2] == 0 ? [:args] : node[2]
+      local_table = block_args[1..-1].map { |a| [a, :arg] }.to_h
+      block_iseq = Iseq.new("block in #{@iseq.name}", :block, @iseq, local_table)
+      compiler = Compiler.new(block_iseq)
+      compiler.compile_node(node[3])
+
+      call_node = node[1]
+      if call_node[1]
+        compile(call_node[1])
+      else
+        add_instruction(:put_self)
+      end
+      argc = compile_call_args(call_node)
+
+      add_instruction(:send, call_node[2], argc, block_iseq)
     end
 
     def compile_attrasgn(node)
       add_instruction(:put_nil)
       compile(node[1])
-      argc = compile_args(node)
+      argc = compile_call_args(node)
       add_instruction(:setn, argc + 1)
-      add_instruction(:send, node[2], argc)
+      add_instruction(:send_without_block, node[2], argc)
     end
 
     def compile_op_asgn_or(node)
@@ -266,7 +289,7 @@ module RubyRuby
       add_instruction(:pop)
       compile(node[2][2])
       add_instruction(:dup)
-      add_instruction(:set_local, node[2][1], @iseq.local_level)
+      add_set_local(node[2][1])
       branch_insn.arguments[0] = @iseq.instructions.length
     end
 
@@ -275,14 +298,14 @@ module RubyRuby
       compile(node[1])
       argc = compile_argslist(node[2])
       add_instruction(:dupn, argc + 1)
-      add_instruction(:send, :[], argc)
+      add_instruction(:send_without_block, :[], argc)
       case node[3]
       when :'||', :'&&'
         add_instruction(:dup)
         branch_insn = add_instruction(node[3] == :'&&' ? :branch_unless : :branch_if, nil)
         add_instruction(:pop)
         compile(node[4])
-        add_instruction(:send, :[]=, argc + 1)
+        add_instruction(:send_without_block, :[]=, argc + 1)
         add_instruction(:pop)
         jump_insn = add_instruction(:jump, nil)
         branch_insn.arguments[0] = @iseq.instructions.length
@@ -291,31 +314,38 @@ module RubyRuby
         jump_insn.arguments[0] = @iseq.instructions.length
       else
         compile(node[4])
-        add_instruction(:send, node[3], 1)
+        add_instruction(:send_without_block, node[3], 1)
         add_instruction(:setn, argc + 2)
-        add_instruction(:send, :[]=, argc + 1)
+        add_instruction(:send_without_block, :[]=, argc + 1)
         add_instruction(:pop)
       end
     end
 
-    def compile_args(node)
-      argc = node.length - 3
-      node[3..-1].each do |n|
-        compile(n)
-      end
-      argc
+    def compile_call_args(node)
+      compile_args(node[3..-1])
     end
 
     def compile_argslist(node)
-      argc = node.length - 1
-      node[1..-1].each do |n|
+      compile_args(node[1..-1])
+    end
+
+    def compile_args(args)
+      args.each do |n|
         compile(n)
       end
-      argc
+      args.count
     end
 
     def add_instruction(type, *args)
       @iseq.add_instruction(type, *args)
+    end
+
+    def add_set_local(name)
+      add_instruction(:set_local, name, @iseq.local_level(name))
+    end
+
+    def add_get_local(name)
+      add_instruction(:get_local, name, @iseq.local_level(name))
     end
   end
 end

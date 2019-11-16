@@ -22,16 +22,21 @@ module RubyRuby
 
     def debug_dump_instructions
       @instructions.each_with_index do |insn, i|
-        puts "#{i}: #{insn.type}\t#{insn.arguments.map{|x|x.is_a?(String) ? x.inspect : x.to_s}.join(',')}"
+        args = insn.arguments
+                   .map { |x| x.is_a?(String) ? x.inspect : x.to_s }
+                   .join(',')
+        puts "#{i}: #{insn.type}\t#{args}"
       end
     end
 
-    def local_level
+    def local_level(label)
       i = self
       l = local_iseq
       lv = 0
-      while i != l
-        i = l.parent_iseq
+      while i != l && !i.local_table.key?(label)
+        break if i.parent_iseq.nil?
+
+        i = i.parent_iseq
         lv += 1
       end
       lv

@@ -31,6 +31,7 @@ require 'ruby_ruby/core/string'
 require 'ruby_ruby/core/array'
 require 'ruby_ruby/core/hash'
 require 'ruby_ruby/core/method'
+require 'ruby_ruby/core/block'
 require 'ruby_ruby/core/io'
 require 'ruby_ruby/core/core'
 

@@ -21,12 +21,27 @@ module RubyRuby
       execute(iseq) until @control_frames.empty?
     end
 
-    def execute_method_iseq(target, method, args)
+    def execute_method_iseq(target, method, args, block=nil)
       prev_control_frame = @control_frames.last
 
       iseq = method.iseq
-      locals = iseq.local_table.select { |_,v| v == :arg }.keys[0..args.count].zip(args).to_h
-      control_frame = ControlFrame.new(target, Environment.new(target.klass, method.environment, locals))
+      locals = iseq.local_table.select { |_, v| v == :arg }.keys[0..args.count].zip(args).to_h
+      env = Environment.new(target.klass, method.environment, locals)
+      control_frame = ControlFrame.new(target, env, block)
+      @control_frames.push(control_frame)
+
+      execute(iseq) until @control_frames.last == prev_control_frame
+
+      control_frame.stack.pop
+    end
+
+    def execute_block_iseq(block, args)
+      prev_control_frame = @control_frames.last
+
+      iseq = block.iseq
+      locals = iseq.local_table.select { |_, v| v == :arg }.keys[0..args.count].zip(args).to_h
+      env = Environment.new(block.self_value.klass, block.environment, locals, block.environment)
+      control_frame = ControlFrame.new(block.self_value, env, prev_control_frame.block)
       @control_frames.push(control_frame)
 
       execute(iseq) until @control_frames.last == prev_control_frame
@@ -203,13 +218,32 @@ module RubyRuby
       control_frame.pc = insn.arguments[0]
     end
 
-    def exec_send(control_frame, insn, iseq)
-      mid = insn.arguments[0]
-      argc = insn.arguments[1]
+    def exec_send_without_block(control_frame, insn, iseq)
+      mid, argc = insn.arguments
       args = pop_stack_multi(argc)
       target = pop_stack
       method = find_method(target, mid)
       ret = dispatch_method(target, method, args)
+      push_stack(ret)
+      control_frame.pc += 1
+    end
+
+    def exec_send(control_frame, insn, iseq)
+      mid, argc, block_iseq = insn.arguments
+      args = pop_stack_multi(argc)
+      target = pop_stack
+      method = find_method(target, mid)
+      block = Block.new(block_iseq, control_frame.environment, control_frame.self_value)
+      ret = dispatch_method(target, method, args, block)
+      push_stack(ret)
+      control_frame.pc += 1
+    end
+
+    def exec_invoke_block(control_frame, insn, iseq)
+      argc = insn.arguments[0]
+      args = pop_stack_multi(argc)
+      block = control_frame.block
+      ret = execute_block_iseq(block, args)
       push_stack(ret)
       control_frame.pc += 1
     end
@@ -316,12 +350,18 @@ module RubyRuby
       method
     end
 
-    def dispatch_method(target, method, args)
+    def dispatch_method(target, method, args, block=nil)
       case method
       when BuiltInMethod
-        method.block.call(target, *args)
+        if block
+          method.block.call(target, *args) do |*blargs|
+            execute_block_iseq(block, blargs)
+          end
+        else
+          method.block.call(target, *args)
+        end
       when ISeqMethod
-        execute_method_iseq(target, method, args)
+        execute_method_iseq(target, method, args, block)
       else
         raise "NOT IMPLEMENTED: #{method.class} dispatch"
       end
