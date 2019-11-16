@@ -98,6 +98,29 @@ module RubyRuby
       control_frame.pc += 1
     end
 
+    def make_array(ary)
+      ary.is_a?(RArray) ? ary : rb_funcall(ary, :to_a)
+    end
+
+    def dup_array(ary)
+      RArray.new(Core.cArray, 0, ary.array_value)
+    end
+
+    def exec_concat_array(control_frame, insn, iseq)
+      ary1, ary2 = pop_stack_multi(2).map { |x| make_array(x) }
+      ary = RArray.new(Core.cArray, 0, ary1.array_value + ary2.array_value)
+      push_stack(ary)
+      control_frame.pc += 1
+    end
+
+    def exec_splat_array(control_frame, insn, iseq)
+      flag = insn.arguments[0]
+      ary = make_array(pop_stack)
+      ary = dup_array(ary) if flag
+      push_stack(ary)
+      control_frame.pc += 1
+    end
+
     def exec_new_hash(control_frame, insn, iseq)
       count = insn.arguments[0]
       items = pop_stack_multi(count)

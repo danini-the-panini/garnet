@@ -91,10 +91,37 @@ module RubyRuby
     end
 
     def compile_array(node)
-      node[1..-1].each do |n|
+      print "p node[1..-1] -- "; p node[1..-1]
+      chunks = node[1..-1].chunk { |n| n[0] == :splat }.to_a
+      print "p chunks -- "; p chunks
+      if chunks[0][0]
+        print "p chunks[0][1] -- "; p chunks[0][1]
+        compile(chunks[0][1][0][1])
+        add_instruction(:splat_array, true)
+        chunks.slice!(0)
+      else
+        nodes = chunks.slice!(0)[1]
+        print "p nodes -- "; p nodes
+        array_from_nodes(nodes)
+      end
+      print "p chunks -- "; p chunks
+      chunks.each do |splat, n|
+        print "p splat, n -- "; p splat, n
+        if splat
+          compile(n[0][1])
+        else
+          array_from_nodes(n)
+        end
+        add_instruction(:concat_array)
+      end
+      puts "~~~~~"
+    end
+
+    def array_from_nodes(nodes)
+      nodes.each do |n|
         compile(n)
       end
-      add_instruction(:new_array, node.length - 1)
+      add_instruction(:new_array, nodes.count)
     end
 
     def compile_hash(node)
