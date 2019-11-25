@@ -1,4 +1,4 @@
 $LOAD_PATH.unshift File.expand_path("../lib", __dir__)
-require "ruby_ruby"
+require "garnet_ruby"
 
 require "minitest/autorun"

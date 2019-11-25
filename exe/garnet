@@ -1,0 +1,12 @@
+#!/usr/bin/env ruby
+
+require "bundler/setup"
+require "garnet_ruby"
+
+if ARGV.empty?
+  source, filename = STDIN.read, "$stdin"
+else
+  source, filename = File.read(ARGV.first), ARGV.first
+end
+
+GarnetRuby.run(source, filename)

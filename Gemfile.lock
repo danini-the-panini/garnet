@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    ruby_ruby (0.1.0)
+    garnet_ruby (0.1.0)
       ruby_parser (~> 3.14)
 
 GEM
@@ -18,9 +18,9 @@ PLATFORMS
 
 DEPENDENCIES
   bundler (~> 2.0)
+  garnet_ruby!
   minitest (~> 5.0)
   rake (~> 10.0)
-  ruby_ruby!
 
 BUNDLED WITH
    2.0.2

@@ -1,21 +1,21 @@
 lib = File.expand_path("lib", __dir__)
 $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
-require "ruby_ruby/version"
+require "garnet_ruby/version"
 
 Gem::Specification.new do |spec|
-  spec.name          = "ruby_ruby"
-  spec.version       = RubyRuby::VERSION
+  spec.name          = "garnet_ruby"
+  spec.version       = GarnetRuby::VERSION
   spec.authors       = ["Daniel Smith"]
   spec.email         = ["jellymann@gmail.com"]
 
   spec.summary       = %q{Ruby written in Ruby}
   spec.description   = %q{The Ruby programming language, written in the Ruby programming language.}
-  spec.homepage      = "https://www.github.com/jellmann/ruby_ruby"
+  spec.homepage      = "https://www.github.com/jellmann/garnet"
   spec.license       = "MIT"
 
   spec.metadata["homepage_uri"] = spec.homepage
-  spec.metadata["source_code_uri"] = "https://www.github.com/jellmann/ruby_ruby"
-  spec.metadata["changelog_uri"] = "https://www.github.com/jellmann/ruby_ruby"
+  spec.metadata["source_code_uri"] = "https://www.github.com/jellmann/garnet"
+  spec.metadata["changelog_uri"] = "https://www.github.com/jellmann/garnet"
 
   # Specify which files should be added to the gem when it is released.
   # The `git ls-files -z` loads the files in the RubyGem that have been added into git.
