@@ -219,29 +219,41 @@ module GarnetRuby
     end
 
     def exec_send_without_block(control_frame, insn, iseq)
-      mid, argc = insn.arguments
-      args = pop_stack_multi(argc)
+      callinfo = insn.arguments[0]
+      args = pop_stack_multi(callinfo.argc)
+      if callinfo.flags.include?(:splat)
+        *pargs, splat = args
+        args = [*pargs, *splat.array_value]
+      end
       target = pop_stack
-      method = find_method(target, mid)
+      method = find_method(target, callinfo.mid)
       ret = dispatch_method(target, method, args)
       push_stack(ret)
       control_frame.pc += 1
     end
 
     def exec_send(control_frame, insn, iseq)
-      mid, argc, block_iseq = insn.arguments
-      args = pop_stack_multi(argc)
+      callinfo = insn.arguments[0]
+      args = pop_stack_multi(callinfo.argc)
+      if callinfo.flags.include?(:splat)
+        *pargs, splat = args
+        args = [*pargs, *splat.array_value]
+      end
       target = pop_stack
-      method = find_method(target, mid)
-      block = Block.new(block_iseq, control_frame.environment, control_frame.self_value)
+      method = find_method(target, callinfo.mid)
+      block = Block.new(callinfo.block_iseq, control_frame.environment, control_frame.self_value)
       ret = dispatch_method(target, method, args, block)
       push_stack(ret)
       control_frame.pc += 1
     end
 
     def exec_invoke_block(control_frame, insn, iseq)
-      argc = insn.arguments[0]
-      args = pop_stack_multi(argc)
+      callinfo = insn.arguments[0]
+      args = pop_stack_multi(callinfo.argc)
+      if callinfo.flags.include?(:splat)
+        *pargs, splat = args
+        args = [*pargs, *splat.array_value]
+      end
       block = control_frame.block
       ret = execute_block_iseq(block, args)
       push_stack(ret)

@@ -1,5 +1,27 @@
 module GarnetRuby
   class Compiler
+    class CallInfo
+      attr_reader :mid, :argc, :flags, :block_iseq
+
+      def initialize(mid, argc, flags, block_iseq = nil)
+        @mid = mid
+        @argc = argc
+        @flags = flags
+        @block_iseq = block_iseq
+      end
+
+      def inspect
+        things = [
+          mid && "mid:#{mid}",
+          "argc:#{argc}",
+          flags.map{ |f| f.to_s.upcase}.join("|"),
+          block_iseq
+        ].compact.join(', ')
+        "<callinfo!#{things}>"
+      end
+      alias to_s inspect
+    end
+
     def initialize(iseq)
       @iseq = iseq
     end
@@ -87,7 +109,7 @@ module GarnetRuby
 
     def compile_evstr(node)
       compile(node[1])
-      add_instruction(:send_without_block, :to_s, 0)
+      add_instruction(:send_without_block, CallInfo.new(:to_s, 0, [:simple]))
     end
 
     def compile_array(node)
@@ -239,13 +261,13 @@ module GarnetRuby
       else
         add_instruction(:put_self)
       end
-      argc = compile_call_args(node)
-      add_instruction(:send_without_block, node[2], argc)
+      argc, flags = compile_call_args(node)
+      add_instruction(:send_without_block, CallInfo.new(node[2], argc, flags))
     end
 
     def compile_yield(node)
-      argc = compile_args(node[1..-1])
-      add_instruction(:invoke_block, argc)
+      argc, flags = compile_args(node[1..-1])
+      add_instruction(:invoke_block, CallInfo.new(nil, argc, flags))
     end
 
     def compile_iter(node)
@@ -261,17 +283,17 @@ module GarnetRuby
       else
         add_instruction(:put_self)
       end
-      argc = compile_call_args(call_node)
+      argc, flags = compile_call_args(call_node)
 
-      add_instruction(:send, call_node[2], argc, block_iseq)
+      add_instruction(:send, CallInfo.new(call_node[2], argc, flags, block_iseq))
     end
 
     def compile_attrasgn(node)
       add_instruction(:put_nil)
       compile(node[1])
-      argc = compile_call_args(node)
+      argc, flags = compile_call_args(node)
       add_instruction(:setn, argc + 1)
-      add_instruction(:send_without_block, node[2], argc)
+      add_instruction(:send_without_block, CallInfo.new(node[2], argc, flags))
     end
 
     def compile_op_asgn_or(node)
@@ -296,16 +318,16 @@ module GarnetRuby
     def compile_op_asgn1(node)
       add_instruction(:put_nil)
       compile(node[1])
-      argc = compile_argslist(node[2])
+      argc, flags = compile_argslist(node[2])
       add_instruction(:dupn, argc + 1)
-      add_instruction(:send_without_block, :[], argc)
+      add_instruction(:send_without_block, CallInfo.new(:[], argc, [:simple]))
       case node[3]
       when :'||', :'&&'
         add_instruction(:dup)
         branch_insn = add_instruction(node[3] == :'&&' ? :branch_unless : :branch_if, nil)
         add_instruction(:pop)
         compile(node[4])
-        add_instruction(:send_without_block, :[]=, argc + 1)
+        add_instruction(:send_without_block, CallInfo.new(:[]=, argc + 1, flags))
         add_instruction(:pop)
         jump_insn = add_instruction(:jump, nil)
         branch_insn.arguments[0] = @iseq.instructions.length
@@ -314,9 +336,9 @@ module GarnetRuby
         jump_insn.arguments[0] = @iseq.instructions.length
       else
         compile(node[4])
-        add_instruction(:send_without_block, node[3], 1)
+        add_instruction(:send_without_block, CallInfo.new(node[3], 1, [:simple]))
         add_instruction(:setn, argc + 2)
-        add_instruction(:send_without_block, :[]=, argc + 1)
+        add_instruction(:send_without_block, CallInfo.new(:[]=, argc + 1, flags))
         add_instruction(:pop)
       end
     end
@@ -330,10 +352,44 @@ module GarnetRuby
     end
 
     def compile_args(args)
-      args.each do |n|
+      flags = []
+      has_splat = args.find { |x| x[0] == :splat }
+      slices = args.slice_when { |a, b| a[0] == :splat || b[0] == :splat }.to_a
+      count = 0
+      if has_splat
+        if slices[0][0][0] == :splat
+          pargs = []
+        else
+          pargs = slices[0]
+          slices = slices[1..-1]
+        end
+        count = pargs.count + 1
+        flags << :splat
+      else
+        pargs = args
+        count = pargs.count
+        flags << :simple
+      end
+      pargs.each do |n|
         compile(n)
       end
-      args.count
+      if has_splat
+        slices.each_with_index do |slice, index|
+          if slice[0][0] == :splat
+            compile(slice[0][1])
+            add_instruction(:splat_array, index != slices.count - 1)
+          else
+            slice.each do |a|
+              compile(a)
+            end
+            add_instruction(:new_array, slice.count)
+          end
+        end
+        (slices.count - 1).times do
+          add_instruction(:concat_array)
+        end
+      end
+      [count, flags]
     end
 
     def add_instruction(type, *args)

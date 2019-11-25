@@ -10,5 +10,6 @@ module GarnetRuby
     def to_s
       "<##{klass.name}>"
     end
+    alias inspect to_s
   end
 end
