@@ -8,7 +8,7 @@ Ruby written in Ruby.
 
 ## Usage
 
-    $ garnet_ruby program.rb
+    $ garnet program.rb
 
 ## Contributing
 
