@@ -194,9 +194,17 @@ module GarnetRuby
     end
 
     def compile_or(node)
+      compile_boolean_op(node, :branch_if)
+    end
+
+    def compile_and(node)
+      compile_boolean_op(node, :branch_unless)
+    end
+
+    def compile_boolean_op(node, branch_type)
       compile(node[1])
       add_instruction(:dup)
-      branch_insn = add_instruction(:branch_if, nil)
+      branch_insn = add_instruction(branch_type, nil)
       add_instruction(:pop)
       compile(node[2])
       branch_insn.arguments[0] = @iseq.instructions.length
@@ -255,6 +263,22 @@ module GarnetRuby
       add_instruction(:define_method)
     end
 
+    def compile_return(node)
+      compile(node[1]) if node.length > 1
+      add_instruction(:leave)
+      # TODO: handle blocks
+    end
+
+    def compile_next(node)
+      compile(node[1]) if node.length > 1
+      add_instruction(:leave)
+    end
+
+    def compile_break(node)
+      compile(node[1]) if node.length > 1
+      add_instruction(:throw, :break)
+    end
+
     def compile_call(node)
       if node[1]
         compile(node[1])
@@ -271,6 +295,8 @@ module GarnetRuby
     end
 
     def compile_iter(node)
+      st = @iseq.instructions.length - 1
+
       block_args = node[2] == 0 ? [:args] : node[2]
       local_table = block_args[1..-1].map { |a| [a, :arg] }.to_h
       block_iseq = Iseq.new("block in #{@iseq.name}", :block, @iseq, local_table)
@@ -286,6 +312,10 @@ module GarnetRuby
       argc, flags = compile_call_args(call_node)
 
       add_instruction(:send, CallInfo.new(call_node[2], argc, flags, block_iseq))
+      add_instruction(:nop)
+
+      ed = @iseq.instructions.length - 1
+      @iseq.add_catch_type(:break, st, ed, ed, block_iseq)
     end
 
     def compile_attrasgn(node)

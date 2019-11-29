@@ -1,12 +1,15 @@
 module GarnetRuby
   class Iseq
-    attr_reader :name, :type, :instructions, :local_table, :parent_iseq, :local_iseq
+    CatchRecord = Struct.new(:type, :st, :ed, :cont, :iseq)
+
+    attr_reader :name, :type, :instructions, :local_table, :catch_table, :parent_iseq, :local_iseq
 
     def initialize(name, type, parent = nil, local_table={})
       @name = name
       @type = type
       @instructions = []
       @local_table = local_table
+      @catch_table = []
       set_relation(parent)
     end
 
@@ -16,8 +19,16 @@ module GarnetRuby
       end
     end
 
+    def add_catch_type(type, st, ed, cont, iseq)
+      @catch_table << CatchRecord.new(type, st, ed, cont, iseq)
+    end
+
     def to_s
       name
+    end
+
+    def inspect
+      "#<Iseq:#{name}>"
     end
 
     def debug_dump_instructions
