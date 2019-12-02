@@ -107,6 +107,7 @@ module GarnetRuby
         init_string
         init_array
         init_hash
+        init_regexp
         init_io
       end
 

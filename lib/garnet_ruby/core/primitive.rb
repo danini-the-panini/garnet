@@ -32,7 +32,7 @@ module GarnetRuby
               when Float then Core.cFloat
               when Symbol then Core.cSymbol
               else
-                raise "unsupported primitive"
+                raise "unsupported primitive (#{value.class})"
               end
 
       new(klass, [], value)

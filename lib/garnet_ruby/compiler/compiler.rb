@@ -87,7 +87,7 @@ module GarnetRuby
       when Range
         # TODO
       when Regexp
-        # TODO
+        add_instruction(:put_object, RRegexp.new(Core.cRegexp, 0, node[1]))
       else
         raise "UNKNOWN_LITERAL: #{node[1].inspect} (#{node.file}:#{node.line})"
       end
@@ -507,6 +507,23 @@ module GarnetRuby
         add_instruction(:send_without_block, CallInfo.new(:[]=, argc + 1, flags))
         add_instruction(:pop)
       end
+    end
+
+    def compile_match2(node)
+      # TODO: compile to optimised regexp_match instruction
+      compile_regex_match(node)
+    end
+
+    def compile_match3(node)
+      # TODO: compile to optimised regexp_match instruction
+      compile_regex_match(node)
+    end
+
+    def compile_regex_match(node)
+      left, right = node[1..2]
+      compile(left)
+      compile(right)
+      add_instruction(:send_without_block, CallInfo.new(:=~, 1, [:simple]))
     end
 
     def compile_call_args(node)
