@@ -198,20 +198,34 @@ module GarnetRuby
 
     def exec_branch_if(control_frame, insn)
       cond = pop_stack
-      if cond == Q_NIL || cond == Q_FALSE
+      if rtest(cond)
+        control_frame.pc = insn.arguments[0]
+      else
+        control_frame.pc += 1
+      end
+    end
+
+    def exec_branch_unless(control_frame, insn)
+      cond = pop_stack
+      if rtest(cond)
         control_frame.pc += 1
       else
         control_frame.pc = insn.arguments[0]
       end
     end
 
-    def exec_branch_unless(control_frame, insn)
-      cond = pop_stack
-      if cond == Q_NIL || cond == Q_FALSE
-        control_frame.pc = insn.arguments[0]
+    def exec_check_match(control_frame, insn)
+      target, pattern = pop_stack_multi(2)
+      type, flags = insn.arguments
+      if flags.include?(:array)
+        result = pattern.array_value.any? do |v|
+          rtest(Core.check_match(target, v, type))
+        end
+        push_stack(result ? Q_TRUE : Q_FALSE)
       else
-        control_frame.pc += 1
+        push_stack Core.check_match(target, pattern, type)
       end
+      control_frame.pc += 1
     end
 
     def exec_jump(control_frame, insn)
@@ -405,6 +419,10 @@ module GarnetRuby
         local_env = local_env.previous
       end
       local_env
+    end
+
+    def rtest(value)
+      Core.rtest(value)
     end
   end
 end

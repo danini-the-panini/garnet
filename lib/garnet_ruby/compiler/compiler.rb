@@ -221,6 +221,43 @@ module GarnetRuby
       jump_insn.arguments[0] = @iseq.instructions.length if jump_insn
     end
 
+    def compile_case(node)
+      compile(node[1])
+      *whens, else_block = node[2..-1]
+      else_block ||= [:nil]
+
+      when_branches = whens.map do |w|
+        w[1][1..-1].map do |c|
+          add_instruction(:dup)
+          flags = []
+          if c[0] == :splat
+            compile(c[1])
+            add_instruction(:splat_array, false)
+            flags << :array
+          else
+            compile(c)
+          end
+          add_instruction(:check_match, :case, flags)
+          add_instruction(:branch_if, nil)
+        end
+      end
+      jumps = []
+      add_instruction(:pop)
+      compile(else_block)
+      jumps << add_instruction(:jump, nil)
+      whens.each_with_index do |w, i|
+        when_branches[i].each { |b| b.arguments[0] = @iseq.instructions.length }
+        add_instruction(:pop)
+        w[2..-2].each do |n|
+          compile(n)
+          add_instruction(:pop)
+        end
+        compile(w[-1])
+        jumps << add_instruction(:jump, nil) unless i == whens.length - 1
+      end
+      jumps.each { |b| b.arguments[0] = @iseq.instructions.length }
+    end
+
     def compile_lvar(node)
       add_get_local(node[1])
     end

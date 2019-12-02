@@ -11,5 +11,13 @@ module GarnetRuby
       "<##{klass.name}>"
     end
     alias inspect to_s
+
+    def type
+      nil
+    end
+
+    def type?(_)
+      false
+    end
   end
 end

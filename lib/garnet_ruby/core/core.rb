@@ -236,6 +236,19 @@ module GarnetRuby
       def rb_funcall(recv, mid, *args)
         VM.instance.rb_call(recv, mid, *args)
       end
+
+      def rtest(value)
+        value != Q_FALSE && value != Q_NIL
+      end
+
+      def check_match(target, pattern, type)
+        case type
+        when :case
+          rb_funcall(pattern, :===, target)
+        else
+          Q_NIL
+        end
+      end
     end
   end
 end
