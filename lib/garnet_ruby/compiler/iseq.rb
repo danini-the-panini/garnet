@@ -2,9 +2,17 @@ module GarnetRuby
   class Iseq
     CatchRecord = Struct.new(:type, :st, :ed, :cont, :iseq)
 
-    attr_reader :name, :type, :instructions, :local_table, :catch_table, :parent_iseq, :local_iseq
+    attr_reader :name,
+                :type,
+                :instructions,
+                :local_table,
+                :catch_table,
+                :parent_iseq,
+                :local_iseq
 
-    def initialize(name, type, parent = nil, local_table={})
+    attr_accessor :start_label, :end_label, :redo_label
+
+    def initialize(name, type, parent = nil, local_table = {})
       @name = name
       @type = type
       @instructions = []

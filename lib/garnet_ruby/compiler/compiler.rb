@@ -14,12 +14,38 @@ module GarnetRuby
         things = [
           mid && "mid:#{mid}",
           "argc:#{argc}",
-          flags.map{ |f| f.to_s.upcase}.join("|"),
+          flags.map { |f| f.to_s.upcase}.join('|'),
           block_iseq
         ].compact.join(', ')
         "<callinfo!#{things}>"
       end
       alias to_s inspect
+    end
+
+    class Label
+      attr_reader :line
+
+      def initialize(iseq)
+        @iseq = iseq
+        @insns = []
+        @line = nil
+      end
+
+      def add
+        @line = @iseq.instructions.length
+        @insns.each do |insns|
+          insns.arguments[0] = @line
+        end
+        @insns = nil
+      end
+
+      def ref(ins)
+        if @line
+          ins.arguments[0] = @line
+        else
+          @insns << ins
+        end
+      end
     end
 
     def initialize(iseq)
@@ -202,34 +228,44 @@ module GarnetRuby
     end
 
     def compile_boolean_op(node, branch_type)
+      end_label = new_label
+
       compile(node[1])
       add_instruction(:dup)
-      branch_insn = add_instruction(branch_type, nil)
+      add_instruction_with_label(branch_type, end_label)
       add_instruction(:pop)
       compile(node[2])
-      branch_insn.arguments[0] = @iseq.instructions.length
+      add_label(end_label)
     end
 
     def compile_if(node)
+      else_label = new_label
+      end_label = new_label
+
       cond, if_branch, else_branch = node[1..3]
       compile(cond)
-      branch_insn = add_instruction(:branch_unless, nil)
+      add_instruction_with_label(:branch_unless, else_label)
       compile(if_branch || [:nil])
-      jump_insn = add_instruction(:jump, nil)
-      branch_insn.arguments[0] = @iseq.instructions.length
+      add_instruction_with_label(:jump, end_label)
+      add_label(else_label)
       compile(else_branch || [:nil])
-      jump_insn.arguments[0] = @iseq.instructions.length if jump_insn
+      add_label(end_label)
     end
 
     def compile_case(node)
-      compile(node[1])
       *whens, else_block = node[2..-1]
       else_block ||= [:nil]
 
-      when_branches = whens.map do |w|
-        w[1][1..-1].map do |c|
+      when_labels = whens.map { new_label }
+      end_label = new_label
+
+      compile(node[1])
+
+      whens.each_with_index do |w, i|
+        w[1][1..-1].each do |c|
           add_instruction(:dup)
           flags = []
+
           if c[0] == :splat
             compile(c[1])
             add_instruction(:splat_array, false)
@@ -237,25 +273,33 @@ module GarnetRuby
           else
             compile(c)
           end
+
           add_instruction(:check_match, :case, flags)
-          add_instruction(:branch_if, nil)
+          add_instruction_with_label(:branch_if, when_labels[i])
         end
       end
-      jumps = []
+
       add_instruction(:pop)
       compile(else_block)
-      jumps << add_instruction(:jump, nil)
+      add_instruction_with_label(:jump, end_label)
+
       whens.each_with_index do |w, i|
-        when_branches[i].each { |b| b.arguments[0] = @iseq.instructions.length }
+        add_label(when_labels[i])
         add_instruction(:pop)
+
         w[2..-2].each do |n|
           compile(n)
           add_instruction(:pop)
         end
+
         compile(w[-1])
-        jumps << add_instruction(:jump, nil) unless i == whens.length - 1
+
+        unless i == whens.length - 1
+          add_instruction_with_label(:jump, end_label)
+        end
       end
-      jumps.each { |b| b.arguments[0] = @iseq.instructions.length }
+
+      add_label(end_label)
     end
 
     def compile_while(node)
@@ -269,24 +313,36 @@ module GarnetRuby
     def compile_loop(node, branch_type)
       cond, body = node[1..2]
 
+      prev_start_label = @iseq.start_label
+      prev_redo_label = @iseq.redo_label
+
+      next_label = @iseq.start_label = new_label
+      redo_label = @iseq.redo_label = new_label
+      end_label = new_label
+
       # TODO: figure out what the hell this is supposed to be...
-      jumps = []
-      jumps << add_instruction(:jump, nil)
+      add_instruction_with_label(:jump, next_label)
       add_instruction(:put_nil)
       add_instruction(:pop)
-      jumps << add_instruction(:jump, nil)
+      add_instruction_with_label(:jump, next_label)
 
-      body_start = @iseq.instructions.length
+      add_label(redo_label)
       compile(body)
       add_instruction(:pop)
 
-      jumps.each { |j| j.arguments[0] = @iseq.instructions.length }
-
+      add_label(next_label)
       compile(cond)
-      add_instruction(branch_type, body_start)
+      add_instruction_with_label(branch_type, redo_label)
 
       add_instruction(:put_nil)
+
+      add_label(end_label)
       add_instruction(:nop)
+
+      @iseq.add_catch_type(:break, redo_label.line, end_label.line, end_label.line, @iseq)
+
+      @iseq.start_label = prev_start_label
+      @iseq.redo_label = prev_redo_label
     end
 
     def compile_lvar(node)
@@ -338,8 +394,14 @@ module GarnetRuby
     end
 
     def compile_next(node)
-      compile(node[1]) if node.length > 1
-      add_instruction(:leave)
+      if @iseq.redo_label
+        compile(node[1] || [:nil])
+        add_instruction(:pop)
+        add_instruction_with_label(:jump, @iseq.start_label)
+      else
+        compile(node[1]) if node.length > 1
+        add_instruction(:leave)
+      end
     end
 
     def compile_break(node)
@@ -403,17 +465,23 @@ module GarnetRuby
     end
 
     def compile_op_asgn_or_and(node, branch_type)
+      end_label = new_label
+
       compile(node[1])
       add_instruction(:dup)
-      branch_insn = add_instruction(branch_type, nil)
+      add_instruction_with_label(branch_type, end_label)
       add_instruction(:pop)
       compile(node[2][2])
       add_instruction(:dup)
       add_set_local(node[2][1])
-      branch_insn.arguments[0] = @iseq.instructions.length
+
+      add_label(end_label)
     end
 
     def compile_op_asgn1(node)
+      match_label = new_label
+      end_label = new_label
+
       add_instruction(:put_nil)
       compile(node[1])
       argc, flags = compile_argslist(node[2])
@@ -422,16 +490,16 @@ module GarnetRuby
       case node[3]
       when :'||', :'&&'
         add_instruction(:dup)
-        branch_insn = add_instruction(node[3] == :'&&' ? :branch_unless : :branch_if, nil)
+        add_instruction_with_label(node[3] == :'&&' ? :branch_unless : :branch_if, match_label)
         add_instruction(:pop)
         compile(node[4])
         add_instruction(:send_without_block, CallInfo.new(:[]=, argc + 1, flags))
         add_instruction(:pop)
-        jump_insn = add_instruction(:jump, nil)
-        branch_insn.arguments[0] = @iseq.instructions.length
+        add_instruction_with_label(:jump, end_label)
+        add_label(match_label)
         add_instruction(:setn, argc + 2)
         add_instruction(:adjust_stack, argc + 2)
-        jump_insn.arguments[0] = @iseq.instructions.length
+        add_label(end_label)
       else
         compile(node[4])
         add_instruction(:send_without_block, CallInfo.new(node[3], 1, [:simple]))
@@ -490,8 +558,20 @@ module GarnetRuby
       [count, flags]
     end
 
+    def new_label
+      Label.new(@iseq)
+    end
+
+    def add_label(label)
+      label.add
+    end
+
     def add_instruction(type, *args)
       @iseq.add_instruction(type, *args)
+    end
+
+    def add_instruction_with_label(type, label)
+      @iseq.add_instruction(type, nil).tap { |i| label.ref(i) }
     end
 
     def add_set_local(name)

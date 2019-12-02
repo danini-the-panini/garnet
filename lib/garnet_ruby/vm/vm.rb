@@ -241,7 +241,6 @@ module GarnetRuby
 
       if throw_type == :break
         until @control_frames.empty?
-          @control_frames.pop
           cfp = @control_frames.last
           puts "CFP: #{cfp}"
           cr = cfp.iseq.catch_table.find do |x|
@@ -251,6 +250,7 @@ module GarnetRuby
             cfp.pc = cr.cont
             break
           end
+          @control_frames.pop
         end
       end
     end
