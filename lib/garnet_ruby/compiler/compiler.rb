@@ -404,6 +404,14 @@ module GarnetRuby
       end
     end
 
+    def compile_redo(node)
+      if @iseq.redo_label
+        add_instruction_with_label(:jump, @iseq.redo_label)
+      else
+        # TODO: redo in block
+      end
+    end
+
     def compile_break(node)
       compile(node[1]) if node.length > 1
       add_instruction(:throw, :break)
