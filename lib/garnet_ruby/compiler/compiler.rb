@@ -258,6 +258,37 @@ module GarnetRuby
       jumps.each { |b| b.arguments[0] = @iseq.instructions.length }
     end
 
+    def compile_while(node)
+      compile_loop(node, :branch_if)
+    end
+
+    def compile_until(node)
+      compile_loop(node, :branch_unless)
+    end
+
+    def compile_loop(node, branch_type)
+      cond, body = node[1..2]
+
+      # TODO: figure out what the hell this is supposed to be...
+      jumps = []
+      jumps << add_instruction(:jump, nil)
+      add_instruction(:put_nil)
+      add_instruction(:pop)
+      jumps << add_instruction(:jump, nil)
+
+      body_start = @iseq.instructions.length
+      compile(body)
+      add_instruction(:pop)
+
+      jumps.each { |j| j.arguments[0] = @iseq.instructions.length }
+
+      compile(cond)
+      add_instruction(branch_type, body_start)
+
+      add_instruction(:put_nil)
+      add_instruction(:nop)
+    end
+
     def compile_lvar(node)
       add_get_local(node[1])
     end

@@ -3,6 +3,8 @@
 module GarnetRuby
   class Error < StandardError; end
 
+  Q_UNDEF = Object.new
+
   def self.run(source, filename)
     Core.init
 

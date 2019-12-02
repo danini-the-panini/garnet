@@ -25,5 +25,17 @@ module GarnetRuby
     def type?(t)
       value.is_a?(t)
     end
+
+    def self.from(value)
+      klass = case value
+              when Integer then Core.cInteger
+              when Float then Core.cFloat
+              when Symbol then Core.cSymbol
+              else
+                raise "unsupported primitive"
+              end
+
+      new(klass, [], value)
+    end
   end
 end

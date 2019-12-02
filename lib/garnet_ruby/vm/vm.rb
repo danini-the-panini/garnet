@@ -67,6 +67,10 @@ module GarnetRuby
       @control_frames.pop
     end
 
+    def exec_nop(control_frame, insn)
+      control_frame.pc += 1
+    end
+
     def exec_pop(control_frame, insn)
       pop_stack
       control_frame.pc += 1
@@ -307,6 +311,7 @@ module GarnetRuby
       level = insn.arguments[1]
       local_env = get_local_env(level)
       local_env.locals[name] = value
+      push_stack(value)
       control_frame.pc += 1
     end
 
