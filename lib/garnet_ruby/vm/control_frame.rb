@@ -9,7 +9,11 @@ module GarnetRuby
       @stack = []
       @self_value = self_value
       @environment = environment
-      @block = block
+      environment.block = block
+    end
+
+    def block
+      environment.block
     end
 
     def to_s

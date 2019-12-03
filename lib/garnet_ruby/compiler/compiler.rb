@@ -448,7 +448,7 @@ module GarnetRuby
     def compile_defn(node)
       _, mid, args, *nodes = node
 
-      local_table = args[1..-1].map { |a| [a, :arg] }.to_h
+      local_table = gen_local_table(args[1..-1])
       method_iseq = Iseq.new(mid.to_s, :method, @iseq, local_table)
       compiler = Compiler.new(method_iseq)
       compiler.compile_nodes(nodes)
@@ -461,7 +461,7 @@ module GarnetRuby
     def compile_defs(node)
       _, target, mid, args, *nodes = node
 
-      local_table = args[1..-1].map { |a| [a, :arg] }.to_h
+      local_table = gen_local_table(args[1..-1])
       method_iseq = Iseq.new(mid.to_s, :method, @iseq, local_table)
       compiler = Compiler.new(method_iseq)
       compiler.compile_nodes(nodes)
@@ -573,8 +573,8 @@ module GarnetRuby
     def compile_iter(node)
       st = @iseq.instructions.length
 
-      block_args = node[2] == 0 ? [:args] : node[2]
-      local_table = block_args[1..-1].map { |a| [a, :arg] }.to_h
+      block_args = node[2] == 0 ? [] : node[2][1..-1]
+      local_table = gen_local_table(block_args)
       block_iseq = Iseq.new("block in #{@iseq.name}", :block, @iseq, local_table)
       compiler = Compiler.new(block_iseq)
       compiler.compile_node(node[3] || [:nil])
@@ -597,8 +597,7 @@ module GarnetRuby
     def compile_for(node)
       st = @iseq.instructions.length
 
-      block_args = for_block_args(node[2])
-      local_table = block_args.map { |a| [a, :arg] }.to_h
+      local_table = gen_local_table(for_block_args(node[2]))
       block_iseq = Iseq.new("block in #{@iseq.name}", :block, @iseq, local_table)
       compiler = Compiler.new(block_iseq)
       compiler.compile_node(node[3])
@@ -623,6 +622,22 @@ module GarnetRuby
           end
         end
       end
+    end
+
+    def gen_local_table(args)
+      args.map { |a|
+        s = a.to_s
+        case s
+        when /^\*\*/
+          [s[2..-1].to_sym, :kwsplat]
+        when /^\*/
+          [s[1..-1].to_sym, :splat]
+        when /^&/
+          [s[1..-1].to_sym, :block]
+        else
+          [a, :arg]
+        end
+      }.to_h
     end
 
     def compile_attrasgn(node)
@@ -714,6 +729,7 @@ module GarnetRuby
     def compile_args(args)
       flags = []
       has_splat = args.find { |x| x[0] == :splat }
+      block_pass = args.delete_at(-1) if args.find { |x| x[0] == :block_pass }
       slices = args.slice_when { |a, b| a[0] == :splat || b[0] == :splat }.to_a
       count = 0
       if has_splat
@@ -749,6 +765,10 @@ module GarnetRuby
           add_instruction(:concat_array)
         end
       end
+      if block_pass
+        flags << :blockarg
+        compile(block_pass[1])
+      end
       [count, flags]
     end
 
@@ -773,7 +793,14 @@ module GarnetRuby
     end
 
     def add_get_local(name)
-      add_instruction(:get_local, name, @iseq.local_level(name))
+      level = @iseq.local_level(name)
+      pi = @iseq
+      level.times { pi = pi.parent_iseq }
+      if pi.local_table[name] == :block
+        add_instruction(:get_block_param_proxy, level)
+      else
+        add_instruction(:get_local, name, level)
+      end
     end
   end
 end

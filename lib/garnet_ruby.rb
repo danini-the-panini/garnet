@@ -36,6 +36,7 @@ require 'garnet_ruby/core/hash'
 require 'garnet_ruby/core/regexp'
 require 'garnet_ruby/core/method'
 require 'garnet_ruby/core/block'
+require 'garnet_ruby/core/proc'
 require 'garnet_ruby/core/io'
 require 'garnet_ruby/core/core'
 

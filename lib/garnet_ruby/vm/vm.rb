@@ -312,6 +312,9 @@ module GarnetRuby
 
     def exec_send_without_block(control_frame, insn)
       callinfo = insn.arguments[0]
+      if callinfo.flags.include?(:blockarg)
+        blockarg = Core.rb_funcall(pop_stack, :to_proc)
+      end
       args = pop_stack_multi(callinfo.argc)
       if callinfo.flags.include?(:splat)
         *pargs, splat = args
@@ -319,7 +322,7 @@ module GarnetRuby
       end
       target = pop_stack
       method = find_method(target, callinfo.mid)
-      ret = dispatch_method(target, method, args)
+      ret = dispatch_method(target, method, args, blockarg&.block)
       push_stack(ret) unless ret == Q_UNDEF
     end
 
@@ -350,19 +353,23 @@ module GarnetRuby
     end
 
     def exec_get_local(control_frame, insn)
-      name = insn.arguments[0]
-      level = insn.arguments[1]
+      name, level = insn.arguments
       local_env = get_local_env(level)
       push_stack(local_env.locals[name])
     end
 
     def exec_set_local(control_frame, insn)
       value = pop_stack
-      name = insn.arguments[0]
-      level = insn.arguments[1]
+      name, level = insn.arguments
       local_env = get_local_env(level)
       local_env.locals[name] = value
       push_stack(value)
+    end
+
+    def exec_get_block_param_proxy(control_frame, insn)
+      level = insn.arguments[0]
+      local_env = get_local_env(level)
+      push_stack(local_env.block.proc)
     end
 
     def exec_set_constant(control_frame, insn)
@@ -432,6 +439,7 @@ module GarnetRuby
     end
 
     def find_method(target, mid)
+      raise "TRYING TO CALL #{mid} on NIL" if target.nil?
       klass = target.klass
       method = klass.method_table[mid]
       while method.nil?

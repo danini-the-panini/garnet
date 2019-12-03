@@ -10,6 +10,10 @@ module GarnetRuby
     def to_s
       symbol_value.inspect
     end
+
+    def inspect
+      "<#Symbol:#{symbol_value}>"
+    end
   end
 
   module Core

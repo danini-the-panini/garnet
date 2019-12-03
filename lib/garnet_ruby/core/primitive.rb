@@ -11,6 +11,10 @@ module GarnetRuby
       "Q_#{value.inspect.upcase}"
     end
 
+    def inspect
+      "<##{klass}:#{value}>"
+    end
+
     def ==(other)
       return false unless other.is_a?(RPrimitive)
       return unless other.type?(type)
