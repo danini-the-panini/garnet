@@ -10,6 +10,10 @@ module GarnetRuby
     def to_s
       string_value.inspect
     end
+
+    def self.from(str)
+      new(Core.cString, [], str)
+    end
   end
 
   module Core
@@ -18,6 +22,9 @@ module GarnetRuby
 
       rb_define_method(cString, :to_s) do |x|
         x
+      end
+      rb_define_method(cString, :inspect) do |x|
+        RString.from(x.string_value.inspect)
       end
     end
   end

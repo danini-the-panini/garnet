@@ -16,6 +16,10 @@ module GarnetRuby
 
         Q_NIL
       end
+
+      rb_define_global_function(:`) do |_, str|
+        RString.from(`#{str.string_value}`)
+      end
     end
   end
 end

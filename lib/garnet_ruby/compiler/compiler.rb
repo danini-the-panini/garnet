@@ -133,6 +133,18 @@ module GarnetRuby
       add_instruction(:concat_strings, node.length - 1)
     end
 
+    def compile_xstr
+      add_instruction(:put_self)
+      add_instruction(:put_string, node[1])
+      add_instruction(:send_without_block, CallInfo.new(:`, 1, [:simple]))
+    end
+
+    def compile_dxstr(node)
+      add_instruction(:put_self)
+      compile_dstr(node)
+      add_instruction(:send_without_block, CallInfo.new(:`, 1, [:simple]))
+    end
+
     def compile_evstr(node)
       compile(node[1])
       add_instruction(:send_without_block, CallInfo.new(:to_s, 0, [:simple]))
