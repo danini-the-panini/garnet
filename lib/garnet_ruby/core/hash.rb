@@ -6,6 +6,10 @@ module GarnetRuby
       super(klass, flags)
       @hash_value = hash_value
     end
+
+    def from(h)
+      new(Core.cHash, [], h)
+    end
   end
 
   module Core
@@ -16,7 +20,7 @@ module GarnetRuby
         strings = hash.hash_value.map do |key, value|
           [rb_funcall(key, :inspect).string_value, rb_funcall(value, :inspect).string_value]
         end.to_h
-        RString.new(cString, 0, "{#{strings.map { |k, v| "#{k}=>#{v}" }.join(', ')}}")
+        RString.from("{#{strings.map { |k, v| "#{k}=>#{v}" }.join(', ')}}")
       end
       rb_alias_method(cHash, :to_s, :inspect)
     end

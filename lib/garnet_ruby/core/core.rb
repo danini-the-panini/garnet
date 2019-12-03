@@ -163,10 +163,25 @@ module GarnetRuby
       end
 
       def make_singleton_class(obj)
+        orig_class = obj.klass
+        klass = RClass.new_class(orig_class)
+
+        klass.flags |= [:SINGLETON]
+        obj.klass = klass
+        # obj.singleton_class_attached(klass) # TODO
+
+        klass.metaclass = orig_class.real.metaclass
+        klass
       end
 
       def singleton_class_of(obj)
         # TODO: do some checks
+
+        if obj.is_a?(RPrimitive)
+          raise TypeError, "can't define singleton"
+        end
+        # TODO: special const?
+        # TODO: builtin type?
 
         klass = obj.klass
         unless klass.flags.include?(:SINGLETON)

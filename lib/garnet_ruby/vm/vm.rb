@@ -120,38 +120,38 @@ module GarnetRuby
     end
 
     def exec_put_string(control_frame, insn)
-      push_stack RString.new(Core.cString, 0, insn.arguments[0])
+      push_stack RString.from(insn.arguments[0])
     end
 
     def exec_concat_strings(control_frame, insn)
       count = insn.arguments[0]
       strings = pop_stack_multi(count)
-      string = RString.new(Core.cString, 0, strings.map(&:string_value).join(''))
+      string = RString.from(strings.map(&:string_value).join(''))
       push_stack(string)
     end
 
     def exec_new_array(control_frame, insn)
       count = insn.arguments[0]
       items = pop_stack_multi(count)
-      array = RArray.new(Core.cArray, 0, items)
+      array = RArray.from(items)
       push_stack(array)
     end
 
     def make_array(x)
       case x
       when RArray then x
-      when RPrimitive then RArray.new(Core.cArray, 0, [x])
+      when RPrimitive then RArray.from([x])
       else Core.rb_funcall(x, :to_a)
       end
     end
 
     def dup_array(ary)
-      RArray.new(Core.cArray, 0, ary.array_value)
+      RArray.from(ary.array_value)
     end
 
     def exec_concat_array(control_frame, insn)
       ary1, ary2 = pop_stack_multi(2).map { |x| make_array(x) }
-      ary = RArray.new(Core.cArray, 0, ary1.array_value + ary2.array_value)
+      ary = RArray.from(ary1.array_value + ary2.array_value)
       push_stack(ary)
     end
 
@@ -170,14 +170,14 @@ module GarnetRuby
         (num - len).times { push_stack(Q_NIL) } if len < num
         [num, len].min.times { |j| push_stack(ary[len - j - 1]) }
         if is_splat
-          push_stack(RArray.new(Core.cArray, 0, ary[0,(len - [num, len].min)]))
+          push_stack(RArray.from(ary[0,(len - [num, len].min)]))
         end
       else
         if is_splat
           if num > len
-            push_stack(RArray.new(Core.cArray, 0, []))
+            push_stack(RArray.from([]))
           else
-            push_stack(RArray.new(Core.cArray, 0, ary[num..-1]))
+            push_stack(RArray.from(ary[num..-1]))
           end
         end
         (num - 1).downto(0) do |i|
@@ -193,7 +193,7 @@ module GarnetRuby
     def exec_new_hash(control_frame, insn)
       count = insn.arguments[0]
       items = pop_stack_multi(count)
-      hash = RHash.new(Core.cHash, 0, items.each_slice(2).to_a.to_h)
+      hash = RHash.from(items.each_slice(2).to_a.to_h)
       push_stack(hash)
     end
 
@@ -209,6 +209,19 @@ module GarnetRuby
       klass = control_frame.environment.lexical_scope.klass
       method = ISeqMethod.new(mid, klass, :public, method_iseq, control_frame.environment)
       klass.method_table[mid] = method
+
+      push_stack(mid_sym)
+    end
+
+    def exec_define_singleton_method(control_frame, insn)
+      method_iseq = pop_stack
+      mid_sym = pop_stack
+      mid = mid_sym.symbol_value
+      target = pop_stack
+      singleton = Core.singleton_class_of(target)
+
+      method = ISeqMethod.new(mid, singleton, :public, method_iseq, control_frame.environment)
+      singleton.method_table[mid] = method
 
       push_stack(mid_sym)
     end

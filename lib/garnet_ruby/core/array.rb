@@ -10,6 +10,10 @@ module GarnetRuby
     def to_s
       "[#{array_value.map(&:to_s).join(', ')}]"
     end
+
+    def self.from(ary)
+      new(Core.cArray, [], ary)
+    end
   end
 
   module Core
@@ -20,7 +24,7 @@ module GarnetRuby
         strings = ary.array_value.map do |item|
           rb_funcall(item, :to_s).string_value
         end
-        RString.new(cString, 0, "[#{strings.join(', ')}]")
+        RString.from("[#{strings.join(', ')}]")
       end
       rb_alias_method(cArray, :to_s, :inspect)
 
@@ -33,7 +37,7 @@ module GarnetRuby
             # TODO: Range
           end
         when 2
-          RArray.new(Core.cArray, 0, ary.array_value[args[0].value, args[1].value])
+          RArray.from(ary.array_value[args[0].value, args[1].value])
         end
       end
       rb_define_method(cArray, :[]=) do |ary, *args|

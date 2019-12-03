@@ -80,7 +80,7 @@ module GarnetRuby
     def make_metaclass
       metaclass = RClass.new_class(Q_UNDEF)
 
-      metaclass.flag |= [:SINGLETON]
+      metaclass.flags |= [:SINGLETON]
       # rb_singleton_class_attached(metaclass) # TODO ??
 
       if meta_class_of_class_class?
@@ -136,6 +136,11 @@ module GarnetRuby
       copy.const_table = const_table
 
       copy
+    end
+
+    def real
+      return super_class.real if flags.include?(:SINGLETON) || flags.include?(:ICLASS)
+      self
     end
 
     protected

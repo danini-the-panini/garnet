@@ -140,15 +140,15 @@ module GarnetRuby
     def compile_lit(node)
       case node[1]
       when Integer
-        add_instruction(:put_object, RPrimitive.new(Core.cInteger, 0, node[1]))
+        add_instruction(:put_object, RPrimitive.new(Core.cInteger, [], node[1]))
       when Float
-        add_instruction(:put_object, RPrimitive.new(Core.cFloat, 0, node[1]))
+        add_instruction(:put_object, RPrimitive.new(Core.cFloat, [], node[1]))
       when Symbol
-        add_instruction(:put_object, RSymbol.new(Core.cSymbol, 0, node[1]))
+        add_instruction(:put_object, RSymbol.new(Core.cSymbol, [], node[1]))
       when Range
         # TODO
       when Regexp
-        add_instruction(:put_object, RRegexp.new(Core.cRegexp, 0, node[1]))
+        add_instruction(:put_object, RRegexp.new(Core.cRegexp, [], node[1]))
       else
         raise "UNKNOWN_LITERAL: #{node[1].inspect} (#{node.file}:#{node.line})"
       end
@@ -446,9 +446,7 @@ module GarnetRuby
     end
 
     def compile_defn(node)
-      mid = node[1]
-      args = node[2]
-      nodes = node[3..-1]
+      _, mid, args, *nodes = node
 
       local_table = args[1..-1].map { |a| [a, :arg] }.to_h
       method_iseq = Iseq.new(mid.to_s, :method, @iseq, local_table)
@@ -458,6 +456,20 @@ module GarnetRuby
       add_instruction(:put_object, RSymbol.new(Core.cSymbol, 0, mid))
       add_instruction(:put_iseq, method_iseq)
       add_instruction(:define_method)
+    end
+
+    def compile_defs(node)
+      _, target, mid, args, *nodes = node
+
+      local_table = args[1..-1].map { |a| [a, :arg] }.to_h
+      method_iseq = Iseq.new(mid.to_s, :method, @iseq, local_table)
+      compiler = Compiler.new(method_iseq)
+      compiler.compile_nodes(nodes)
+
+      compile(target)
+      add_instruction(:put_object, RSymbol.new(Core.cSymbol, 0, mid))
+      add_instruction(:put_iseq, method_iseq)
+      add_instruction(:define_singleton_method)
     end
 
     def compile_return(node)
