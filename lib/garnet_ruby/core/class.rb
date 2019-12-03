@@ -42,6 +42,18 @@ module GarnetRuby
       ivar_get(:__classid__)
     end
 
+    def to_s
+      "<#Class:#{name}>"
+    end
+
+    def search_ancestor(cl)
+      while cl
+        return cl if cl == self
+        cl = cl.super_class
+      end
+      false
+    end
+
     def self.new_class(super_class)
       klass = new(Core.cClass, [:CLASS])
       klass.super_class = super_class

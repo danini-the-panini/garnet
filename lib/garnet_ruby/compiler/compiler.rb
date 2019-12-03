@@ -52,21 +52,72 @@ module GarnetRuby
       @iseq = iseq
     end
 
-    def compile_nodes(nodes)
+    def debug_dump_iseq
+      puts "Iseq:#{@iseq.name}"
+      unless @iseq.catch_table.empty?
+        puts "== catch table"
+        puts @iseq.catch_table.map { |cr| "| #{cr}" }.join("\n")
+      end
+      puts "local table: #{@iseq.local_table}"
+      @iseq.debug_dump_instructions
+      puts
+    end
+
+    def compile_nodes(nodes, debug=true)
       nodes.each do |node|
         compile(node)
       end
 
       add_instruction(:leave) unless @iseq.instructions.last&.type == :leave
 
-      puts "Iseq:#{@iseq.name}"
-      puts "local table: #{@iseq.local_table}"
-      @iseq.debug_dump_instructions
-      puts
+      return unless debug
+
+      debug_dump_iseq if debug
     end
 
     def compile_node(node)
       compile_nodes([node])
+    end
+
+    def compile_resbodies(resbodies)
+      resbodies.each do |resbody|
+        compile_resbody(resbody)
+      end
+
+      add_get_local(:"\#$!")
+      add_instruction(:throw, :continue)
+
+      debug_dump_iseq
+    end
+
+    def compile_resbody(resbody)
+      match, lvar = nil, nil?
+
+      if resbody[1].length >= 2
+        match = resbody[1][1]
+      end
+      if resbody[1].length == 3
+        lvar = resbody[1][2][1]
+      end
+
+      end_label = new_label
+      add_get_local(:"\#$!")
+      if match
+        compile(match)
+      else
+        add_instruction(:put_object, Core.eStandardError)
+      end
+      add_instruction(:check_match, :rescue, [])
+      add_instruction_with_label(:branch_unless, end_label)
+
+      if lvar
+        add_get_local(:"\#$!")
+        add_set_local(lvar)
+        add_instruction(:pop)
+      end
+
+      compile_nodes(resbody[2..-1], false)
+      add_label(end_label)
     end
 
     def compile(node)
@@ -424,9 +475,35 @@ module GarnetRuby
       end
     end
 
+    def compile_retry(node)
+      add_instruction(:throw, :retry)
+    end
+
     def compile_break(node)
       compile(node[1]) if node.length > 1
       add_instruction(:throw, :break)
+    end
+
+    def compile_rescue(node)
+      block, *resbodies = node[1..-1]
+
+      start_label = new_label
+      end_label = new_label
+      cont_label = new_label
+
+      local_table = { :"\#$!" => 0 }
+      rescue_iseq = Iseq.new("rescue in #{@iseq.name}", :rescue, @iseq, local_table)
+      compiler = Compiler.new(rescue_iseq)
+      compiler.compile_resbodies(resbodies)
+
+      add_label(start_label)
+      compile(block)
+      add_label(end_label)
+      add_instruction(:nop)
+      add_label(cont_label)
+
+      @iseq.add_catch_type(:rescue, start_label.line, end_label.line, cont_label.line, rescue_iseq)
+      @iseq.add_catch_type(:retry, end_label.line, cont_label.line, nil, rescue_iseq)
     end
 
     def compile_call(node)
@@ -445,7 +522,7 @@ module GarnetRuby
     end
 
     def compile_iter(node)
-      st = @iseq.instructions.length - 1
+      st = @iseq.instructions.length
 
       block_args = node[2] == 0 ? [:args] : node[2]
       local_table = block_args[1..-1].map { |a| [a, :arg] }.to_h
@@ -469,7 +546,7 @@ module GarnetRuby
     end
 
     def compile_for(node)
-      st = @iseq.instructions.length - 1
+      st = @iseq.instructions.length
 
       block_args = for_block_args(node[2])
       local_table = block_args.map { |a| [a, :arg] }.to_h

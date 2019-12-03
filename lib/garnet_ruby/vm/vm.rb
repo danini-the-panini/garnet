@@ -14,6 +14,8 @@ module GarnetRuby
     end
 
     def execute_main(iseq)
+      $indent = '';
+
       main = RObject.new(Core.cObject, [])
       control_frame = ControlFrame.new(main, iseq, Environment.new(Core.cObject, nil))
       @control_frames.push(control_frame)
@@ -22,15 +24,13 @@ module GarnetRuby
     end
 
     def execute_method_iseq(target, method, args, block=nil)
-      prev_control_frame = @control_frames.last
-
       iseq = method.iseq
       locals = iseq.local_table.select { |_, v| v == :arg }.keys[0..args.count].zip(args).to_h
       env = Environment.new(target.klass, method.environment, locals)
       control_frame = ControlFrame.new(target, iseq, env, block)
-      @control_frames.push(control_frame)
+      push_control_frame(control_frame)
 
-      execute(iseq) until @control_frames.last == prev_control_frame
+      execute(iseq) until @control_frames.last != control_frame
 
       control_frame.stack.pop
     end
@@ -42,7 +42,19 @@ module GarnetRuby
       locals = iseq.local_table.select { |_, v| v == :arg }.keys[0..args.count].zip(args).to_h
       env = Environment.new(block.self_value.klass, block.environment, locals, block.environment)
       control_frame = ControlFrame.new(block.self_value, iseq, env, prev_control_frame.block)
-      @control_frames.push(control_frame)
+      push_control_frame(control_frame)
+
+      execute(iseq) until @control_frames.last != control_frame
+
+      control_frame.stack.pop
+    end
+
+    def execute_rescue_iseq(iseq, exception)
+      prev_control_frame = @control_frames.last
+      locals = { :"\#$!" => exception }
+      env = Environment.new(prev_control_frame.self_value.klass, prev_control_frame.environment, locals, prev_control_frame.environment)
+      control_frame = ControlFrame.new(prev_control_frame.self_value, iseq, env, prev_control_frame.block)
+      push_control_frame(control_frame)
 
       execute(iseq) until @control_frames.last != control_frame
 
@@ -53,52 +65,56 @@ module GarnetRuby
       control_frame = @control_frames.last
       insn = iseq.instructions[control_frame.pc]
 
-      puts "### executing: #{insn.type}"
-      puts "STACK BEFORE: #{control_frame.stack.map(&:to_s).join(',')}"
+      puts "#{$indent}begin : #{insn.type} for #{control_frame}"
 
       method_name = :"exec_#{insn.type}"
       raise "EXEC_ERROR: Unknown Instruction Type #{insn.type}" unless respond_to?(method_name)
 
+      prev_pc = control_frame.pc
       __send__(method_name, control_frame, insn)
-      puts "STACK AFTER: #{control_frame.stack.map(&:to_s).join(',')}"
+      control_frame.pc += 1 if control_frame.pc == prev_pc
+
+      puts "#{$indent}end   : #{insn.type} for #{control_frame}"
     end
 
     def exec_leave(control_frame, insn)
-      @control_frames.pop
+      pop_control_frame
+      if control_frame.iseq.type == :rescue
+        cfp = @control_frames.last
+        cr = cfp.iseq.catch_table.find do |x|
+          x.type == :rescue && x.iseq == control_frame.iseq
+        end
+        @control_frames.last.stack.push control_frame.stack.last
+        @control_frames.last.pc = cr.cont if cr
+      end
+      puts "#{$indent}  --- leave: now executing: #{@control_frames.last}"
     end
 
     def exec_nop(control_frame, insn)
-      control_frame.pc += 1
     end
 
     def exec_pop(control_frame, insn)
       pop_stack
-      control_frame.pc += 1
     end
 
     def exec_dup(control_frame, insn)
       push_stack(peek_stack)
-      control_frame.pc += 1
     end
 
     def exec_put_object(control_frame, insn)
       push_stack insn.arguments[0]
-      control_frame.pc += 1
     end
 
     def exec_put_self(control_frame, insn)
       push_stack control_frame.self_value
-      control_frame.pc += 1
     end
 
     def exec_put_nil(control_frame, insn)
       push_stack Q_NIL
-      control_frame.pc += 1
     end
 
     def exec_put_string(control_frame, insn)
       push_stack RString.new(Core.cString, 0, insn.arguments[0])
-      control_frame.pc += 1
     end
 
     def exec_concat_strings(control_frame, insn)
@@ -106,7 +122,6 @@ module GarnetRuby
       strings = pop_stack_multi(count)
       string = RString.new(Core.cString, 0, strings.map(&:string_value).join(''))
       push_stack(string)
-      control_frame.pc += 1
     end
 
     def exec_new_array(control_frame, insn)
@@ -114,7 +129,6 @@ module GarnetRuby
       items = pop_stack_multi(count)
       array = RArray.new(Core.cArray, 0, items)
       push_stack(array)
-      control_frame.pc += 1
     end
 
     def make_array(x)
@@ -133,7 +147,6 @@ module GarnetRuby
       ary1, ary2 = pop_stack_multi(2).map { |x| make_array(x) }
       ary = RArray.new(Core.cArray, 0, ary1.array_value + ary2.array_value)
       push_stack(ary)
-      control_frame.pc += 1
     end
 
     def exec_splat_array(control_frame, insn)
@@ -141,7 +154,6 @@ module GarnetRuby
       ary = make_array(pop_stack)
       ary = dup_array(ary) if flag
       push_stack(ary)
-      control_frame.pc += 1
     end
 
     def exec_expand_array(control_frame, insn)
@@ -170,7 +182,6 @@ module GarnetRuby
           end
         end
       end
-      control_frame.pc += 1
     end
 
     def exec_new_hash(control_frame, insn)
@@ -178,12 +189,10 @@ module GarnetRuby
       items = pop_stack_multi(count)
       hash = RHash.new(Core.cHash, 0, items.each_slice(2).to_a.to_h)
       push_stack(hash)
-      control_frame.pc += 1
     end
 
     def exec_put_iseq(control_frame, insn)
       push_stack insn.arguments[0]
-      control_frame.pc += 1
     end
 
     def exec_define_method(control_frame, insn)
@@ -196,26 +205,16 @@ module GarnetRuby
       klass.method_table[mid] = method
 
       push_stack(mid_sym)
-
-      control_frame.pc += 1
     end
 
     def exec_branch_if(control_frame, insn)
       cond = pop_stack
-      if rtest(cond)
-        control_frame.pc = insn.arguments[0]
-      else
-        control_frame.pc += 1
-      end
+      control_frame.pc = insn.arguments[0] if rtest(cond)
     end
 
     def exec_branch_unless(control_frame, insn)
       cond = pop_stack
-      if rtest(cond)
-        control_frame.pc += 1
-      else
-        control_frame.pc = insn.arguments[0]
-      end
+      control_frame.pc = insn.arguments[0] unless rtest(cond)
     end
 
     def exec_check_match(control_frame, insn)
@@ -229,7 +228,6 @@ module GarnetRuby
       else
         push_stack Core.check_match(target, pattern, type)
       end
-      control_frame.pc += 1
     end
 
     def exec_jump(control_frame, insn)
@@ -239,10 +237,10 @@ module GarnetRuby
     def exec_throw(control_frame, insn)
       throw_type = insn.arguments[0]
 
-      if throw_type == :break
+      case throw_type
+      when :break
         until @control_frames.empty?
           cfp = @control_frames.last
-          puts "CFP: #{cfp}"
           cr = cfp.iseq.catch_table.find do |x|
             x.type == :break && x.iseq == control_frame.iseq && (x.st..x.ed).include?(cfp.pc)
           end
@@ -250,8 +248,23 @@ module GarnetRuby
             cfp.pc = cr.cont
             break
           end
-          @control_frames.pop
+          pop_control_frame
         end
+      when :retry
+      when :continue
+        exception = pop_stack
+        until @control_frames.empty?
+          cfp = @control_frames.last
+          cr = cfp.iseq.catch_table.find do |x|
+            x.type == :rescue && x.iseq != control_frame.iseq && (x.st..x.ed).include?(cfp.pc)
+          end
+          if cr
+            execute_rescue_iseq(cr.iseq, exception)
+            return
+          end
+          pop_control_frame
+        end
+        raise "Uncaught Exception: #{exception}"
       end
     end
 
@@ -266,7 +279,6 @@ module GarnetRuby
       method = find_method(target, callinfo.mid)
       ret = dispatch_method(target, method, args)
       push_stack(ret)
-      control_frame.pc += 1
     end
 
     def exec_send(control_frame, insn)
@@ -281,7 +293,6 @@ module GarnetRuby
       block = Block.new(callinfo.block_iseq, control_frame.environment, control_frame.self_value)
       ret = dispatch_method(target, method, args, block)
       push_stack(ret)
-      control_frame.pc += 1
     end
 
     def exec_invoke_block(control_frame, insn)
@@ -294,7 +305,6 @@ module GarnetRuby
       block = control_frame.block
       ret = execute_block_iseq(block, args)
       push_stack(ret)
-      control_frame.pc += 1
     end
 
     def exec_get_local(control_frame, insn)
@@ -302,7 +312,6 @@ module GarnetRuby
       level = insn.arguments[1]
       local_env = get_local_env(level)
       push_stack(local_env.locals[name])
-      control_frame.pc += 1
     end
 
     def exec_set_local(control_frame, insn)
@@ -312,39 +321,33 @@ module GarnetRuby
       local_env = get_local_env(level)
       local_env.locals[name] = value
       push_stack(value)
-      control_frame.pc += 1
     end
 
     def exec_set_constant(control_frame, insn)
       value = pop_stack
       name = insn.arguments[0]
       control_frame.environment.lexical_scope.klass.rb_const_set(name, value)
-      control_frame.pc += 1
     end
 
     def exec_get_constant(control_frame, insn)
       name = insn.arguments[0]
       ret = control_frame.environment.lexical_scope.klass.rb_const_get(name)
       push_stack(ret)
-      control_frame.pc += 1
     end
 
     def exec_set_global(control_frame, insn)
       value = pop_stack
       @global_variables[insn.arguments[0]] = value
-      control_frame.pc += 1
     end
 
     def exec_get_global(control_frame, insn)
       value = @global_variables[insn.arguments[0]] || Q_NIL
       push_stack(value)
-      control_frame.pc += 1
     end
 
     def exec_setn(control_frame, insn)
       n = insn.arguments[0]
       control_frame.stack[-n - 1] = control_frame.stack.last
-      control_frame.pc += 1
     end
 
     def exec_dupn(control_frame, insn)
@@ -352,13 +355,11 @@ module GarnetRuby
       control_frame.stack[-n..-1].each do |x|
         control_frame.stack << x
       end
-      control_frame.pc += 1
     end
 
     def exec_adjust_stack(control_frame, insn)
       n = insn.arguments[0]
       control_frame.stack.pop(n)
-      control_frame.pc += 1
     end
 
     def push_stack(obj)
@@ -428,6 +429,31 @@ module GarnetRuby
 
     def rtest(value)
       Core.rtest(value)
+    end
+
+    def do_raise(exception)
+      until @control_frames.empty?
+        cfp = @control_frames.last
+        cr = cfp.iseq.catch_table.find do |x|
+          x.type == :rescue && (x.st..x.ed).include?(cfp.pc)
+        end
+        if cr
+          execute_rescue_iseq(cr.iseq, exception)
+          return
+        end
+        pop_control_frame
+      end
+      raise "Uncaught Exception: #{exception}"
+    end
+
+    def push_control_frame(cfp)
+      $indent += "  "
+      @control_frames << cfp
+    end
+
+    def pop_control_frame
+      $indent.slice!(0, 2)
+      @control_frames.pop
     end
   end
 end

@@ -17,6 +17,15 @@ module GarnetRuby
   end
 
   module Core
+    class << self
+      def obj_is_kind_of(obj, c)
+        cl = obj.klass
+
+        # TODO: make sure c is a module/class
+        c.search_ancestor(cl) ? Q_TRUE : Q_FALSE
+      end
+    end
+
     def self.init_object
       @mKernel = rb_define_module(:Kernel)
       cObject.include_module(mKernel)
@@ -29,7 +38,11 @@ module GarnetRuby
       @cNilClass = rb_define_class(:NilClass)
       ::GarnetRuby.const_set(:Q_NIL, RPrimitive.new(@cNilClass, 0, nil))
       rb_define_method(cNilClass, :to_s) do |obj|
-        RString.new(cString, 0, "")
+        RString.new(cString, 0, '')
+      end
+
+      rb_define_method(cModule, :===) do |mod, arg|
+        obj_is_kind_of(arg, mod)
       end
 
       @cTrueClass = rb_define_class(:TrueClass)

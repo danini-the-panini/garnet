@@ -1,6 +1,20 @@
 module GarnetRuby
   class Iseq
-    CatchRecord = Struct.new(:type, :st, :ed, :cont, :iseq)
+    class CatchRecord
+      attr_reader :type, :st, :ed, :cont, :iseq
+
+      def initialize(type, st, ed, cont, iseq)
+        @type = type
+        @st = st
+        @ed = ed
+        @cont = cont
+        @iseq = iseq
+      end
+
+      def to_s
+        "catch type: #{type} st: #{st} ed: #{ed} cont: #{cont}, iseq: #{iseq}"
+      end
+    end
 
     attr_reader :name,
                 :type,

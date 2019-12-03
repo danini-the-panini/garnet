@@ -102,6 +102,7 @@ module GarnetRuby
         cBasicObject.klass = cClass
 
         init_object
+        init_exception
         init_symbol
         init_numeric
         init_string
@@ -243,8 +244,11 @@ module GarnetRuby
       end
 
       def check_match(target, pattern, type)
+        if type == :rescue
+          # TODO: check that pattern is kind_of?(Module)
+        end
         case type
-        when :case
+        when :rescue, :case
           rb_funcall(pattern, :===, target)
         else
           Q_NIL
