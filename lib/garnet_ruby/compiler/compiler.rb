@@ -577,7 +577,7 @@ module GarnetRuby
       local_table = block_args[1..-1].map { |a| [a, :arg] }.to_h
       block_iseq = Iseq.new("block in #{@iseq.name}", :block, @iseq, local_table)
       compiler = Compiler.new(block_iseq)
-      compiler.compile_node(node[3])
+      compiler.compile_node(node[3] || [:nil])
 
       call_node = node[1]
       if call_node[1]
