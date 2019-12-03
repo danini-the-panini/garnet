@@ -538,6 +538,11 @@ module GarnetRuby
       @iseq.add_catch_type(:ensure, start_label.line, end_label.line, cont_label.line, ensure_iseq)
     end
 
+    def compile_defined(node)
+      # TODO: some fancy logic
+      add_instruction(:put_object, RString.from('expression'))
+    end
+
     def compile_call(node)
       if node[1]
         compile(node[1])
