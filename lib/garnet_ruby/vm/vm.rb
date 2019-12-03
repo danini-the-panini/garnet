@@ -49,8 +49,7 @@ module GarnetRuby
       control_frame.stack.pop
     end
 
-    def execute_rescue_iseq(iseq, exception)
-      prev_control_frame = @control_frames.last
+    def execute_rescue_iseq(iseq, exception, prev_control_frame=@control_frames.last)
       locals = { :"\#$!" => exception }
       env = Environment.new(prev_control_frame.self_value.klass, prev_control_frame.environment, locals, prev_control_frame.environment)
       control_frame = ControlFrame.new(prev_control_frame.self_value, iseq, env, prev_control_frame.block)
@@ -84,7 +83,14 @@ module GarnetRuby
         cr = cfp.iseq.catch_table.find do |x|
           x.type == :rescue && x.iseq == control_frame.iseq
         end
-        @control_frames.last.stack.push control_frame.stack.last
+        @control_frames.last.stack << control_frame.stack.last
+        @control_frames.last.pc = cr.cont if cr
+      end
+      if control_frame.iseq.type == :ensure
+        cfp = @control_frames.last
+        cr = cfp.iseq.catch_table.find do |x|
+          x.type == :ensure && x.iseq == control_frame.iseq
+        end
         @control_frames.last.pc = cr.cont if cr
       end
       puts "#{$indent}  --- leave: now executing: #{@control_frames.last}"
@@ -251,19 +257,42 @@ module GarnetRuby
           pop_control_frame
         end
       when :retry
+        # TODO
       when :continue
         exception = pop_stack
-        until @control_frames.empty?
+
+        pop_control_frame
+        prev_control_frame = @control_frames.last
+
+        cr = nil
+        if control_frame.iseq.type == :rescue
           cfp = @control_frames.last
           cr = cfp.iseq.catch_table.find do |x|
-            x.type == :rescue && x.iseq != control_frame.iseq && (x.st..x.ed).include?(cfp.pc)
-          end
-          if cr
-            execute_rescue_iseq(cr.iseq, exception)
-            return
+            x.type == :ensure && (x.st..x.ed).include?(cfp.pc)
           end
           pop_control_frame
         end
+
+        if !cr
+          until @control_frames.empty?
+            cfp = @control_frames.last
+            puts "THROW AT CFP(#{cfp})"
+            cr = cfp.iseq.catch_table.find do |x|
+              x.type == :rescue && x.iseq != control_frame.iseq && (x.st..x.ed).include?(cfp.pc)
+            end
+            cr ||= cfp.iseq.catch_table.find do |x|
+              x.type == :ensure && x.iseq != control_frame.iseq && (x.st..x.ed).include?(cfp.pc)
+            end
+            break if cr
+            pop_control_frame
+          end
+        end
+
+        if cr
+          execute_rescue_iseq(cr.iseq, exception, prev_control_frame)
+          return
+        end
+
         raise "Uncaught Exception: #{exception}"
       end
     end
@@ -278,7 +307,7 @@ module GarnetRuby
       target = pop_stack
       method = find_method(target, callinfo.mid)
       ret = dispatch_method(target, method, args)
-      push_stack(ret)
+      push_stack(ret) unless ret == Q_UNDEF
     end
 
     def exec_send(control_frame, insn)
@@ -292,7 +321,7 @@ module GarnetRuby
       method = find_method(target, callinfo.mid)
       block = Block.new(callinfo.block_iseq, control_frame.environment, control_frame.self_value)
       ret = dispatch_method(target, method, args, block)
-      push_stack(ret)
+      push_stack(ret) unless ret == Q_UNDEF
     end
 
     def exec_invoke_block(control_frame, insn)
@@ -363,6 +392,8 @@ module GarnetRuby
     end
 
     def push_stack(obj)
+      raise "PUSH NIL!" if obj.nil?
+      raise "PUSH UNDEF!" if obj == Q_UNDEF
       control_frame = @control_frames.last
       control_frame.stack.push obj
     end
@@ -437,6 +468,9 @@ module GarnetRuby
         cr = cfp.iseq.catch_table.find do |x|
           x.type == :rescue && (x.st..x.ed).include?(cfp.pc)
         end
+        cr ||= cfp.iseq.catch_table.find do |x|
+          x.type == :ensure && (x.st..x.ed).include?(cfp.pc)
+        end
         if cr
           execute_rescue_iseq(cr.iseq, exception)
           return
@@ -447,13 +481,16 @@ module GarnetRuby
     end
 
     def push_control_frame(cfp)
+      puts "#{$indent}BEGIN CONTROL FRAME: #{cfp}"
       $indent += "  "
       @control_frames << cfp
     end
 
     def pop_control_frame
       $indent.slice!(0, 2)
-      @control_frames.pop
+      @control_frames.pop.tap { |cfp|
+        puts "#{$indent}END CONTROL FRAME: #{cfp}"
+      }
     end
   end
 end

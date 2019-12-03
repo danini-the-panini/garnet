@@ -116,8 +116,18 @@ module GarnetRuby
         add_instruction(:pop)
       end
 
-      compile_nodes(resbody[2..-1], false)
+      nodes = resbody[2].nil? ? [[:nil]] : resbody[2..-1]
+      compile_nodes(nodes, false)
       add_label(end_label)
+    end
+
+    def compile_ensure_body(ensure_body)
+      compile(ensure_body)
+      add_instruction(:pop)
+      add_get_local(:"\#$!")
+      add_instruction(:throw, :continue)
+
+      debug_dump_iseq
     end
 
     def compile(node)
@@ -504,6 +514,28 @@ module GarnetRuby
 
       @iseq.add_catch_type(:rescue, start_label.line, end_label.line, cont_label.line, rescue_iseq)
       @iseq.add_catch_type(:retry, end_label.line, cont_label.line, nil, rescue_iseq)
+    end
+    
+    def compile_ensure(node)
+      block, ensure_body = node[1..-1]
+
+      local_table = { :"\#$!" => 0 }
+      ensure_iseq = Iseq.new("ensure in #{@iseq.name}", :ensure, @iseq, local_table)
+      compiler = Compiler.new(ensure_iseq)
+      compiler.compile_ensure_body(ensure_body)
+
+      start_label = new_label
+      end_label = new_label
+      cont_label = new_label
+
+      add_label(start_label)
+      compile(block)
+      add_label(end_label)
+      compile(ensure_body)
+      add_label(cont_label)
+      add_instruction(:pop)
+
+      @iseq.add_catch_type(:ensure, start_label.line, end_label.line, cont_label.line, ensure_iseq)
     end
 
     def compile_call(node)

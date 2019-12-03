@@ -1,15 +1,16 @@
 puts "-- begin"
 
-def run
+def run(x)
+  puts "run #{x}"
   yield
 rescue TypeError
   puts "nope"
 ensure
-  puts "<run ensure>"
+  puts "<run(#{x}) ensure>"
 end
 
 def foo
-  run { raise "foo" }
+  run('f') { raise "foo" }
   puts "no"
 rescue TypeError
   puts "nope"
@@ -19,7 +20,7 @@ end
 
 begin
   puts "A"
-  run { foo }
+  run('m') { foo }
   puts "B"
 rescue RuntimeError
   puts "yes"

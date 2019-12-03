@@ -43,6 +43,7 @@ module GarnetRuby
       rb_define_global_function(:raise) do |*args|
         exception = make_exception(*args)
         VM.instance.do_raise(exception)
+        Q_UNDEF
       end
     end
   end
