@@ -456,6 +456,37 @@ module GarnetRuby
       @iseq.add_catch_type(:break, st, ed, ed, block_iseq)
     end
 
+    def compile_for(node)
+      st = @iseq.instructions.length - 1
+
+      block_args = for_block_args(node[2])
+      local_table = block_args.map { |a| [a, :arg] }.to_h
+      block_iseq = Iseq.new("block in #{@iseq.name}", :block, @iseq, local_table)
+      compiler = Compiler.new(block_iseq)
+      compiler.compile_node(node[3])
+
+      compile(node[1])
+      add_instruction(:send, CallInfo.new(:each, 0, [:simple], block_iseq))
+      add_instruction(:nop)
+
+      ed = @iseq.instructions.length - 1
+      @iseq.add_catch_type(:break, st, ed, ed, block_iseq)
+    end
+
+    def for_block_args(node)
+      case node[0]
+      when :lasgn
+        [node[1]]
+      when :masgn
+        node[1][1..-1].map do |n|
+          case n[0]
+          when :lasgn then n[1]
+          when :splat then :"*#{n[1][1]}"
+          end
+        end
+      end
+    end
+
     def compile_attrasgn(node)
       add_instruction(:put_nil)
       compile(node[1])
