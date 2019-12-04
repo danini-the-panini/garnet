@@ -60,6 +60,17 @@ module GarnetRuby
       control_frame.stack.pop
     end
 
+    def execute_class_iseq(iseq, klass)
+      prev_control_frame = @control_frames.last
+      env = Environment.new(klass, prev_control_frame.environment)
+      control_frame = ControlFrame.new(klass, iseq, env)
+      push_control_frame(control_frame)
+
+      execute(iseq) until @control_frames.last != control_frame
+
+      control_frame.stack.pop || Q_NIL
+    end
+
     def execute(iseq)
       control_frame = @control_frames.last
       insn = iseq.instructions[control_frame.pc]
@@ -121,6 +132,16 @@ module GarnetRuby
 
     def exec_put_string(control_frame, insn)
       push_stack RString.from(insn.arguments[0])
+    end
+
+    def exec_put_special_object(control_frame, insn)
+      type = insn.arguments[0]
+      case type
+      when :const_base
+        push_stack(control_frame.environment.lexical_scope.klass)
+      # when :vm_core
+      # when :cbase
+      end
     end
 
     def exec_concat_strings(control_frame, insn)
@@ -224,6 +245,18 @@ module GarnetRuby
       singleton.method_table[mid] = method
 
       push_stack(mid_sym)
+    end
+
+    def exec_define_class(control_frame, insn)
+      id, iseq, type, flags = insn.arguments
+
+      cbase, super_class = pop_stack_multi(2)
+
+      klass = find_or_create_class_by_id(id, type, flags, cbase, super_class)
+
+      ret = execute_class_iseq(iseq, klass)
+
+      push_stack(ret)
     end
 
     def exec_branch_if(control_frame, insn)
@@ -468,6 +501,58 @@ module GarnetRuby
       else
         raise "NOT IMPLEMENTED: #{method.class} dispatch"
       end
+    end
+
+    def find_or_create_class_by_id(id, type, flags, cbase, super_class)
+      case type
+      when :class
+        define_class(id, flags, cbase, super_class)
+      when :singleton_class
+        singleton_class(cbase)
+      when :module
+        define_module(id, flags, cbase)
+      else
+        raise "unknown defineclass type: #{type}"
+      end
+    end
+
+    def check_if_namespace(klass)
+      unless klass.flags.include?(:CLASS) || klass.flags.include?(:MODULE)
+        raise TypeError, "#{klass} is not a class/module"
+      end
+    end
+
+    def check_class_redefinition(id, flags, super_class, klass)
+      unless klass.flags.include?(:CLASS)
+        raise TypeError, "#{klass} is not a class"
+      end
+
+      if flags.include?(:has_superclass) && super_class != klass.super_class.real
+        raise TypeError, "superclass mismatch for #{id}"
+      end
+    end
+
+    def define_class(id, flags, cbase, super_class)
+      if flags.include?(:has_superclass) && !super_class.flags.include?(:CLASS) # TODO: also check it isn't a model
+        raise TypeError, "superclass must be a Class (#{super_class.klass} given)"
+      end
+
+      check_if_namespace(cbase)
+      klass = cbase.rb_const_get(id)
+      if klass
+        check_class_redefinition(id, flags, super_class, klass)
+        return klass
+      end
+
+      return declare_class(id, flags, cbase, super_class)
+    end
+
+    def declare_class(id, flags, cbase, super_class)
+      super_class = flags.include?(:has_superclass) ? super_class : Core.cObject
+      klass = RClass.new_class(super_class)
+      klass.name = id
+      cbase.rb_const_set(id, klass)
+      klass
     end
 
     def get_local_env(level)

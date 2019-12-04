@@ -27,6 +27,8 @@ module GarnetRuby
     end
 
     def self.init_object
+      rb_define_private_method(cBasicObject, :initialize) { nil }
+
       @mKernel = rb_define_module(:Kernel)
       cObject.include_module(mKernel)
 
@@ -43,6 +45,12 @@ module GarnetRuby
 
       rb_define_method(cModule, :===) do |mod, arg|
         obj_is_kind_of(arg, mod)
+      end
+
+      rb_define_method(cClass, :new) do |klass, *args|
+        obj = klass.alloc
+        rb_funcall(obj, :initialize, *args)
+        obj
       end
 
       @cTrueClass = rb_define_class(:TrueClass)

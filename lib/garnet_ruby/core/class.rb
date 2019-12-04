@@ -12,6 +12,10 @@ module GarnetRuby
       @const_table = {}
     end
 
+    def alloc
+      RObject.new(self, [])
+    end
+
     def rb_const_defined?(name)
       # TODO: recurse
       @const_table.key?(name)
@@ -27,7 +31,7 @@ module GarnetRuby
     end
 
     def super_class=(s)
-      if s
+      if s && s != Q_UNDEF
         remove_from_super_subclasses
         s.add_subclass(self)
       end
@@ -81,7 +85,6 @@ module GarnetRuby
       metaclass = RClass.new_class(Q_UNDEF)
 
       metaclass.flags |= [:SINGLETON]
-      # rb_singleton_class_attached(metaclass) # TODO ??
 
       if meta_class_of_class_class?
         self.metaclass = metaclass
@@ -89,11 +92,11 @@ module GarnetRuby
       else
         tmp = metaclass
         self.metaclass = metaclass
-        metaclass.metaclass = tmp.ensure_eigenclass
+        metaclass.metaclass = tmp#.ensure_eigenclass
       end
 
       s = super_class
-      s = s.super_class while s.flags.include?(:ICLASS)
+      s = s.super_class while s&.flags&.include?(:ICLASS)
       metaclass.super_class = s&.ensure_eigenclass || Core.cClass
 
       metaclass
@@ -109,6 +112,10 @@ module GarnetRuby
 
     def meta_class_of_class_class?
       metaclass == self
+    end
+
+    def has_metaclass?
+      metaclass.flags.include?(:SINGLETON)
     end
 
     def ensure_eigenclass
@@ -139,11 +146,15 @@ module GarnetRuby
     end
 
     def real
-      return super_class.real if flags.include?(:SINGLETON) || flags.include?(:ICLASS)
+      if flags.include?(:SINGLETON) || flags.include?(:ICLASS)
+        return super_class.real
+      end
+
       self
     end
 
     protected
+
     attr_writer :method_table, :const_table
 
     private

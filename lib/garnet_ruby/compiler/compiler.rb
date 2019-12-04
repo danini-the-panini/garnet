@@ -445,6 +445,31 @@ module GarnetRuby
       add_instruction(:get_global, node[1])
     end
 
+    def compile_class(node)
+      _, name, super_class, *nodes = node
+      flags = []
+      if super_class
+        flags << :has_superclass
+      else
+        super_class = [:nil]
+      end
+      type = :class
+      if name.is_a?(Symbol)
+        add_instruction(:put_special_object, :const_base)
+        id = name
+      else
+        flags << :scoped
+        # TODO: scoped class definitions
+      end
+
+      class_iseq = Iseq.new("<class:#{id}>", :class, @iseq)
+      compiler = Compiler.new(class_iseq)
+      compiler.compile_nodes(nodes)
+
+      compile(super_class)
+      add_instruction(:define_class, id, class_iseq, type, flags)
+    end
+
     def compile_defn(node)
       _, mid, args, *nodes = node
 
