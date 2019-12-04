@@ -445,6 +445,15 @@ module GarnetRuby
       add_instruction(:get_global, node[1])
     end
 
+    def compile_iasgn(node)
+      compile(node[2])
+      add_instruction(:set_instance_variable, node[1])
+    end
+
+    def compile_ivar(node)
+      add_instruction(:get_instance_variable, node[1])
+    end
+
     def compile_class(node)
       _, name, super_class, *nodes = node
       flags = []

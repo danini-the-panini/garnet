@@ -399,6 +399,19 @@ module GarnetRuby
       push_stack(value)
     end
 
+    def exec_get_instance_variable(control_frame, insn)
+      id = insn.arguments[0]
+      value = control_frame.self_value.ivar_get(id) || Q_NIL
+      push_stack(value)
+    end
+
+    def exec_set_instance_variable(control_frame, insn)
+      id = insn.arguments[0]
+      value = pop_stack
+      control_frame.self_value.ivar_set(id, value)
+      push_stack(value)
+    end
+
     def exec_get_block_param_proxy(control_frame, insn)
       level = insn.arguments[0]
       local_env = get_local_env(level)
