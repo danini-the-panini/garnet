@@ -483,6 +483,18 @@ module GarnetRuby
       add_instruction(:define_class, id, class_iseq, type, flags)
     end
 
+    def compile_sclass(node)
+      _, target, *nodes = node
+
+      class_iseq = Iseq.new('singleton class', :class, @iseq)
+      compiler = Compiler.new(class_iseq)
+      compiler.compile_nodes(nodes)
+
+      compile(target)
+      add_instruction(:put_nil)
+      add_instruction(:define_class, :singleton_class, class_iseq, :singleton_class, [])
+    end
+
     def compile_defn(node)
       _, mid, args, *nodes = node
 

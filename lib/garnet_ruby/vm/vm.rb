@@ -542,7 +542,7 @@ module GarnetRuby
       when :class
         define_class(id, flags, cbase, super_class)
       when :singleton_class
-        singleton_class(cbase)
+        Core.singleton_class_of(cbase)
       when :module
         define_module(id, flags, cbase)
       else
