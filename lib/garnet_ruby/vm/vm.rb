@@ -13,6 +13,10 @@ module GarnetRuby
       @global_variables = {}
     end
 
+    def current_control_frame
+      @control_frames.last
+    end
+
     def execute_main(iseq)
       $indent = '';
 
@@ -30,13 +34,13 @@ module GarnetRuby
       control_frame = ControlFrame.new(target, iseq, env, block)
       push_control_frame(control_frame)
 
-      execute(iseq) until @control_frames.last != control_frame
+      execute(iseq) until current_control_frame != control_frame
 
       control_frame.stack.pop
     end
 
     def execute_block_iseq(block, args)
-      prev_control_frame = @control_frames.last
+      prev_control_frame = current_control_frame
 
       iseq = block.iseq
       locals = iseq.local_table.select { |_, v| v == :arg }.keys[0..args.count].zip(args).to_h
@@ -44,35 +48,35 @@ module GarnetRuby
       control_frame = ControlFrame.new(block.self_value, iseq, env, prev_control_frame.block)
       push_control_frame(control_frame)
 
-      execute(iseq) until @control_frames.last != control_frame
+      execute(iseq) until current_control_frame != control_frame
 
       control_frame.stack.pop
     end
 
-    def execute_rescue_iseq(iseq, exception, prev_control_frame=@control_frames.last)
+    def execute_rescue_iseq(iseq, exception, prev_control_frame=current_control_frame)
       locals = { :"\#$!" => exception }
       env = Environment.new(prev_control_frame.self_value.klass, prev_control_frame.environment, locals, prev_control_frame.environment)
       control_frame = ControlFrame.new(prev_control_frame.self_value, iseq, env, prev_control_frame.block)
       push_control_frame(control_frame)
 
-      execute(iseq) until @control_frames.last != control_frame
+      execute(iseq) until current_control_frame != control_frame
 
       control_frame.stack.pop
     end
 
     def execute_class_iseq(iseq, klass)
-      prev_control_frame = @control_frames.last
+      prev_control_frame = current_control_frame
       env = Environment.new(klass, prev_control_frame.environment)
       control_frame = ControlFrame.new(klass, iseq, env)
       push_control_frame(control_frame)
 
-      execute(iseq) until @control_frames.last != control_frame
+      execute(iseq) until current_control_frame != control_frame
 
       control_frame.stack.pop || Q_NIL
     end
 
     def execute(iseq)
-      control_frame = @control_frames.last
+      control_frame = current_control_frame
       insn = iseq.instructions[control_frame.pc]
 
       puts "#{$indent}begin : #{insn.type} for #{control_frame}"
@@ -90,21 +94,21 @@ module GarnetRuby
     def exec_leave(control_frame, insn)
       pop_control_frame
       if control_frame.iseq.type == :rescue
-        cfp = @control_frames.last
+        cfp = current_control_frame
         cr = cfp.iseq.catch_table.find do |x|
           x.type == :rescue && x.iseq == control_frame.iseq
         end
-        @control_frames.last.stack << control_frame.stack.last
-        @control_frames.last.pc = cr.cont if cr
+        current_control_frame.stack << control_frame.stack.last
+        current_control_frame.pc = cr.cont if cr
       end
       if control_frame.iseq.type == :ensure
-        cfp = @control_frames.last
+        cfp = current_control_frame
         cr = cfp.iseq.catch_table.find do |x|
           x.type == :ensure && x.iseq == control_frame.iseq
         end
-        @control_frames.last.pc = cr.cont if cr
+        current_control_frame.pc = cr.cont if cr
       end
-      puts "#{$indent}  --- leave: now executing: #{@control_frames.last}"
+      puts "#{$indent}  --- leave: now executing: #{current_control_frame}"
     end
 
     def exec_nop(control_frame, insn)
@@ -292,7 +296,7 @@ module GarnetRuby
       case throw_type
       when :break
         until @control_frames.empty?
-          cfp = @control_frames.last
+          cfp = current_control_frame
           cr = cfp.iseq.catch_table.find do |x|
             x.type == :break && x.iseq == control_frame.iseq && (x.st..x.ed).include?(cfp.pc)
           end
@@ -308,11 +312,11 @@ module GarnetRuby
         exception = pop_stack
 
         pop_control_frame
-        prev_control_frame = @control_frames.last
+        prev_control_frame = current_control_frame
 
         cr = nil
         if control_frame.iseq.type == :rescue
-          cfp = @control_frames.last
+          cfp = current_control_frame
           cr = cfp.iseq.catch_table.find do |x|
             x.type == :ensure && (x.st..x.ed).include?(cfp.pc)
           end
@@ -321,7 +325,7 @@ module GarnetRuby
 
         if !cr
           until @control_frames.empty?
-            cfp = @control_frames.last
+            cfp = current_control_frame
             puts "THROW AT CFP(#{cfp})"
             cr = cfp.iseq.catch_table.find do |x|
               x.type == :rescue && x.iseq != control_frame.iseq && (x.st..x.ed).include?(cfp.pc)
@@ -460,22 +464,22 @@ module GarnetRuby
     def push_stack(obj)
       raise "PUSH NIL!" if obj.nil?
       raise "PUSH UNDEF!" if obj == Q_UNDEF
-      control_frame = @control_frames.last
+      control_frame = current_control_frame
       control_frame.stack.push obj
     end
 
     def pop_stack
-      control_frame = @control_frames.last
+      control_frame = current_control_frame
       control_frame.stack.pop
     end
 
     def peek_stack
-      control_frame = @control_frames.last
+      control_frame = current_control_frame
       control_frame.stack.last
     end
 
     def pop_stack_multi(n)
-      control_frame = @control_frames.last
+      control_frame = current_control_frame
       control_frame.stack.pop(n)
     end
 
@@ -502,13 +506,12 @@ module GarnetRuby
     def dispatch_method(target, method, args, block=nil)
       case method
       when BuiltInMethod
-        if block
-          method.block.call(target, *args) do |*blargs|
-            execute_block_iseq(block, blargs)
-          end
-        else
-          method.block.call(target, *args)
-        end
+        env = Environment.new(target.klass, nil)
+        control_frame = ControlFrame.new(target, nil, env, block)
+        push_control_frame(control_frame)
+        ret = method.block.call(target, *args)
+        pop_control_frame
+        ret
       when ISeqMethod
         execute_method_iseq(target, method, args, block)
       else
@@ -569,7 +572,7 @@ module GarnetRuby
     end
 
     def get_local_env(level)
-      control_frame = @control_frames.last
+      control_frame = current_control_frame
       local_env = control_frame.environment
       level.times do
         local_env = local_env.previous
@@ -583,7 +586,7 @@ module GarnetRuby
 
     def do_raise(exception)
       until @control_frames.empty?
-        cfp = @control_frames.last
+        cfp = current_control_frame
         cr = cfp.iseq.catch_table.find do |x|
           x.type == :rescue && (x.st..x.ed).include?(cfp.pc)
         end

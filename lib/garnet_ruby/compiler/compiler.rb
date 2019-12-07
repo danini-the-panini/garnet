@@ -614,14 +614,22 @@ module GarnetRuby
       compiler.compile_node(node[3] || [:nil])
 
       call_node = node[1]
-      if call_node[1]
-        compile(call_node[1])
-      else
+      if call_node[0] == :lambda
+        mid = :lambda
         add_instruction(:put_self)
+        argc = 0
+        flags = [:simple]
+      else
+        mid = call_node[2]
+        if call_node[1]
+          compile(call_node[1])
+        else
+          add_instruction(:put_self)
+        end
+        argc, flags = compile_call_args(call_node)
       end
-      argc, flags = compile_call_args(call_node)
 
-      add_instruction(:send, CallInfo.new(call_node[2], argc, flags, block_iseq))
+      add_instruction(:send, CallInfo.new(mid, argc, flags, block_iseq))
       add_instruction(:nop)
 
       ed = @iseq.instructions.length - 1
