@@ -162,6 +162,10 @@ module GarnetRuby
       compile(node[-1])
     end
 
+    def compile_begin(node)
+      compile(node[1])
+    end
+
     def compile_true(node)
       add_instruction(:put_object, Q_TRUE)
     end

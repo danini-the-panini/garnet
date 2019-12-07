@@ -510,7 +510,7 @@ module GarnetRuby
         control_frame = ControlFrame.new(target, nil, env, block)
         push_control_frame(control_frame)
         ret = method.block.call(target, *args)
-        pop_control_frame
+        pop_control_frame if current_control_frame == control_frame
         ret
       when ISeqMethod
         execute_method_iseq(target, method, args, block)
@@ -587,15 +587,17 @@ module GarnetRuby
     def do_raise(exception)
       until @control_frames.empty?
         cfp = current_control_frame
-        cr = cfp.iseq.catch_table.find do |x|
-          x.type == :rescue && (x.st..x.ed).include?(cfp.pc)
-        end
-        cr ||= cfp.iseq.catch_table.find do |x|
-          x.type == :ensure && (x.st..x.ed).include?(cfp.pc)
-        end
-        if cr
-          execute_rescue_iseq(cr.iseq, exception)
-          return
+        unless cfp.iseq.nil?
+          cr = cfp.iseq.catch_table.find do |x|
+            x.type == :rescue && (x.st..x.ed).include?(cfp.pc)
+          end
+          cr ||= cfp.iseq.catch_table.find do |x|
+            x.type == :ensure && (x.st..x.ed).include?(cfp.pc)
+          end
+          if cr
+            execute_rescue_iseq(cr.iseq, exception)
+            return
+          end
         end
         pop_control_frame
       end
