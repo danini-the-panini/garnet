@@ -34,6 +34,12 @@ module GarnetRuby
 
       RPrimitive.from(pos)
     end
+
+    def self.from(value)
+      return Q_NIL if value.nil?
+
+      new(Core.cRegexp, [], value)
+    end
   end
 
   class RMatch < RObject

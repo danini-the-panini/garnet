@@ -139,16 +139,14 @@ module GarnetRuby
 
     def compile_lit(node)
       case node[1]
-      when Integer
-        add_instruction(:put_object, RPrimitive.new(Core.cInteger, [], node[1]))
-      when Float
-        add_instruction(:put_object, RPrimitive.new(Core.cFloat, [], node[1]))
+      when Integer, Float
+        add_instruction(:put_object, RPrimitive.from(node[1]))
       when Symbol
-        add_instruction(:put_object, RSymbol.new(Core.cSymbol, [], node[1]))
+        add_instruction(:put_object, RSymbol.from(node[1]))
       when Range
-        # TODO
+        add_instruction(:put_object, RRange.from(node[1]))
       when Regexp
-        add_instruction(:put_object, RRegexp.new(Core.cRegexp, [], node[1]))
+        add_instruction(:put_object, RRegexp.from(node[1]))
       else
         raise "UNKNOWN_LITERAL: #{node[1].inspect} (#{node.file}:#{node.line})"
       end
@@ -237,6 +235,20 @@ module GarnetRuby
         end
         add_instruction(:concat_array)
       end
+    end
+
+    def compile_dot2(node)
+      compile_new_range(node, false)
+    end
+
+    def compile_dot3(node)
+      compile_new_range(node, true)
+    end
+
+    def compile_new_range(node, excl)
+      compile(node[1])
+      compile(node[2])
+      add_instruction(:new_range, excl)
     end
 
     def compile_svalue(node)

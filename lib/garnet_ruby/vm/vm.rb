@@ -229,6 +229,13 @@ module GarnetRuby
       push_stack(hash)
     end
 
+    def exec_new_range(control_frame, insn)
+      excl = insn.arguments[0]
+      st, ed = pop_stack_multi(2)
+      range = RRange.make(st, ed, excl)
+      push_stack(range)
+    end
+
     def exec_put_iseq(control_frame, insn)
       push_stack insn.arguments[0]
     end

@@ -105,6 +105,7 @@ module GarnetRuby
         init_exception
         init_symbol
         init_numeric
+        init_range
         init_string
         init_array
         init_hash

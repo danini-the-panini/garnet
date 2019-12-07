@@ -18,6 +18,12 @@ module GarnetRuby
     def sym2str
       RString.from(x.symbol_value.to_s)
     end
+
+    def self.from(value)
+      return Q_NIL if value.nil?
+
+      new(Core.cSymbol, [], value)
+    end
   end
 
   module Core
