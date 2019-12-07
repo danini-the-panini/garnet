@@ -613,6 +613,12 @@ module GarnetRuby
       end
     end
 
+    def check_module_redefinition(id, flags, klass)
+      unless klass.flags.include?(:MODULE)
+        raise TypeError, "#{klass} is not a module"
+      end
+    end
+
     def define_class(id, flags, cbase, super_class)
       if flags.include?(:has_superclass) && !super_class.flags.include?(:CLASS) # TODO: also check it isn't a model
         raise TypeError, "superclass must be a Class (#{super_class.klass} given)"
@@ -628,9 +634,27 @@ module GarnetRuby
       return declare_class(id, flags, cbase, super_class)
     end
 
+    def define_module(id, flags, cbase)
+      check_if_namespace(cbase)
+      klass = cbase.rb_const_get(id)
+      if klass
+        check_module_redefinition(id, flags, klass)
+        return klass
+      end
+
+      return declare_module(id, flags, cbase)
+    end
+
     def declare_class(id, flags, cbase, super_class)
       super_class = flags.include?(:has_superclass) ? super_class : Core.cObject
       klass = RClass.new_class(super_class)
+      klass.name = id
+      cbase.rb_const_set(id, klass)
+      klass
+    end
+
+    def declare_module(id, flags, cbase)
+      klass = RClass.new_module
       klass.name = id
       cbase.rb_const_set(id, klass)
       klass

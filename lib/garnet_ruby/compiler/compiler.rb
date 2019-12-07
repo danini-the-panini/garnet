@@ -559,6 +559,26 @@ module GarnetRuby
       add_instruction(:define_class, id, class_iseq, type, flags)
     end
 
+    def compile_module(node)
+      _, name, *nodes = node
+      flags = []
+      type = :module
+      if name.is_a?(Symbol)
+        add_instruction(:put_special_object, :const_base)
+        id = name
+      else
+        flags << :scoped
+        # TODO: scoped class definitions
+      end
+
+      class_iseq = Iseq.new("<module:#{id}>", :class, @iseq)
+      compiler = Compiler.new(class_iseq)
+      compiler.compile_nodes(nodes)
+
+      add_instruction(:put_nil)
+      add_instruction(:define_class, id, class_iseq, type, flags)
+    end
+
     def compile_sclass(node)
       _, target, *nodes = node
 
