@@ -31,6 +31,8 @@ module GarnetRuby
       iseq = method.iseq
       locals = iseq.local_table.select { |_, v| v == :arg }.keys[0..args.count].zip(args).to_h
       env = Environment.new(target.klass, method.environment, locals)
+      env.method_entry = env
+      env.method_name = method.called_id
       control_frame = ControlFrame.new(target, iseq, env, block)
       push_control_frame(control_frame)
 
@@ -44,7 +46,7 @@ module GarnetRuby
 
       iseq = block.iseq
       locals = iseq.local_table.select { |_, v| v == :arg }.keys[0..args.count].zip(args).to_h
-      env = Environment.new(block.self_value.klass, block.environment, locals, block.environment)
+      env = Environment.new(block.self_value.klass, block.environment, locals, block.environment, prev_control_frame.environment.method_entry)
       control_frame = ControlFrame.new(block.self_value, iseq, env, prev_control_frame.block)
       push_control_frame(control_frame)
 
@@ -55,7 +57,7 @@ module GarnetRuby
 
     def execute_rescue_iseq(iseq, exception, prev_control_frame=current_control_frame)
       locals = { :"\#$!" => exception }
-      env = Environment.new(prev_control_frame.self_value.klass, prev_control_frame.environment, locals, prev_control_frame.environment)
+      env = Environment.new(prev_control_frame.self_value.klass, prev_control_frame.environment, locals, prev_control_frame.environment, prev_control_frame.environment.method_entry)
       control_frame = ControlFrame.new(prev_control_frame.self_value, iseq, env, prev_control_frame.block)
       push_control_frame(control_frame)
 
@@ -386,7 +388,20 @@ module GarnetRuby
       end
       block = control_frame.block
       ret = execute_block_iseq(block, args)
-      push_stack(ret)
+      push_stack(ret) unless ret == Q_UNDEF
+    end
+
+    def exec_invoke_super(control_frame, insn)
+      callinfo = insn.arguments[0]
+      args = pop_stack_multi(callinfo.argc)
+      if callinfo.flags.include?(:splat)
+        *pargs, splat = args
+        args = [*pargs, *splat.array_value]
+      end
+      target = control_frame.self_value
+      method = find_super_method(target, control_frame.environment.method_entry.method_name)
+      ret = dispatch_method(target, method, args)
+      push_stack(ret) unless ret == Q_UNDEF
     end
 
     def exec_get_local(control_frame, insn)
@@ -488,9 +503,8 @@ module GarnetRuby
       dispatch_method(recv, method, args)
     end
 
-    def find_method(target, mid)
+    def find_method(target, mid, klass = target.klass)
       raise "TRYING TO CALL #{mid} on NIL" if target.nil?
-      klass = target.klass
       method = klass.method_table[mid]
       while method.nil?
         klass = klass.super_class
@@ -501,6 +515,10 @@ module GarnetRuby
         method = klass.method_table[mid]
       end
       method
+    end
+
+    def find_super_method(target, mid)
+      find_method(target, mid, target.klass.super_class)
     end
 
     def dispatch_method(target, method, args, block=nil)

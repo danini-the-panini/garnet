@@ -2,13 +2,14 @@ module GarnetRuby
   class Environment
     LexicalScope = Struct.new(:klass, :next_scope)
 
-    attr_accessor :block
+    attr_accessor :block, :method_entry, :method_name
     attr_reader :lexical_scope, :locals, :previous
 
-    def initialize(klass, next_scope, locals = {}, previous = nil)
+    def initialize(klass, next_scope, locals = {}, previous = nil, method_entry = nil)
       @lexical_scope = LexicalScope.new(klass, next_scope)
       @locals = locals
       @previous = previous
+      @method_entry = method_entry
     end
 
     def to_s

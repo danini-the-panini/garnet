@@ -565,7 +565,7 @@ module GarnetRuby
       @iseq.add_catch_type(:rescue, start_label.line, end_label.line, cont_label.line, rescue_iseq)
       @iseq.add_catch_type(:retry, end_label.line, cont_label.line, nil, rescue_iseq)
     end
-    
+
     def compile_ensure(node)
       block, ensure_body = node[1..-1]
 
@@ -606,6 +606,20 @@ module GarnetRuby
     def compile_yield(node)
       argc, flags = compile_args(node[1..-1])
       add_instruction(:invoke_block, CallInfo.new(nil, argc, flags))
+    end
+
+    def compile_super(node)
+      argc, flags = compile_args(node[1..-1])
+      add_instruction(:invoke_super, CallInfo.new(nil, argc, flags | [:super]))
+    end
+
+    def compile_zsuper(node)
+      flags = [:simple]
+      args = @iseq.method_iseq.local_table.select { |id, type| type == :arg }.keys
+      args.each do |arg|
+        add_get_local(arg)
+      end
+      add_instruction(:invoke_super, CallInfo.new(nil, args.count, flags | [:super, :zsuper]))
     end
 
     def compile_iter(node)

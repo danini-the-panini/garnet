@@ -62,6 +62,12 @@ module GarnetRuby
       end
     end
 
+    def method_iseq
+      return self if type == :method
+      raise "NO METHOD ISEQ" if parent_iseq.nil?
+      parent_iseq.method_iseq
+    end
+
     def local_level(label)
       i = self
       l = local_iseq
