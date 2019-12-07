@@ -12,7 +12,17 @@ module GarnetRuby
     end
 
     def self.from(str)
+      return Q_NIL if str.nil?
+
       new(Core.cString, [], str)
+    end
+
+    def subseq(beg, len)
+      string_value[beg, len]
+    end
+
+    def length
+      string_value.length
     end
   end
 
@@ -20,9 +30,7 @@ module GarnetRuby
     def self.init_string
       @cString = rb_define_class(:String)
 
-      rb_define_method(cString, :to_s) do |x|
-        x
-      end
+      rb_define_method(cString, :to_s) { |x| x }
       rb_define_method(cString, :inspect) do |x|
         RString.from(x.string_value.inspect)
       end

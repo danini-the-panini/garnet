@@ -8,9 +8,14 @@ module GarnetRuby
       end
     end
 
+    attr_reader :special_variables
+
     def initialize
       @control_frames = []
       @global_variables = {}
+      @special_variables = {
+        backref: Q_NIL
+      }
     end
 
     def current_control_frame
@@ -459,6 +464,33 @@ module GarnetRuby
       push_stack(value)
     end
 
+    def exec_get_special(control_frame, insn)
+      key, type = insn.arguments
+
+      val = if type.nil?
+              lep_svar_get(key)
+            else
+              backref = lep_svar_get(:backref)
+
+              case type
+              when :&
+                Core.reg_last_match(backref)
+              when :`
+                Core.reg_match_pre(backref)
+              when :"'"
+                Core.reg_match_post(backref)
+              when :+
+                Core.reg_match_last(backref)
+              when Integer
+                Core.reg_nth_match(type, backref)
+              else
+                raise "unexpected back-ref: #{type}"
+              end
+            end
+
+      push_stack(val)
+    end
+
     def exec_setn(control_frame, insn)
       n = insn.arguments[0]
       control_frame.stack[-n - 1] = control_frame.stack.last
@@ -600,6 +632,10 @@ module GarnetRuby
 
     def rtest(value)
       Core.rtest(value)
+    end
+
+    def lep_svar_get(key)
+      @special_variables[key]
     end
 
     def do_raise(exception)

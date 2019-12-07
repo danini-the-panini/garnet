@@ -14,15 +14,18 @@ module GarnetRuby
     def inspect
       "<#Symbol:#{symbol_value}>"
     end
+
+    def sym2str
+      RString.from(x.symbol_value.to_s)
+    end
   end
 
   module Core
     def self.init_symbol
       @cSymbol = rb_define_class(:Symbol)
 
-      rb_define_method(cSymbol, :to_s) do |x|
-        RString.from(x.symbol_value.to_s)
-      end
+      rb_define_method(cSymbol, :to_s) { x.sym2str }
+
       rb_define_method(cSymbol, :inspect) do |x|
         RString.from(":#{x.symbol_value}")
       end

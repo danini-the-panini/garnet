@@ -466,6 +466,14 @@ module GarnetRuby
       add_instruction(:get_instance_variable, node[1])
     end
 
+    def compile_back_ref(node)
+      add_instruction(:get_special, 1, node[1])
+    end
+
+    def compile_nth_ref(node)
+      add_instruction(:get_special, 1, node[1])
+    end
+
     def compile_class(node)
       _, name, super_class, *nodes = node
       flags = []
