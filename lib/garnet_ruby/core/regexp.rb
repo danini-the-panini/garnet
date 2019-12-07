@@ -40,6 +40,10 @@ module GarnetRuby
 
       new(Core.cRegexp, [], value)
     end
+
+    def self.from_string(str, options = nil)
+      from(Regexp.new(str.string_value, options))
+    end
   end
 
   class RMatch < RObject

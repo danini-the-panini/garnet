@@ -1,5 +1,32 @@
 module GarnetRuby
   class Compiler
+    class CompilationError < StandardError
+      attr_reader :compilation_error, :node
+
+      def initialize(message, node = nil)
+        @compilation_error = message
+        location = "(#{node.file}:#{node.line})" rescue "(?:?)"
+        super("COMPILATION ERROR: #{message} #{location}")
+      end
+
+      def self.from(error, node)
+        new(error.compilation_error, error.node || node)
+      end
+    end
+
+    class NodelessCompilationError < StandardError
+      attr_reader :compilation_error
+
+      def node
+        nil
+      end
+
+      def initialize(message)
+        @compilation_error = message
+        super("COMPILATION ERROR: #{message}")
+      end
+    end
+
     class CallInfo
       attr_reader :mid, :argc, :flags, :block_iseq
 
@@ -131,10 +158,21 @@ module GarnetRuby
     end
 
     def compile(node)
-      method_name = :"compile_#{node[0]}"
-      raise "COMPILE_ERROR: Unknown Node Type #{node[0]} (#{node.file}:#{node.line})" unless respond_to?(method_name)
+      raise raise NodelessCompilationError.new("NOT A NODE: #{node}") unless node.is_a?(Array)
+      node = s(*node) unless node.is_a?(Sexp)
 
-      __send__(method_name, node)
+      method_name = :"compile_#{node[0]}"
+      raise CompilationError.new("Unknown Node Type #{node[0]}", node) unless respond_to?(method_name)
+
+      begin
+        __send__(method_name, node)
+      rescue NodelessCompilationError => e
+        raise CompilationError.from(e, node)
+      end
+    end
+
+    def node_position(node)
+      "#{node.file}:#{node.line}"
     end
 
     def compile_lit(node)
@@ -184,8 +222,8 @@ module GarnetRuby
       add_instruction(:put_string, node[1])
     end
 
-    def compile_dstr(node)
-      node[1..-1].each do |n|
+    def compile_dstr_nodes(nodes)
+      nodes.each do |n|
         case n
         when String
           add_instruction(:put_string, n)
@@ -193,6 +231,10 @@ module GarnetRuby
           compile(n)
         end
       end
+    end
+
+    def compile_dstr(node)
+      compile_dstr_nodes(node[1..-1])
       add_instruction(:concat_strings, node.length - 1)
     end
 
@@ -204,8 +246,14 @@ module GarnetRuby
 
     def compile_dxstr(node)
       add_instruction(:put_self)
-      compile_dstr(node)
+      compile_dstr_nodes(node[1..-1])
       add_instruction(:send_without_block, CallInfo.new(:`, 1, [:simple]))
+    end
+
+    def compile_dregx(node)
+      options = node[-1] if node[-1].is_a?(Integer)
+      compile_dstr_nodes(node[1..(options ? -2 : -1)])
+      add_instruction(:to_regexp, options, node.length - 1)
     end
 
     def compile_evstr(node)

@@ -162,6 +162,14 @@ module GarnetRuby
       push_stack(string)
     end
 
+    def exec_to_regexp(control_frame, insn)
+      options, count = insn.arguments
+      strings = pop_stack_multi(count)
+      string = RString.from(strings.map(&:string_value).join(''))
+      regexp = RRegexp.from_string(string, options)
+      push_stack(regexp)
+    end
+
     def exec_new_array(control_frame, insn)
       count = insn.arguments[0]
       items = pop_stack_multi(count)
