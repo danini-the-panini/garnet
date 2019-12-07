@@ -24,6 +24,11 @@ module GarnetRuby
         # TODO: make sure c is a module/class
         c.search_ancestor(cl) ? Q_TRUE : Q_FALSE
       end
+
+      def obj_not_match(obj1, obj2)
+        result = rb_funcall(obj1, :=~, obj2)
+        rtest(result) ? Q_FALSE : Q_TRUE
+      end
     end
 
     def self.init_object
@@ -31,6 +36,9 @@ module GarnetRuby
 
       @mKernel = rb_define_module(:Kernel)
       cObject.include_module(mKernel)
+
+      rb_define_method(mKernel, :=~) { Q_NIL }
+      rb_define_method(mKernel, :'!~', &method(:obj_not_match))
 
       rb_define_method(mKernel, :to_s) do |obj|
         RString.from("#<#{obj.klass.name},#{obj.__id__}>")

@@ -304,6 +304,14 @@ module GarnetRuby
       compile_boolean_op(node, :branch_unless)
     end
 
+    def compile_not(node)
+      if (%i[match2 match3].include?(node[1][0]))
+        compile_regex_match_not(node[1])
+      else
+        raise "UNKNOWN COMPILE NOT"
+      end
+    end
+
     def compile_boolean_op(node, branch_type)
       end_label = new_label
 
@@ -783,11 +791,15 @@ module GarnetRuby
       compile_regex_match(node)
     end
 
-    def compile_regex_match(node)
+    def compile_regex_match(node, mid = :=~)
       left, right = node[1..2]
       compile(left)
       compile(right)
-      add_instruction(:send_without_block, CallInfo.new(:=~, 1, [:simple]))
+      add_instruction(:send_without_block, CallInfo.new(mid, 1, [:simple]))
+    end
+
+    def compile_regex_match_not(node)
+      compile_regex_match(node, :'!~')
     end
 
     def compile_call_args(node)
