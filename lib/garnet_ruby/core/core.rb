@@ -84,7 +84,7 @@ module GarnetRuby
                   :eLoadError,
                   :eMathDomainError
 
-      attr_reader :env_table
+      attr_reader :env_table, :stdin, :stdout, :stderr
 
       def init
         @cBasicObject = boot_defclass(:BasicObject, nil)
@@ -250,6 +250,10 @@ module GarnetRuby
 
       def rb_define_global_function(name, &block)
         rb_define_module_method(mKernel, name, &block)
+      end
+
+      def rb_define_global_const(name, value)
+        cObject.rb_const_set(name, value)
       end
 
       def rb_define_module_method(mdl, name, &block)

@@ -514,6 +514,7 @@ module GarnetRuby
       const_base = pop_stack
       name = insn.arguments[0]
       ret = const_base.rb_const_get(name)
+      raise NameError, "Undefined Constant #{name}" if ret.nil?
       push_stack(ret)
     end
 
