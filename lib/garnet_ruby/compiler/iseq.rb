@@ -35,8 +35,10 @@ module GarnetRuby
       set_relation(parent)
     end
 
-    def add_instruction(type, *args)
-      Instruction.new(type, *args).tap do |insn|
+    def add_instruction(node, type, *args)
+      file = node.file rescue '?'
+      line = node.line rescue '?'
+      Instruction.new(file, line, type, *args).tap do |insn|
         @instructions << insn
       end
     end

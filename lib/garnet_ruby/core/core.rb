@@ -84,6 +84,8 @@ module GarnetRuby
                   :eLoadError,
                   :eMathDomainError
 
+      attr_reader :env_table
+
       def init
         @cBasicObject = boot_defclass(:BasicObject, nil)
         @cObject = boot_defclass(:Object, cBasicObject)
@@ -112,6 +114,9 @@ module GarnetRuby
         init_regexp
         init_proc
         init_io
+
+        @env_table = RHash.from(ENV)
+        cObject.rb_const_set(:ENV, env_table)
       end
 
       def boot_defclass(name, super_class)

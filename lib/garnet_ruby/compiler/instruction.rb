@@ -1,8 +1,10 @@
 module GarnetRuby
   class Instruction
-    attr_reader :type, :arguments
+    attr_reader :file, :line, :type, :arguments
 
-    def initialize(type, *args)
+    def initialize(file, line, type, *args)
+      @file = file
+      @line = line
       @type = type
       @arguments = args
     end

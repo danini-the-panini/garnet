@@ -1,5 +1,5 @@
 module GarnetRuby
-  class RHash < RBasic
+  class RHash < RObject
     attr_reader :hash_value
 
     def initialize(klass, flags, hash_value)
@@ -7,7 +7,9 @@ module GarnetRuby
       @hash_value = hash_value
     end
 
-    def from(h)
+    def self.from(h)
+      return Q_NIL if h.nil?
+
       new(Core.cHash, [], h)
     end
   end

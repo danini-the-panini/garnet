@@ -36,4 +36,7 @@ module GarnetRuby
       @original_method = original_method.is_a?(AliasMethod) ? original_method.original_method : original_method
     end
   end
+
+  class UndefinedMethod < Method
+  end
 end

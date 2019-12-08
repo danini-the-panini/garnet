@@ -8,6 +8,12 @@ module GarnetRuby
       end
     end
 
+    class ExecutionError < StandardError
+      def initialize(message, insn)
+        super("#{message} (#{insn.file}:#{insn.line})")
+      end
+    end
+
     attr_reader :special_variables
 
     def initialize
@@ -89,10 +95,14 @@ module GarnetRuby
       puts "#{$indent}begin : #{insn.type} for #{control_frame}"
 
       method_name = :"exec_#{insn.type}"
-      raise "EXEC_ERROR: Unknown Instruction Type #{insn.type}" unless respond_to?(method_name)
+      raise ExecutionError.new("EXEC_ERROR: Unknown Instruction Type #{insn.type}", insn) unless respond_to?(method_name)
 
       prev_pc = control_frame.pc
-      __send__(method_name, control_frame, insn)
+      begin
+        __send__(method_name, control_frame, insn)
+      rescue => e
+        raise ExecutionError.new(e.message, insn)
+      end
       control_frame.pc += 1 if control_frame.pc == prev_pc
 
       puts "#{$indent}end   : #{insn.type} for #{control_frame}"
@@ -284,6 +294,17 @@ module GarnetRuby
       klass.method_table[mid] = method
 
       push_stack(new_mid_sym)
+    end
+
+    def exec_undefine_method(control_frame, insn)
+      mid_sym = pop_stack
+      mid = mid_sym.symbol_value
+
+      klass = control_frame.environment.lexical_scope.klass
+      method = UndefinedMethod.new(mid, klass, :public)
+      klass.method_table[mid] = method
+
+      push_stack(mid_sym)
     end
 
     def exec_define_class(control_frame, insn)
@@ -577,17 +598,22 @@ module GarnetRuby
       dispatch_method(recv, method, args)
     end
 
+    def undefined_method(mid, target)
+      # method_missing
+      raise "undefined method #{mid} for #{target}"
+    end
+
     def find_method(target, mid, klass = target.klass)
       raise "TRYING TO CALL #{mid} on NIL" if target.nil?
       method = klass.method_table[mid]
       while method.nil?
         klass = klass.super_class
         if klass.nil?
-          # method_missing
-          raise "undefined method #{mid} for #{target}"
+          undefined_method(mid, target)
         end
         method = klass.method_table[mid]
       end
+      undefined_method(mid, target) if method.is_a?(UndefinedMethod)
       method
     end
 
@@ -608,6 +634,8 @@ module GarnetRuby
         execute_method_iseq(target, method, args, block)
       when AliasMethod
         dispatch_method(target, method.original_method, args, block)
+      when UndefinedMethod
+        raise "CANNOT CALL UNDEFINED METHOD"
       else
         raise "NOT IMPLEMENTED: #{method.class} dispatch"
       end

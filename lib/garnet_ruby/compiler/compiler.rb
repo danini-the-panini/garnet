@@ -159,7 +159,7 @@ module GarnetRuby
 
     def compile(node)
       raise raise NodelessCompilationError.new("NOT A NODE: #{node}") unless node.is_a?(Array)
-      node = s(*node) unless node.is_a?(Sexp)
+      @node = node = s(*node) unless node.is_a?(Sexp)
 
       method_name = :"compile_#{node[0]}"
       raise CompilationError.new("Unknown Node Type #{node[0]}", node) unless respond_to?(method_name)
@@ -169,6 +169,8 @@ module GarnetRuby
       rescue NodelessCompilationError => e
         raise CompilationError.from(e, node)
       end
+
+      @node = node
     end
 
     def node_position(node)
@@ -193,6 +195,7 @@ module GarnetRuby
     def compile_block(node)
       node[1..-2].each do |n|
         compile(n)
+        @node = n
         add_instruction(:pop)
       end
       compile(node[-1])
@@ -642,6 +645,11 @@ module GarnetRuby
       add_instruction(:set_method_alias)
     end
 
+    def compile_undef(node)
+      compile(node[1])
+      add_instruction(:undefine_method)
+    end
+
     def compile_return(node)
       compile(node[1]) if node.length > 1
       add_instruction(:leave)
@@ -976,26 +984,26 @@ module GarnetRuby
       label.add
     end
 
-    def add_instruction(type, *args)
-      @iseq.add_instruction(type, *args)
+    def add_instruction(type, *args, node: @node)
+      @iseq.add_instruction(node, type, *args)
     end
 
-    def add_instruction_with_label(type, label)
-      @iseq.add_instruction(type, nil).tap { |i| label.ref(i) }
+    def add_instruction_with_label(type, label, node: @node)
+      @iseq.add_instruction(type, nil, node: node).tap { |i| label.ref(i) }
     end
 
-    def add_set_local(name)
-      add_instruction(:set_local, name, @iseq.local_level(name))
+    def add_set_local(name, node: @node)
+      add_instruction(:set_local, name, @iseq.local_level(name), node: node)
     end
 
-    def add_get_local(name)
+    def add_get_local(name, node: @node)
       level = @iseq.local_level(name)
       pi = @iseq
       level.times { pi = pi.parent_iseq }
       if pi.local_table[name] == :block
-        add_instruction(:get_block_param_proxy, level)
+        add_instruction(:get_block_param_proxy, level, node: node)
       else
-        add_instruction(:get_local, name, level)
+        add_instruction(:get_local, name, level, node: node)
       end
     end
   end
