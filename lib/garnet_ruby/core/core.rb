@@ -204,11 +204,11 @@ module GarnetRuby
 
       def rb_alias_method(klass, alias_name, orig_name)
         orig_me = search_method(klass, orig_name)
-        if !orig_me
+        if !orig_me || orig_me.is_a?(UndefinedMethod)
           raise "undefined method #{orig_name} for #{klass}"
         end
 
-        klass.method_table[alias_name] = orig_me
+        klass.method_table[alias_name] = AliasMethod.new(alias_name, klass, :PUBLIC, orig_me)
       end
 
       def search_method(klass, name)
