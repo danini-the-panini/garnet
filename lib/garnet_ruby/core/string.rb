@@ -1,5 +1,5 @@
 module GarnetRuby
-  class RString < RBasic
+  class RString < RObject
     attr_reader :string_value
 
     def initialize(klass, flags, string_value)

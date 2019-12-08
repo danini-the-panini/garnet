@@ -503,8 +503,9 @@ module GarnetRuby
     end
 
     def compile_cdecl(node)
+      id = compile_const_base(node[1])
       compile(node[2])
-      add_instruction(:set_constant, node[1])
+      add_instruction(:set_constant, id)
     end
 
     def compile_colon2(node)
@@ -513,8 +514,8 @@ module GarnetRuby
     end
 
     def compile_const(node)
-      add_instruction(:put_special_object, :const_base)
-      add_instruction(:get_constant, node[1])
+      id = compile_const_base(node[1])
+      add_instruction(:get_constant, id)
     end
 
     def compile_gasgn(node)
@@ -552,6 +553,18 @@ module GarnetRuby
       add_instruction(:get_special, 1, node[1])
     end
 
+    def compile_const_base(node)
+      if node.is_a?(Symbol)
+        add_instruction(:put_special_object, :const_base)
+        return node
+      elsif node[0] == :colon2
+        compile(node[1])
+        return node[2]
+      else
+        raise "UNKNOWN CONST BASE: #{node}"
+      end
+    end
+
     def compile_class(node)
       _, name, super_class, *nodes = node
       flags = []
@@ -561,16 +574,8 @@ module GarnetRuby
         super_class = [:nil]
       end
       type = :class
-      if name.is_a?(Symbol)
-        add_instruction(:put_special_object, :const_base)
-        id = name
-      elsif name[0] == :colon2
-        flags << :scoped
-        compile(name[1])
-        id = name[2]
-      else
-        raise "UNKNOWN CLASS BASE: #{name}"
-      end
+      id = compile_const_base(name)
+      flags << :scoped unless id == name
 
       class_iseq = Iseq.new("<class:#{id}>", :class, @iseq)
       compiler = Compiler.new(class_iseq)
@@ -989,7 +994,7 @@ module GarnetRuby
     end
 
     def add_instruction_with_label(type, label, node: @node)
-      @iseq.add_instruction(type, nil, node: node).tap { |i| label.ref(i) }
+      @iseq.add_instruction(node, type, nil, node: node).tap { |i| label.ref(i) }
     end
 
     def add_set_local(name, node: @node)

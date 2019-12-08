@@ -1,5 +1,5 @@
 module GarnetRuby
-  class RProc < RBasic
+  class RProc < RObject
     attr_accessor :block
 
     def initialize(klass, flags, block, is_lambda = false)

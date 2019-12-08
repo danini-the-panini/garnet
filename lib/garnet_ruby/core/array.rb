@@ -1,5 +1,5 @@
 module GarnetRuby
-  class RArray < RBasic
+  class RArray < RObject
     attr_reader :array_value
 
     def initialize(klass, flags, array_value)
@@ -12,7 +12,7 @@ module GarnetRuby
     end
 
     def self.from(ary)
-      new(Core.cArray, [], ary)
+      new(Core.cArray, [], ary.map { |x| Core.ruby2garnet(x) })
     end
   end
 

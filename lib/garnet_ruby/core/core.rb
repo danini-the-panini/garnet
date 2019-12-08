@@ -276,6 +276,23 @@ module GarnetRuby
           Q_NIL
         end
       end
+
+      def ruby2garnet(value)
+        case value
+        when NilClass then Q_NIL
+        when TrueClass then Q_TRUE
+        when FalseClass then Q_FALSE
+        when Symbol then RSymbol.from(value)
+        when String then RString.from(value)
+        when Integer, Float then RPrimitive.from(value)
+        when Regexp then RRegexp.from(value)
+        when Array then RArray.from(value)
+        when Hash then RHash.from(value)
+        when Range then RRange.from(value)
+        when RBasic then value
+        else raise "CANNOT CONVERT TO GARNET OBJECT: #{value}"
+        end
+      end
     end
   end
 end

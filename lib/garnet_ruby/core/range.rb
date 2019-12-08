@@ -12,8 +12,8 @@ module GarnetRuby
     def self.from(value)
       return Q_NIL if value.nil?
 
-      st = RPrimitive.from(value.begin)
-      ed = RPrimitive.from(value.end)
+      st = Core.ruby2garnet(value.begin)
+      ed = Core.ruby2garnet(value.end)
       make(st, ed, value.exclude_end?)
     end
 
