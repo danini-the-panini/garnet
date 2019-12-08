@@ -12,6 +12,8 @@ module GarnetRuby
     end
 
     def self.from(ary)
+      return Q_NIL if ary.nil?
+
       new(Core.cArray, [], ary.map { |x| Core.ruby2garnet(x) })
     end
   end

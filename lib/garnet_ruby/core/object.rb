@@ -29,6 +29,10 @@ module GarnetRuby
         result = rb_funcall(obj1, :=~, obj2)
         rtest(result) ? Q_FALSE : Q_TRUE
       end
+
+      def rb_caller(_, *args)
+        VM.instance.backtrace_to_ary(args, 1, true)
+      end
     end
 
     def self.init_object
@@ -66,6 +70,8 @@ module GarnetRuby
 
       @cFalseClass = rb_define_class(:FalseClass)
       ::GarnetRuby.const_set(:Q_FALSE, RPrimitive.new(@cFalseClass, [], false))
+
+      rb_define_global_function(:caller, &method(:rb_caller))
     end
   end
 end

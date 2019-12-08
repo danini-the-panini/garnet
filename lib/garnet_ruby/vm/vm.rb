@@ -780,6 +780,48 @@ module GarnetRuby
       raise "Uncaught Exception: #{exception}"
     end
 
+    def backtrace
+      @control_frames.filter(&:iseq).reverse.map do |cfp|
+        insn = cfp.iseq.instructions[cfp.pc]
+        "#{insn.file}:#{insn.line} in `#{cfp.iseq.name}'"
+      end
+    end
+
+    def backtrace_to_ary(args, lev_default, to_str)
+      level, vn = args
+      bt = backtrace
+
+      lev = n = 0
+
+      case args.length
+      when 0
+        lev = lev_default
+        n = bt.length - lev
+      when 1
+        if level.is_a?(Range)
+          # TODO
+        else
+          lev = level.value
+          raise ArgumentError, "negative level (#{lev})" if lev.negative?
+
+          n = bt.length - lev
+        end
+      when 2
+        lev = level.value
+        n = vn.value
+        raise ArgumentError, "negative level (#{lev})" if lev.negative?
+        raise ArgumentError, "negative size (#{n})" if n.negative?
+      end
+
+      return RArray.from([]) if n.zero?
+
+      if to_str
+        RArray.from(bt[lev, n])
+      else
+        # TODO: backtrace_to_location_ary
+      end
+    end
+
     def push_control_frame(cfp)
       puts "#{$indent}BEGIN CONTROL FRAME: #{cfp}"
       $indent += "  "

@@ -159,7 +159,8 @@ module GarnetRuby
 
     def compile(node)
       raise raise NodelessCompilationError.new("NOT A NODE: #{node}") unless node.is_a?(Array)
-      @node = node = s(*node) unless node.is_a?(Sexp)
+      node = s(*node) unless node.is_a?(Sexp)
+      @node = node
 
       method_name = :"compile_#{node[0]}"
       raise CompilationError.new("Unknown Node Type #{node[0]}", node) unless respond_to?(method_name)

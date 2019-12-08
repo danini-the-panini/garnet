@@ -25,8 +25,12 @@ module GarnetRuby
       end
 
       args.each do |arg|
-        print Core.rb_funcall(arg, :to_s).string_value
-        print "\n"
+        if arg.is_a?(RArray)
+          io_puts(*arg.array_value)
+        else
+          print Core.rb_funcall(arg, :to_s).string_value
+          print "\n"
+        end
       end
       Q_NIL
     end
