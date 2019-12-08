@@ -458,14 +458,15 @@ module GarnetRuby
     end
 
     def exec_set_constant(control_frame, insn)
-      value = pop_stack
+      const_base, value = pop_stack_multi(2)
       name = insn.arguments[0]
-      control_frame.environment.lexical_scope.klass.rb_const_set(name, value)
+      const_base.rb_const_set(name, value)
     end
 
     def exec_get_constant(control_frame, insn)
+      const_base = pop_stack
       name = insn.arguments[0]
-      ret = control_frame.environment.lexical_scope.klass.rb_const_get(name)
+      ret = const_base.rb_const_get(name)
       push_stack(ret)
     end
 

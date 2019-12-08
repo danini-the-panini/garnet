@@ -504,7 +504,13 @@ module GarnetRuby
       add_instruction(:set_constant, node[1])
     end
 
+    def compile_colon2(node)
+      compile(node[1])
+      add_instruction(:get_constant, node[2])
+    end
+
     def compile_const(node)
+      add_instruction(:put_special_object, :const_base)
       add_instruction(:get_constant, node[1])
     end
 
@@ -546,9 +552,12 @@ module GarnetRuby
       if name.is_a?(Symbol)
         add_instruction(:put_special_object, :const_base)
         id = name
-      else
+      elsif name[0] == :colon2
         flags << :scoped
-        # TODO: scoped class definitions
+        compile(name[1])
+        id = name[2]
+      else
+        raise "UNKNOWN CLASS BASE: #{name}"
       end
 
       class_iseq = Iseq.new("<class:#{id}>", :class, @iseq)
