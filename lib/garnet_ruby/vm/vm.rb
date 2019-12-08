@@ -606,15 +606,8 @@ module GarnetRuby
 
     def find_method(target, mid, klass = target.klass)
       raise "TRYING TO CALL #{mid} on NIL" if target.nil?
-      method = klass.method_table[mid]
-      while method.nil?
-        klass = klass.super_class
-        if klass.nil?
-          undefined_method(mid, target)
-        end
-        method = klass.method_table[mid]
-      end
-      undefined_method(mid, target) if method.is_a?(UndefinedMethod)
+      method = Core.find_method(klass, mid)
+      undefined_method(mid, target) if method.nil? || method.is_a?(UndefinedMethod)
       method
     end
 
