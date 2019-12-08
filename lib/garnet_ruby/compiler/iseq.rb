@@ -24,7 +24,7 @@ module GarnetRuby
                 :parent_iseq,
                 :local_iseq
 
-    attr_accessor :start_label, :end_label, :redo_label
+    attr_accessor :start_label, :end_label, :redo_label, :start_index
 
     def initialize(name, type, parent = nil, local_table = {})
       @name = name
@@ -32,6 +32,7 @@ module GarnetRuby
       @instructions = []
       @local_table = local_table
       @catch_table = []
+      @start_index = 0
       set_relation(parent)
     end
 

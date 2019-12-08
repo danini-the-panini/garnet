@@ -620,9 +620,9 @@ module GarnetRuby
     def compile_defn(node)
       _, mid, args, *nodes = node
 
-      local_table = gen_local_table(args[1..-1])
-      method_iseq = Iseq.new(mid.to_s, :method, @iseq, local_table)
+      method_iseq = Iseq.new(mid.to_s, :method, @iseq, {})
       compiler = Compiler.new(method_iseq)
+      populate_local_table(args[1..-1], compiler, method_iseq)
       compiler.compile_nodes(nodes)
 
       add_instruction(:put_object, RSymbol.new(Core.cSymbol, 0, mid))
@@ -633,9 +633,9 @@ module GarnetRuby
     def compile_defs(node)
       _, target, mid, args, *nodes = node
 
-      local_table = gen_local_table(args[1..-1])
-      method_iseq = Iseq.new(mid.to_s, :method, @iseq, local_table)
+      method_iseq = Iseq.new(mid.to_s, :method, @iseq, {})
       compiler = Compiler.new(method_iseq)
+      populate_local_table(args[1..-1], compiler, method_iseq)
       compiler.compile_nodes(nodes)
 
       compile(target)
@@ -696,7 +696,7 @@ module GarnetRuby
       end_label = new_label
       cont_label = new_label
 
-      local_table = { :"\#$!" => 0 }
+      local_table = { :"\#$!" => [:exception] }
       rescue_iseq = Iseq.new("rescue in #{@iseq.name}", :rescue, @iseq, local_table)
       compiler = Compiler.new(rescue_iseq)
       compiler.compile_resbodies(resbodies)
@@ -714,7 +714,7 @@ module GarnetRuby
     def compile_ensure(node)
       block, ensure_body = node[1..-1]
 
-      local_table = { :"\#$!" => 0 }
+      local_table = { :"\#$!" => [:exception] }
       ensure_iseq = Iseq.new("ensure in #{@iseq.name}", :ensure, @iseq, local_table)
       compiler = Compiler.new(ensure_iseq)
       compiler.compile_ensure_body(ensure_body)
@@ -760,7 +760,7 @@ module GarnetRuby
 
     def compile_zsuper(node)
       flags = [:simple]
-      args = @iseq.method_iseq.local_table.select { |id, type| type == :arg }.keys
+      args = @iseq.method_iseq.local_table.select { |id, type| type[0] == :arg }.keys
       args.each do |arg|
         add_get_local(arg)
       end
@@ -771,9 +771,9 @@ module GarnetRuby
       st = @iseq.instructions.length
 
       block_args = node[2] == 0 ? [] : node[2][1..-1]
-      local_table = gen_local_table(block_args)
-      block_iseq = Iseq.new("block in #{@iseq.name}", :block, @iseq, local_table)
+      block_iseq = Iseq.new("block in #{@iseq.name}", :block, @iseq, {})
       compiler = Compiler.new(block_iseq)
+      populate_local_table(block_args, compiler, block_iseq)
       compiler.compile_node(node[3] || [:nil])
 
       call_node = node[1]
@@ -802,9 +802,9 @@ module GarnetRuby
     def compile_for(node)
       st = @iseq.instructions.length
 
-      local_table = gen_local_table(for_block_args(node[2]))
-      block_iseq = Iseq.new("block in #{@iseq.name}", :block, @iseq, local_table)
+      block_iseq = Iseq.new("block in #{@iseq.name}", :block, @iseq, {})
       compiler = Compiler.new(block_iseq)
+      populate_local_table(for_block_args(node[2]), compiler, block_iseq)
       compiler.compile_node(node[3])
 
       compile(node[1])
@@ -829,20 +829,27 @@ module GarnetRuby
       end
     end
 
-    def gen_local_table(args)
-      args.map { |a|
-        s = a.to_s
-        case s
-        when /^\*\*/
-          [s[2..-1].to_sym, :kwsplat]
-        when /^\*/
-          [s[1..-1].to_sym, :splat]
-        when /^&/
-          [s[1..-1].to_sym, :block]
-        else
-          [a, :arg]
+    def populate_local_table(args, compiler, iseq)
+      args.each do |a|
+        next if a.nil?
+        if a.is_a?(Symbol)
+          s = a.to_s
+          case s
+          when /^\*\*/
+            iseq.local_table[s[2..-1].to_sym] = [:kwsplat]
+          when /^\*/
+            iseq.local_table[s[1..-1].to_sym] = [:splat]
+          when /^&/
+            iseq.local_table[s[1..-1].to_sym] = [:block]
+          else
+            iseq.local_table[a] = [:arg]
+          end
+        elsif a[0] == :lasgn
+          iseq.local_table[a[1]] = [:opt]
+          compiler.compile(a)
+          iseq.local_table[a[1]][1] = iseq.instructions.length
         end
-      }.to_h
+      end
     end
 
     def compile_attrasgn(node)
@@ -1005,7 +1012,7 @@ module GarnetRuby
       level = @iseq.local_level(name)
       pi = @iseq
       level.times { pi = pi.parent_iseq }
-      if pi.local_table[name] == :block
+      if pi.local_table.dig(name, 0) == :block
         add_instruction(:get_block_param_proxy, level, node: node)
       else
         add_instruction(:get_local, name, level, node: node)

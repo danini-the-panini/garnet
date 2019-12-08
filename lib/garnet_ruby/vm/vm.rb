@@ -38,13 +38,29 @@ module GarnetRuby
       execute(iseq) until @control_frames.empty?
     end
 
+    def populate_locals(env, iseq, args)
+      offset = 0
+      iseq.local_table.each_with_index do |(k, v), i|
+        case v[0]
+        when :arg
+          env.locals[k] = args[i]
+        when :opt
+          if args[i]
+            env.locals[k] = args[i]
+            offset = v[1]
+          end
+        end
+      end
+      offset
+    end
+
     def execute_method_iseq(target, method, args, block=nil)
       iseq = method.iseq
-      locals = iseq.local_table.select { |_, v| v == :arg }.keys[0..args.count].zip(args).to_h
-      env = Environment.new(target.klass, method.environment, locals)
+      env = Environment.new(target.klass, method.environment, {})
       env.method_entry = env
       env.method_name = method.called_id
       control_frame = ControlFrame.new(target, iseq, env, block)
+      control_frame.pc = populate_locals(env, iseq, args)
       push_control_frame(control_frame)
 
       execute(iseq) until current_control_frame != control_frame
@@ -56,9 +72,9 @@ module GarnetRuby
       prev_control_frame = current_control_frame
 
       iseq = block.iseq
-      locals = iseq.local_table.select { |_, v| v == :arg }.keys[0..args.count].zip(args).to_h
-      env = Environment.new(block.self_value.klass, block.environment, locals, block.environment, prev_control_frame.environment.method_entry)
+      env = Environment.new(block.self_value.klass, block.environment, {}, block.environment, prev_control_frame.environment.method_entry)
       control_frame = ControlFrame.new(block.self_value, iseq, env, prev_control_frame.block)
+      control_frame.pc = populate_locals(env, iseq, args)
       push_control_frame(control_frame)
 
       execute(iseq) until current_control_frame != control_frame
