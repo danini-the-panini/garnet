@@ -28,11 +28,11 @@ module GarnetRuby
       end
       rb_alias_method(cArray, :to_s, :inspect)
 
-      rb_define_method(cArray, :[]) do |ary, args|
+      rb_define_method(cArray, :[]) do |ary, *args|
         case args.length
         when 1
           if args[0].is_a?(RPrimitive) && args[0].value.is_a?(Integer)
-            ary.array_value[args[0].value]
+            ary.array_value[args[0].value] || Q_NIL
           else
             # TODO: Range
           end
@@ -40,7 +40,7 @@ module GarnetRuby
           RArray.from(ary.array_value[args[0].value, args[1].value])
         end
       end
-      rb_define_method(cArray, :[]=) do |ary, args|
+      rb_define_method(cArray, :[]=) do |ary, *args|
         case args.length
         when 2
           if args[0].is_a?(RPrimitive) && args[0].value.is_a?(Integer)

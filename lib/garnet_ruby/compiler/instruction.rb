@@ -8,5 +8,9 @@ module GarnetRuby
       @type = type
       @arguments = args
     end
+
+    def to_s
+      "#{type} #{arguments.map(&:to_s).join(', ')} (#{file}:#{line})"
+    end
   end
 end

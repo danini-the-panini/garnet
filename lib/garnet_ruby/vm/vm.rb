@@ -92,7 +92,7 @@ module GarnetRuby
       control_frame = current_control_frame
       insn = iseq.instructions[control_frame.pc]
 
-      puts "#{$indent}begin : #{insn.type} for #{control_frame}"
+      puts "#{$indent}begin : #{insn} for #{control_frame}"
 
       method_name = :"exec_#{insn.type}"
       raise ExecutionError.new("EXEC_ERROR: Unknown Instruction Type #{insn.type}", insn) unless respond_to?(method_name)
@@ -105,7 +105,7 @@ module GarnetRuby
       end
       control_frame.pc += 1 if control_frame.pc == prev_pc
 
-      puts "#{$indent}end   : #{insn.type} for #{control_frame}"
+      puts "#{$indent}end   : #{insn} for #{control_frame}"
     end
 
     def exec_leave(control_frame, insn)
