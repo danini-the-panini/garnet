@@ -451,6 +451,19 @@ module GarnetRuby
       push_stack(value)
     end
 
+    def exec_get_class_variable(control_frame, insn)
+      id = insn.arguments[0]
+      value = cvar_base.cvar_get(id) || Q_NIL
+      push_stack(value)
+    end
+
+    def exec_set_class_variable(control_frame, insn)
+      id = insn.arguments[0]
+      value = pop_stack
+      cvar_base.cvar_set(id, value)
+      push_stack(value)
+    end
+
     def exec_get_block_param_proxy(control_frame, insn)
       level = insn.arguments[0]
       local_env = get_local_env(level)
@@ -676,6 +689,22 @@ module GarnetRuby
 
     def lep_svar_get(key)
       @special_variables[key]
+    end
+
+    def cvar_base
+      env = current_control_frame.environment
+
+      while env.next_scope && (env.klass.nil? || env.klass.flags.include?(:SINGLETON))
+        env = env.next_scope
+      end
+
+      puts 'WARNING: class variable access from top level' if env.next_scope.nil?
+
+      klass = env.klass
+
+      raise TypeError, 'no class variables available' if klass == Q_NIL
+
+      klass
     end
 
     def do_raise(exception)

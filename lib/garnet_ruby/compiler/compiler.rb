@@ -532,6 +532,15 @@ module GarnetRuby
       add_instruction(:get_instance_variable, node[1])
     end
 
+    def compile_cvdecl(node)
+      compile(node[2])
+      add_instruction(:set_class_variable, node[1])
+    end
+
+    def compile_cvar(node)
+      add_instruction(:get_class_variable, node[1])
+    end
+
     def compile_back_ref(node)
       add_instruction(:get_special, 1, node[1])
     end

@@ -30,6 +30,22 @@ module GarnetRuby
       @const_table[name] = value
     end
 
+    def cvar_get(name)
+      return ivars[name] if ivars.key?(name)
+      return nil if super_class.nil? || super_class == Q_NIL
+
+      super_class.cvar_get(name)
+    end
+
+    def cvar_set(name, value)
+      if ivars.key?(name) || super_class.nil? || super_class == Q_NIL
+        ivars[name] = value
+        return
+      end
+
+      super_class.cvar_set(name, value)
+    end
+
     def super_class=(s)
       if s && s != Q_UNDEF
         remove_from_super_subclasses
