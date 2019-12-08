@@ -27,4 +27,13 @@ module GarnetRuby
       @environment = environment
     end
   end
+
+  class AliasMethod < Method
+    attr_reader :original_method
+
+    def initialize(called_id, defined_class, visibility, original_method)
+      super(called_id, defined_class, visibility)
+      @original_method = original_method.is_a?(AliasMethod) ? original_method.original_method : original_method
+    end
+  end
 end

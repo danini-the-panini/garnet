@@ -636,6 +636,12 @@ module GarnetRuby
       add_instruction(:define_singleton_method)
     end
 
+    def compile_alias(node)
+      compile(node[1])
+      compile(node[2])
+      add_instruction(:set_method_alias)
+    end
+
     def compile_return(node)
       compile(node[1]) if node.length > 1
       add_instruction(:leave)

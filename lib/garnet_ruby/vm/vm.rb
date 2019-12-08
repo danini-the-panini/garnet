@@ -273,6 +273,19 @@ module GarnetRuby
       push_stack(mid_sym)
     end
 
+    def exec_set_method_alias(control_frame, insn)
+      new_mid_sym, old_mid_sym = pop_stack_multi(2)
+      mid = new_mid_sym.symbol_value
+
+      klass = control_frame.environment.lexical_scope.klass
+      original_method = find_method(klass, old_mid_sym.symbol_value, klass)
+
+      method = AliasMethod.new(mid, klass, :public, original_method)
+      klass.method_table[mid] = method
+
+      push_stack(new_mid_sym)
+    end
+
     def exec_define_class(control_frame, insn)
       id, iseq, type, flags = insn.arguments
 
@@ -593,6 +606,8 @@ module GarnetRuby
         ret
       when ISeqMethod
         execute_method_iseq(target, method, args, block)
+      when AliasMethod
+        dispatch_method(target, method.original_method, args, block)
       else
         raise "NOT IMPLEMENTED: #{method.class} dispatch"
       end
