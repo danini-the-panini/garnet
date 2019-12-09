@@ -1,5 +1,9 @@
 # frozen_string_literal: true
 
+def __grb_debug__?
+  ENV['GARNET_DEBUG']
+end
+
 module GarnetRuby
   class Error < StandardError; end
 
@@ -10,8 +14,10 @@ module GarnetRuby
 
     parser = Parser.new(source, filename)
     node = parser.parse
-    pp node
-    puts '-----'
+    if __grb_debug__?
+      pp node
+      puts '-----'
+    end
 
     iseq = Iseq.new('<main>', :main)
     Compiler.new(iseq).compile_node(node)

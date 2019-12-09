@@ -57,6 +57,7 @@ module GarnetRuby
     end
 
     def debug_dump_instructions
+      return unless __grb_debug__?
       @instructions.each_with_index do |insn, i|
         args = insn.arguments
                    .map { |x| x.is_a?(String) ? x.inspect : x.to_s }

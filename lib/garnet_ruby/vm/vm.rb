@@ -108,7 +108,7 @@ module GarnetRuby
       control_frame = current_control_frame
       insn = iseq.instructions[control_frame.pc]
 
-      puts "#{$indent}begin : #{insn} for #{control_frame}"
+      puts "#{$indent}begin : #{insn} for #{control_frame}" if __grb_debug__?
 
       method_name = :"exec_#{insn.type}"
       raise ExecutionError.new("EXEC_ERROR: Unknown Instruction Type #{insn.type}", insn) unless respond_to?(method_name)
@@ -121,7 +121,7 @@ module GarnetRuby
       end
       control_frame.pc += 1 if control_frame.pc == prev_pc
 
-      puts "#{$indent}end   : #{insn} for #{control_frame}"
+      puts "#{$indent}end   : #{insn} for #{control_frame}" if __grb_debug__?
     end
 
     def exec_leave(control_frame, insn)
@@ -141,7 +141,7 @@ module GarnetRuby
         end
         current_control_frame.pc = cr.cont if cr
       end
-      puts "#{$indent}  --- leave: now executing: #{current_control_frame}"
+      puts "#{$indent}  --- leave: now executing: #{current_control_frame}" if __grb_debug__?
     end
 
     def exec_nop(control_frame, insn)
@@ -398,7 +398,6 @@ module GarnetRuby
         if !cr
           until @control_frames.empty?
             cfp = current_control_frame
-            puts "THROW AT CFP(#{cfp})"
             cr = cfp.iseq.catch_table.find do |x|
               x.type == :rescue && x.iseq != control_frame.iseq && (x.st..x.ed).include?(cfp.pc)
             end
@@ -823,7 +822,7 @@ module GarnetRuby
     end
 
     def push_control_frame(cfp)
-      puts "#{$indent}BEGIN CONTROL FRAME: #{cfp}"
+      puts "#{$indent}BEGIN CONTROL FRAME: #{cfp}" if __grb_debug__?
       $indent += "  "
       @control_frames << cfp
     end
@@ -831,7 +830,7 @@ module GarnetRuby
     def pop_control_frame
       $indent.slice!(0, 2)
       @control_frames.pop.tap { |cfp|
-        puts "#{$indent}END CONTROL FRAME: #{cfp}"
+        puts "#{$indent}END CONTROL FRAME: #{cfp}" if __grb_debug__?
       }
     end
   end

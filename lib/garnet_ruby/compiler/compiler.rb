@@ -80,6 +80,8 @@ module GarnetRuby
     end
 
     def debug_dump_iseq
+      return unless __grb_debug__?
+
       puts "Iseq:#{@iseq.name}"
       unless @iseq.catch_table.empty?
         puts "== catch table"
