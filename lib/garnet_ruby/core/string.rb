@@ -28,6 +28,20 @@ module GarnetRuby
     def eql_internal(str2)
       string_value == str2.string_value ? Q_TRUE : Q_FALSE
     end
+
+    def format(*args)
+      fmt_args = args.map do |arg|
+        case arg
+        when RPrimitive
+          arg.value
+        when RString
+          arg.string_value
+        else
+          Core.rb_funcall(arg, :to_s).string_value
+        end
+      end
+      RString.from(string_value % fmt_args)
+    end
   end
 
   module Core
@@ -39,6 +53,10 @@ module GarnetRuby
           return rb_equal(str1, str2)
         end
         str1.eql_internal(str2)
+      end
+
+      def rb_sprintf(str, *args)
+        str.format(*args)
       end
     end
 

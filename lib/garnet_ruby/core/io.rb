@@ -34,18 +34,40 @@ module GarnetRuby
       end
       Q_NIL
     end
+
+    def io_flush
+      io.flush
+    end
   end
 
   module Core
+    class << self
+      def rb_printf(*args)
+        return Q_NIL if args.length.zero?
+
+        if args.first.is_a?(RString)
+          out = @stdout
+        else
+          out = args.first
+          _, *args = args
+        end
+        out.io_print(rb_sprintf(*args))
+        Q_NIL
+      end
+    end
+
     def self.init_io
       rb_define_global_function(:print) { |_, *args| @stdout.io_print(*args) }
       rb_define_global_function(:puts) { |_, *args| @stdout.io_puts(*args) }
+      rb_define_global_function(:printf) { |_, *args| rb_printf(*args) }
 
       rb_define_global_function(:`) do |_, str|
         RString.from(`#{str.string_value}`)
       end
 
       @cIO = rb_define_class(:IO, cObject)
+
+      rb_define_global_function(:flush) { |io| io.io_flush }
 
       @stdin = RIO.from(STDIN)
       @stdout = RIO.from(STDOUT)
