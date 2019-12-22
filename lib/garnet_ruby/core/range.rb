@@ -20,11 +20,41 @@ module GarnetRuby
     def self.make(st, ed, excl)
       new(Core.cRange, [], st, ed, excl)
     end
+
+    def include_internal(val)
+      Q_UNDEF # TODO
+    end
+
+    def cover?(val)
+      if !st == Q_NIL || r_less(@st, val) <= 0
+        ex = @excl ? 1 : 0
+        return Q_TRUE if @ed == Q_NIL || r_less(val, @ed) <= -ex
+      end
+      Q_FALSE
+    end
+
+    def r_less(a, b)
+      r = Core.rb_funcall(a, :<=>, b)
+      return 9999999 if r == Q_NIL # TODO: INT_MAX
+
+      Core.rb_cmpint(r, a, b)
+    end
   end
 
   module Core
+    class << self
+      def range_eqq(range, val)
+        ret = range.include_internal(val)
+        return ret unless ret == Q_UNDEF
+
+        range.cover?(val)
+      end
+    end
+
     def self.init_range
       @cRange = rb_define_class(:Range, cObject)
+
+      rb_define_method(cRange, :===, &method(:range_eqq))
 
       rb_define_method(cRange, :to_s) do |r|
         st_string = rb_funcall(r.st, :to_s)

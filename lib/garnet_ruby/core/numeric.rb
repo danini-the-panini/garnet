@@ -66,6 +66,32 @@ module GarnetRuby
         end
       end
 
+      def num_cmp(x, y)
+        return RPrimitive.from(0) if x == y
+        Q_NIL
+      end
+
+      def int_cmp(x, y)
+        if fixnum?(x)
+          fix_cmp(x, y)
+        else
+          Q_NIL
+        end
+      end
+
+      def fix_cmp(x, y)
+        return RPrimitive.from(0) if x == y
+
+        if fixnum?(y)
+          return RPrimitive.from(1) if x.value > y.value
+          RPrimitive.from(-1)
+        elsif y.type?(Flaot)
+          integer_float_cmp(x, y)
+        else
+          num_coerce_cmp(x, y, :<=>)
+        end
+      end
+
       def integer_float_cmp(x, y)
         yd = y.value
         return Q_NIL if yd.nan?
@@ -206,10 +232,30 @@ module GarnetRuby
           Q_NIL
         end
       end
+
+      def rb_cmpint(val, a, b)
+        if val == Q_NIL
+          rb_cmperr(a, b)
+        end
+
+        if val.type?(Integer)
+          l = val.value
+          return 1  if l > 0
+          return -1 if l < 0
+          return 0
+        end
+
+        return 1  if rtest(rb_funcall(val, :>, PRimitive.from(0)))
+        return -1 if rtest(rb_funcall(val, :<, PRimitive.from(0)))
+
+        0
+      end
     end
 
     def self.init_numeric
       @cNumeric = rb_define_class(:Numeric, cObject)
+
+      rb_define_method(cNumeric, :<=>, &method(:num_cmp))
 
       @cInteger = rb_define_class(:Integer, cNumeric)
       rb_define_method(cInteger, :+) do |x, y|
@@ -229,6 +275,7 @@ module GarnetRuby
       rb_define_method(cInteger, :>=, &method(:int_ge))
       rb_define_method(cInteger, :<, &method(:int_lt))
       rb_define_method(cInteger, :<=, &method(:int_le))
+      rb_define_method(cInteger, :<=>, &method(:int_cmp))
     end
   end
 end

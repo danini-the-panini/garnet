@@ -7,6 +7,11 @@ module GarnetRuby
       @value = value
     end
 
+    def ==(other)
+      return true if self == other
+      value.eql?(other)
+    end
+
     def to_s
       "Q_#{value.inspect.upcase}"
     end
