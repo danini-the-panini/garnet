@@ -659,7 +659,11 @@ module GarnetRuby
     end
 
     def compile_return(node)
-      compile(node[1]) if node.length > 1
+      if node.length > 1
+        compile(node[1])
+      else
+        add_instruction(:put_nil)
+      end
       add_instruction(:leave)
       # TODO: handle blocks
     end

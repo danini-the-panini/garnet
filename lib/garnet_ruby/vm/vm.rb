@@ -369,12 +369,14 @@ module GarnetRuby
       when :break
         until @control_frames.empty?
           cfp = current_control_frame
-          cr = cfp.iseq.catch_table.find do |x|
-            x.type == :break && x.iseq == control_frame.iseq && (x.st..x.ed).include?(cfp.pc)
-          end
-          if cr
-            cfp.pc = cr.cont
-            break
+          unless cfp.iseq.nil?
+            cr = cfp.iseq.catch_table.find do |x|
+              x.type == :break && x.iseq == control_frame.iseq && (x.st..x.ed).include?(cfp.pc)
+            end
+            if cr
+              cfp.pc = cr.cont
+              break
+            end
           end
           pop_control_frame
         end
@@ -431,7 +433,7 @@ module GarnetRuby
       target = pop_stack
       method = find_method(target, callinfo.mid)
       ret = dispatch_method(target, method, args, blockarg&.block)
-      push_stack(ret) unless ret == Q_UNDEF
+      push_stack(ret) unless ret.nil? || ret == Q_UNDEF
     end
 
     def exec_send(control_frame, insn)
@@ -445,7 +447,7 @@ module GarnetRuby
       method = find_method(target, callinfo.mid)
       block = Block.new(callinfo.block_iseq, control_frame.environment, control_frame.self_value)
       ret = dispatch_method(target, method, args, block)
-      push_stack(ret) unless ret == Q_UNDEF
+      push_stack(ret) unless ret.nil? || ret == Q_UNDEF
     end
 
     def exec_invoke_block(control_frame, insn)
@@ -457,7 +459,7 @@ module GarnetRuby
       end
       block = control_frame.block
       ret = execute_block_iseq(block, args)
-      push_stack(ret) unless ret == Q_UNDEF
+      push_stack(ret) unless ret.nil? || ret == Q_UNDEF
     end
 
     def exec_invoke_super(control_frame, insn)
@@ -470,13 +472,13 @@ module GarnetRuby
       target = control_frame.self_value
       method = find_super_method(target, control_frame.environment.method_entry.method_name)
       ret = dispatch_method(target, method, args)
-      push_stack(ret) unless ret == Q_UNDEF
+      push_stack(ret) unless ret.nil? || ret == Q_UNDEF
     end
 
     def exec_get_local(control_frame, insn)
       name, level = insn.arguments
       local_env = get_local_env(level)
-      push_stack(local_env.locals[name])
+      push_stack(local_env.locals[name] || Q_NIL)
     end
 
     def exec_set_local(control_frame, insn)
@@ -612,6 +614,11 @@ module GarnetRuby
     def rb_call(recv, mid, *args)
       method = find_method(recv, mid)
       dispatch_method(recv, method, args)
+    end
+
+    def rb_yield(args)
+      block = current_control_frame.block
+      execute_block_iseq(block, args)
     end
 
     def undefined_method(mid, target)
@@ -832,6 +839,15 @@ module GarnetRuby
       @control_frames.pop.tap { |cfp|
         puts "#{$indent}END CONTROL FRAME: #{cfp}" if __grb_debug__?
       }
+    end
+
+    def while_current_control_frame
+      cfp = current_control_frame
+      r = Q_NIL
+      while current_control_frame == cfp
+        r = yield
+      end
+      r
     end
   end
 end

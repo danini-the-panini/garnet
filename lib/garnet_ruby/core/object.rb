@@ -33,10 +33,18 @@ module GarnetRuby
       def rb_caller(_, *args)
         VM.instance.backtrace_to_ary(args, 1, true)
       end
+
+      def rb_loop(_)
+        vm = VM.instance
+        vm.while_current_control_frame do
+          vm.rb_yield([])
+        end
+      end
     end
 
     def self.init_object
       rb_define_private_method(cBasicObject, :initialize) { nil }
+      rb_define_method(cBasicObject, :==) { |obj1, obj2| obj1 == obj2 ? Q_TRUE : Q_FALSE }
 
       @mKernel = rb_define_module(:Kernel)
       cObject.include_module(mKernel)
@@ -72,6 +80,8 @@ module GarnetRuby
       ::GarnetRuby.const_set(:Q_FALSE, RPrimitive.new(@cFalseClass, [], false))
 
       rb_define_global_function(:caller, &method(:rb_caller))
+
+      rb_define_global_function(:loop, &method(:rb_loop))
     end
   end
 end
