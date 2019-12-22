@@ -27,6 +27,10 @@ module GarnetRuby
         # TODO: call default
         hash.hash_value[key] || Q_NIL
       end
+
+      def hash_aset(hash, key, value)
+        hash.hash_value[key] = value
+      end
     end
 
     def self.init_hash
@@ -36,6 +40,7 @@ module GarnetRuby
       rb_alias_method(cHash, :to_s, :inspect)
 
       rb_define_method(cHash, :[], &method(:hash_aref))
+      rb_define_method(cHash, :[]=, &method(:hash_aset))
     end
   end
 end
