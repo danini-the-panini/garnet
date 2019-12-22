@@ -30,6 +30,19 @@ module GarnetRuby
         rtest(result) ? Q_FALSE : Q_TRUE
       end
 
+      def obj_equal(obj1, obj2)
+        obj1 == obj2 ? Q_TRUE : Q_FALSE
+      end
+
+      def obj_not(obj)
+        rtest(obj) ? Q_FALSE : Q_TRUE
+      end
+
+      def obj_not_equal(obj1, obj2)
+        result = rb_funcall(obj1, :==, obj2)
+        rtest(result) ? Q_FALSE : Q_TRUE
+      end
+
       def rb_caller(_, *args)
         VM.instance.backtrace_to_ary(args, 1, true)
       end
@@ -44,7 +57,9 @@ module GarnetRuby
 
     def self.init_object
       rb_define_private_method(cBasicObject, :initialize) { nil }
-      rb_define_method(cBasicObject, :==) { |obj1, obj2| obj1 == obj2 ? Q_TRUE : Q_FALSE }
+      rb_define_method(cBasicObject, :==, &method(:obj_equal))
+      rb_define_method(cBasicObject, :'!', &method(:obj_not))
+      rb_define_method(cBasicObject, :'!=', &method(:obj_not_equal))
 
       @mKernel = rb_define_module(:Kernel)
       cObject.include_module(mKernel)

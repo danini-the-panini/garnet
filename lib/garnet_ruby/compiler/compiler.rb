@@ -669,12 +669,15 @@ module GarnetRuby
     end
 
     def compile_next(node)
+      if node.length > 1
+        compile(node[1])
+      else
+        add_instruction(:put_nil);
+      end
       if @iseq.redo_label
-        compile(node[1] || [:nil])
         add_instruction(:pop)
         add_instruction_with_label(:jump, @iseq.start_label)
       else
-        compile(node[1]) if node.length > 1
         add_instruction(:leave)
       end
     end
