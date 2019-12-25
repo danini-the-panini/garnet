@@ -131,6 +131,7 @@ module GarnetRuby
       @cRegexp = rb_define_class(:Regexp, cObject)
 
       rb_define_method(cRegexp, :=~) { |re, str| re.match(str) }
+      rb_define_method(cRegexp, :===) { |re, str| rtest(re.match(str)) ? Q_TRUE : Q_FALSE }
 
       @cMatch = rb_define_class(:MatchData, cObject)
     end
