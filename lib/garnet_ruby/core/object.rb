@@ -72,6 +72,8 @@ module GarnetRuby
       end
       rb_alias_method(cObject, :inspect, :to_s)
 
+      rb_define_method(mKernel, :kind_of?, &method(:obj_is_kind_of))
+
       @cNilClass = rb_define_class(:NilClass)
       ::GarnetRuby.const_set(:Q_NIL, RPrimitive.new(@cNilClass, [], nil))
       rb_define_method(cNilClass, :to_s) do |obj|
