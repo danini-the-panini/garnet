@@ -38,6 +38,10 @@ module GarnetRuby
     def io_flush
       io.flush
     end
+
+    def io_close
+      io.close
+    end
   end
 
   module Core
@@ -54,9 +58,18 @@ module GarnetRuby
         out.io_print(rb_sprintf(*args))
         Q_NIL
       end
+
+      def rb_open(path, mode = "r", perm = nil, opt = nil)
+        if path.string_value.start_with?('|')
+          # TODO
+        else
+          RFile.open(path, mode, perm, opt)
+        end
+      end
     end
 
     def self.init_io
+      rb_define_global_function(:open) { |_, *args| rb_open(*args) }
       rb_define_global_function(:print) { |_, *args| @stdout.io_print(*args) }
       rb_define_global_function(:puts) { |_, *args| @stdout.io_puts(*args) }
       rb_define_global_function(:printf) { |_, *args| rb_printf(*args) }
@@ -67,7 +80,9 @@ module GarnetRuby
 
       @cIO = rb_define_class(:IO, cObject)
 
-      rb_define_global_function(:flush) { |io| io.io_flush }
+      rb_define_method(cIO, :flush) { |io| io.io_flush }
+
+      rb_define_method(cIO, :close) { |io| io.io_close }
 
       @stdin = RIO.from(STDIN)
       @stdout = RIO.from(STDOUT)

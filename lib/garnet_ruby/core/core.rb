@@ -114,6 +114,7 @@ module GarnetRuby
         init_regexp
         init_proc
         init_io
+        init_file
 
         @env_table = RHash.from(ENV)
         cObject.rb_const_set(:ENV, env_table)
