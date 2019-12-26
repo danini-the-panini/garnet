@@ -250,6 +250,28 @@ module GarnetRuby
 
         0
       end
+
+      def fix_uminus(num)
+        RPrimitive.from(-num.value)
+      end
+
+      def int_uminus(num)
+        if fixnum?(x)
+          fix_uminuns(num)
+        else
+          Core.rb_funcall(num, :'@-')
+        end
+      end
+
+      def int_plus(x, y)
+        # TODO: type coersion
+        RPrimitive.from(x.value + y.value)
+      end
+
+      def int_minus(x, y)
+        # TODO: type coersion
+        RPrimitive.from(x.value - y.value)
+      end
     end
 
     def self.init_numeric
@@ -258,16 +280,13 @@ module GarnetRuby
       rb_define_method(cNumeric, :<=>, &method(:num_cmp))
 
       @cInteger = rb_define_class(:Integer, cNumeric)
-      rb_define_method(cInteger, :+) do |x, y|
-        # TODO: type coersion
-        RPrimitive.from(x.value + y.value)
-      end
       rb_define_method(cInteger, :to_s) do |x, base = 10|
         RString.from(x.value.to_s(base))
       end
       rb_alias_method(cInteger, :inspect, :to_s)
       rb_define_method(cInteger, :odd?, &method(:int_odd_p))
       rb_define_method(cInteger, :even?, &method(:int_even_p))
+      rb_define_method(cInteger, :<=>, &method(:int_cmp))
 
       rb_define_method(cInteger, :===, &method(:int_equal))
       rb_define_method(cInteger, :==, &method(:int_equal))
@@ -275,7 +294,10 @@ module GarnetRuby
       rb_define_method(cInteger, :>=, &method(:int_ge))
       rb_define_method(cInteger, :<, &method(:int_lt))
       rb_define_method(cInteger, :<=, &method(:int_le))
-      rb_define_method(cInteger, :<=>, &method(:int_cmp))
+
+      rb_define_method(cInteger, :'@-', &method(:int_uminus))
+      rb_define_method(cInteger, :+, &method(:int_plus))
+      rb_define_method(cInteger, :-, &method(:int_minus))
     end
   end
 end
