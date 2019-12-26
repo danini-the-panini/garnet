@@ -23,8 +23,16 @@ module GarnetRuby
   end
 
   module Core
+    class << self
+      def file_s_unlink(_, *args)
+        args.each { |f| File.unlink(f.string_value) }
+      end
+    end
+
     def self.init_file
       @cFile = rb_define_class(:File, cIO)
+
+      rb_define_singleton_method(cFile, :unlink, &method(:file_s_unlink))
     end
   end
 end
