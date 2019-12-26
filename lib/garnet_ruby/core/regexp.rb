@@ -20,7 +20,7 @@ module GarnetRuby
     def match_pos(str)
       if str == Q_NIL
         Core.backref_set(Q_NIL)
-        return -1, str
+        return -1
       end
 
       pos = regexp_value =~ operand(str, true).string_value

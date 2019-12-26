@@ -537,12 +537,11 @@ module GarnetRuby
 
     def exec_set_global(control_frame, insn)
       value = pop_stack
-      @global_variables[insn.arguments[0]] = value
+      set_global(insn.arguments[0], value)
     end
 
     def exec_get_global(control_frame, insn)
-      value = @global_variables[insn.arguments[0]] || Q_NIL
-      push_stack(value)
+      push_stack(get_global(insn.arguments[0]))
     end
 
     def exec_get_special(control_frame, insn)
@@ -740,6 +739,14 @@ module GarnetRuby
         local_env = local_env.previous
       end
       local_env
+    end
+
+    def set_global(name, value)
+      @global_variables[name] = value
+    end
+
+    def get_global(name)
+      @global_variables[name] || Q_NIL
     end
 
     def rtest(value)

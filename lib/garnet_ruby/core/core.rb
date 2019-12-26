@@ -257,6 +257,17 @@ module GarnetRuby
         cObject.rb_const_set(name, value)
       end
 
+      def rb_define_global_variable(name, value)
+        @initial_gvars ||= {}
+        @initial_gvars[name] = value
+      end
+
+      def inject_global_variables(vm)
+        @initial_gvars.each do |k, v|
+          vm.set_global(k, v)
+        end
+      end
+
       def rb_define_module_method(mdl, name, &block)
         rb_define_private_method(mdl, name, &block)
         rb_define_singleton_method(mdl, name, &block)

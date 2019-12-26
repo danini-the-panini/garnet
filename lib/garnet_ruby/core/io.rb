@@ -42,6 +42,36 @@ module GarnetRuby
     def io_close
       io.close
     end
+
+    def io_gets(*args)
+      case args.length
+      when 3
+        sep, limit, getline_args = args
+      when 2
+        if args.first.type?(Integer)
+          sep = VM.instance.get_global(:'$/')
+          limit = args.first.value
+        else
+          sep = args.first
+          limit = args[1].type?(Integer) ? args[1].value : -1
+        end
+      when 1
+        if args.first.type?(Integer)
+          sep = VM.instance.get_global(:'$/')
+          limit = args.first.value
+        else
+          sep = args.first
+          limit = -1
+        end
+      else
+        # TODO: raise argument error
+      end
+
+      sep = sep.is_a?(RString) ? sep.string_value : nil
+
+      # TODO: extract getline_args
+      RString.from(io.gets(sep, limit))
+    end
   end
 
   module Core
@@ -80,7 +110,11 @@ module GarnetRuby
 
       @cIO = rb_define_class(:IO, cObject)
 
+      rb_define_global_variable(:'$/', RString.from($/))
+
+      rb_define_method(cIO, :gets) { |io, *args| io.io_gets(*args) }
       rb_define_method(cIO, :flush) { |io| io.io_flush }
+      rb_define_method(cIO, :eof?) { |io| io.io.eof? ? Q_TRUE : Q_FALSE }
 
       rb_define_method(cIO, :close) { |io| io.io_close }
 
