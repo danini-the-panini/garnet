@@ -795,6 +795,7 @@ module GarnetRuby
             x.type == :ensure && (x.st..x.ed).include?(cfp.pc)
           end
           if cr
+            cfp.pc = cr.cont
             execute_rescue_iseq(cr.iseq, exception)
             return
           end

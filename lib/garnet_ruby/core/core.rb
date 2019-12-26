@@ -234,6 +234,11 @@ module GarnetRuby
         rb_define_method(singleton_class_of(obj), name, &block)
       end
 
+      def rb_define_module_method(obj, name, &block)
+        rb_define_private_method(obj, name, &block)
+        rb_define_singleton_method(obj, name, &block)
+      end
+
       def rb_add_method_cfunc(klass, name, visibility, &block)
         klass ||= cObject
 
