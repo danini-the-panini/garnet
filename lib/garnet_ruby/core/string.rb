@@ -17,6 +17,14 @@ module GarnetRuby
       new(Core.cString, [], str)
     end
 
+    def type
+      String
+    end
+
+    def type?(x)
+      x == String
+    end
+
     def subseq(beg, len)
       string_value[beg, len]
     end

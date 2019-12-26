@@ -615,6 +615,17 @@ module GarnetRuby
       dispatch_method(recv, method, args)
     end
 
+    def rb_check_funcall(recv, mid, *args)
+      return Q_UNDEF unless rb_respond_to(recv, mid)
+      rb_call(recv, mid, *args)
+    end
+
+    def rb_respond_to(recv, mid)
+      # TODO: actually call recv#respond_to?
+      method = find_method(recv, mid)
+      method && !method.is_a?(UndefinedMethod)
+    end
+
     def rb_yield(args)
       block = current_control_frame.block
       execute_block_iseq(block, args)
