@@ -26,13 +26,22 @@ module GarnetRuby
     end
 
     def check_string_type
-      check_convert_type_with_id(String, "String", :to_str)
+      rb_check_convert_type_with_id(String, "String", :to_str)
     end
 
-    def check_convert_type_with_id(type, tname, method)
+    def rb_check_convert_type_with_id(type, tname, method)
       return self if self.type == type
-      v = convert_type_with_id(tname, method, false, -1)
+      v = rb_convert_type_with_id(tname, method, false, -1)
       return Q_NIL if v == Q_NIL
+      if v.type != type
+        conversion_mismatch(tname, method, v)
+      end
+      v
+    end
+
+    def rb_convert_type_with_id(type, tname, method)
+      return self if self.type == type
+      v = convert_type_with_id(tname, method, true, -1)
       if v.type != type
         conversion_mismatch(tname, method, v)
       end
