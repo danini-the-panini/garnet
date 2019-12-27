@@ -180,6 +180,10 @@ module GarnetRuby
         ary.array_value.pop
       end
 
+      def ary_empty_p(ary)
+        ary.array_value.empty? ? Q_TRUE : Q_FALSE
+      end
+
       def ary_plus(x, y)
         RArray.from(x.array_value + y.to_array_type.array_value)
       end
@@ -335,6 +339,7 @@ module GarnetRuby
       rb_define_method(cArray, :[], &method(:ary_aref))
       rb_define_method(cArray, :[]=, &method(:ary_aset))
       rb_define_method(cArray, :pop, &method(:ary_pop))
+      rb_define_method(cArray, :empty?, &method(:ary_empty_p))
 
       rb_define_method(cArray, :+, &method(:ary_plus))
       rb_define_method(cArray, :*, &method(:ary_times))
