@@ -141,6 +141,52 @@ module GarnetRuby
           end
         end
       end
+
+      def range_values(range)
+        if obj_is_kind_of(range, cRange)
+          return range.st, range.ed, range.excl
+
+          # TODO: check against ArithSeq ??
+        else
+          b = rb_check_funcall(range, :begin)
+          return false, nil, nil if b == Q_UNDEF
+          e = rb_check_funcall(range, :end)
+          return false, nil, nil if e == Q_UNDEF
+          x = rb_check_funcall(range, :exclude_end?)
+          return false, nil, nil if x == Q_UNDEF
+
+          return b, e, x
+        end
+      end
+
+      def range_beg_len(range, len, err)
+        b, e, excl = range_values(range)
+        return Q_FALSE, nil, nil unless b
+
+        beg = b == Q_NIL ? 0 : num2long(b)
+        ed = e == Q_NIL ? -1 : num2long(e)
+        origbeg = beg
+        origend = ed
+        if beg.negative?
+          beg += len
+          out_of_range(origbeg, origend, excl, err) if beg.negative?
+        end
+        ed += len if ed.negative?
+        ed += 1 unless excl
+        if err.zero? || err == 2
+          out_of_range(origbeg, origend, excl, err) if beg > len
+          ed = len if ed > len
+        end
+        len = ed - beg
+        len = 0 if len.negative?
+
+        return Q_TRUE, beg, len
+      end
+
+      def out_of_range(beg, ed, excl, err=1)
+        return if err.zero?
+        raise RangeError, "#{beg}#{excl ? '...' : '..'}#{ed} out of range"
+      end
     end
 
     def self.init_range

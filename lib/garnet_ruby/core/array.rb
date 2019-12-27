@@ -24,6 +24,10 @@ module GarnetRuby
     def type?(x)
       x == Array
     end
+
+    def len
+      array_value.length
+    end
   end
 
   module Core
@@ -35,30 +39,106 @@ module GarnetRuby
         RString.from("[#{strings.join(', ')}]")
       end
 
+      def ary_entry(ary, offset)
+        len = ary.len
+        return Q_NIL if len.zero?
+        if offset.negative?
+          offset += len
+          return Q_NIL if offset.negative?
+        elsif len <= offset
+          return Q_NIL
+        end
+        ary.array_value[offset]
+      end
+
+      def ary_subseq(ary, beg, len)
+        alen = ary.len
+
+        return Q_NIL if beg > alen
+        return Q_NIL if beg.negative? || len.negative?
+
+        if alen < len || alen < beg + len
+          len = alen - beg
+        end
+        klass = ary.klass
+        return RArray.new(klass, [], []) if len.zero?
+
+        RArray.new(klass, [], ary.array_value[beg, len])
+      end
+
+      def ary_aref2(ary, b, e)
+        beg = num2long(b)
+        ed = num2long(e)
+        beg += ary.len if beg.negative?
+        ary_subseq(ary, beg, ed)
+      end
+
+      def ary_aref1(ary, arg)
+        return ary_entry(ary, arg.value) if fixnum?(arg)
+
+        result, beg, len = range_beg_len(arg, ary.len, 0)
+        return Q_NIL if result == Q_NIL
+        return ary_subseq(ary, beg, len) unless result == Q_FALSE
+
+        return ary_entry(ary, num2long(arg))
+      end
+
       def ary_aref(ary, *args)
-        case args.length
-        when 1
-          if args[0].is_a?(RPrimitive) && args[0].value.is_a?(Integer)
-            ary.array_value[args[0].value] || Q_NIL
-          else
-            # TODO: Range
-          end
-        when 2
-          RArray.from(ary.array_value[args[0].value, args[1].value])
+        if args.length == 2
+          return ary_aref2(ary, args[0], args[1])
+        end
+        ary_aref1(ary, args[0])
+      end
+
+      def ary_splice(ary, beg, len, rpl)
+        ary.array_value[beg, len] = rpl.array_value
+      end
+
+      def ary_mem_clear(ary, beg, size)
+        size.times do |i|
+          ary.array_value[beg + i] = Q_NIL
         end
       end
 
-      def ary_aset(ary, *args)
-        case args.length
-        when 2
-          if args[0].is_a?(RPrimitive) && args[0].value.is_a?(Integer)
-            ary.array_value[args[0].value] = args[1]
-          else
-            # TODO: Range
+      def ary_store(ary, idx, val)
+        len = ary.len
+
+        if idx.negative?
+          idx += len
+          if idx.negative?
+            raise IndexError, "index #{idx - len} too small for array; minimum #{-len}"
           end
-        when 3
-          ary.array_value[args[0].value, args[1].value] = args[2]
+          # TODO: check against ARY_MAX_SIZE
         end
+
+        if idx > len
+          ary_mem_clear(ary, len, idx - len + 1)
+        end
+
+        ary.array_value[idx] = val
+      end
+
+      def ary_aset(ary, *args)
+        if args.length == 3
+          beg = num2long(args[0])
+          len = num2long(args[1])
+          ary_splice(ary, beg, len, args.last.ary_to_ary)
+          return args.last
+        end
+
+        if fixnum?(args[0])
+          ary_store(ary, args[0].value, args[1])
+          return args[1]
+        end
+
+        result, beg, len = range_beg_len(range, ary.len, 1)
+        if rtest(result)
+          ary_splice(ary, beg, len, args.last.ary_to_ary)
+          return args.last
+        end
+
+        ary_store(ary, num2long(args[0]), args[1])
+        args[1]
       end
 
       def ary_includes(ary, item)
@@ -70,7 +150,7 @@ module GarnetRuby
       end
 
       def ary_join(ary, sep)
-        return RString.from("") if ary.array_value.length.zero?
+        return RString.from("") if ary.len.zero?
 
         if sep != Q_NIL
           sep = sep.str_to_str

@@ -25,6 +25,19 @@ module GarnetRuby
       VM.instance.rb_respond_to(self, :succ)
     end
 
+    def to_integer(method, mid)
+      return self if fixnum?(self)
+      v = try_to_int(mid, true)
+      if !fixnum?(v)
+        conversion_mismatch("Integer", method, v)
+      end
+      v
+    end
+
+    def try_to_int(mid, should_raise)
+      convert_type_with_id("Integer", mid, should_raise, -1)
+    end
+
     def obj_as_string
       return self if type?(String)
 
@@ -48,6 +61,13 @@ module GarnetRuby
 
     def str_to_str
       rb_convert_type_with_id(String, "String", :to_str)
+    end
+
+    def ary_to_ary
+      tmp = check_array_type
+      return tmp unless tmp == Q_NIL
+
+      RArray.from([self])
     end
 
     def to_array_type

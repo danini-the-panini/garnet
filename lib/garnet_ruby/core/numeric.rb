@@ -11,6 +11,21 @@ module GarnetRuby
         [f, i]
       end
 
+      def num2long(val)
+        if val == Q_NIL
+          raise TypeError, 'no implicit conversion from nil to integer'
+        end
+
+        return val.value if fixnum?(val)
+        return RPrimitive.from(val.value.to_i) if type?(Float)
+
+        num2long(rb_to_int(val))
+      end
+
+      def rb_to_int(val)
+        val.to_integer("to_int", :to_int)
+      end
+
       def int_odd_p(num)
         if fixnum?(num)
           return Q_TRUE if num.value.odd?
