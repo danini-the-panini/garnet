@@ -183,6 +183,27 @@ module GarnetRuby
       def ary_empty_p(ary)
         ary.array_value.empty? ? Q_TRUE : Q_FALSE
       end
+      
+      def ary_sort_bang(ary)
+        if ary.len > 1
+          if rb_block_given?
+            ary.array_value.sort! do |a, b|
+              rb_cmpint(rb_yield(a, b), a, b)
+            end
+          else
+            ary.array_value.sort! do |a, b|
+              rb_cmpint(rb_funcall(a, :<=>, b), a, b)
+            end
+          end
+        end
+        ary
+      end
+
+      def ary_sort(ary)
+        ary = ary_dup(ary)
+        ary_sort_bang(ary)
+        ary
+      end
 
       def ary_plus(x, y)
         RArray.from(x.array_value + y.to_array_type.array_value)
@@ -259,7 +280,7 @@ module GarnetRuby
       end
 
       def ary_dup(ary)
-        RArray.new(ary.class, [], ary.array_value)
+        RArray.new(ary.klass, [], ary.array_value)
       end
 
       def ary_make_hash(ary)
@@ -340,6 +361,8 @@ module GarnetRuby
       rb_define_method(cArray, :[]=, &method(:ary_aset))
       rb_define_method(cArray, :pop, &method(:ary_pop))
       rb_define_method(cArray, :empty?, &method(:ary_empty_p))
+      rb_define_method(cArray, :sort, &method(:ary_sort))
+      rb_define_method(cArray, :sort!, &method(:ary_sort_bang))
 
       rb_define_method(cArray, :+, &method(:ary_plus))
       rb_define_method(cArray, :*, &method(:ary_times))

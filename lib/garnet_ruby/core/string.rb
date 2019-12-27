@@ -54,6 +54,18 @@ module GarnetRuby
 
   module Core
     class << self
+      def str_cmp(str1, str2)
+        str1.string_value <=> str2.string_value
+      end
+
+      def str_cmp_m(str1, str2)
+        s = str2.check_string_type
+        return invcmp(str1, str2) if s == Q_NIL
+
+        result = str_cmp(str1, s)
+        RPrimitive.from(result)
+      end
+
       def str_equal(str1, str2)
         return Q_TRUE if str1 == str2
 
@@ -87,6 +99,7 @@ module GarnetRuby
     def self.init_string
       @cString = rb_define_class(:String)
 
+      rb_define_method(cString, :<=>, &method(:str_cmp_m))
       rb_define_method(cString, :==, &method(:str_equal))
       rb_define_method(cString, :===, &method(:str_equal))
       rb_define_method(cString, :eql?, &method(:str_eql))
