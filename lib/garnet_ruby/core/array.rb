@@ -361,6 +361,7 @@ module GarnetRuby
       rb_define_method(cArray, :[]=, &method(:ary_aset))
       rb_define_method(cArray, :pop, &method(:ary_pop))
       rb_define_method(cArray, :empty?, &method(:ary_empty_p))
+      rb_define_method(cArray, :join, &method(:ary_join))
       rb_define_method(cArray, :sort, &method(:ary_sort))
       rb_define_method(cArray, :sort!, &method(:ary_sort_bang))
 
