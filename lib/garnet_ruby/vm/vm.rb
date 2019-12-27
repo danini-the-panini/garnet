@@ -805,6 +805,13 @@ module GarnetRuby
       raise "Uncaught Exception: #{exception}"
     end
 
+    def find_tag(tag)
+      cfp = @control_frames.reverse.find { |c| c.tag == tag }
+      raise UncaughtThrowError, "(uncaught throw #{tag})" if !cfp
+
+      pop_control_frame until current_control_frame == cfp
+    end
+
     def backtrace
       @control_frames.filter(&:iseq).reverse.map do |cfp|
         insn = cfp.iseq.instructions[cfp.pc]

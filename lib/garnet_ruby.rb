@@ -32,6 +32,7 @@ require 'garnet_ruby/version'
 
 require 'garnet_ruby/core/basic'
 require 'garnet_ruby/core/object'
+require 'garnet_ruby/core/eval'
 require 'garnet_ruby/core/class'
 require 'garnet_ruby/core/primitive'
 require 'garnet_ruby/core/error'

@@ -656,8 +656,8 @@ test_ok(!$bad)
 test_ok(catch(:foo) {
      loop do
        loop do
-	 throw :foo, true
-	 break
+          throw :foo, true
+          break
        end
        break
        test_ok(false)			# should no reach here

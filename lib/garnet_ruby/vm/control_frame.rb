@@ -1,6 +1,6 @@
 module GarnetRuby
   class ControlFrame
-    attr_accessor :pc, :stack, :iseq, :self_value
+    attr_accessor :pc, :stack, :iseq, :self_value, :tag
     attr_reader :environment, :block
 
     def initialize(self_value, iseq, environment, block=nil)

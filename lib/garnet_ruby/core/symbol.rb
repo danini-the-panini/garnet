@@ -16,7 +16,7 @@ module GarnetRuby
     end
 
     def sym2str
-      RString.from(x.symbol_value.to_s)
+      RString.from(symbol_value.to_s)
     end
 
     def self.from(value)
@@ -24,13 +24,19 @@ module GarnetRuby
 
       new(Core.cSymbol, [], value)
     end
+
+    def ==(other)
+      return false unless other.is_a?(RSymbol)
+
+      symbol_value == other.symbol_value
+    end
   end
 
   module Core
     def self.init_symbol
       @cSymbol = rb_define_class(:Symbol)
 
-      rb_define_method(cSymbol, :to_s) { x.sym2str }
+      rb_define_method(cSymbol, :to_s) { |x| x.sym2str }
 
       rb_define_method(cSymbol, :inspect) do |x|
         RString.from(":#{x.symbol_value}")
