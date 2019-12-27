@@ -622,7 +622,7 @@ module GarnetRuby
 
     def rb_respond_to(recv, mid)
       # TODO: actually call recv#respond_to?
-      method = find_method(recv, mid)
+      method = find_method_unchecked(recv, mid)
       method && !method.is_a?(UndefinedMethod)
     end
 
@@ -636,9 +636,13 @@ module GarnetRuby
       raise "undefined method #{mid} for #{target}"
     end
 
-    def find_method(target, mid, klass = target.klass)
+    def find_method_unchecked(target, mid, klass = target.klass)
       raise "TRYING TO CALL #{mid} on NIL" if target.nil?
-      method = Core.find_method(klass, mid)
+      Core.find_method(klass, mid)
+    end
+
+    def find_method(target, mid, klass = target.klass)
+      method = find_method_unchecked(target, mid, klass)
       undefined_method(mid, target) if method.nil? || method.is_a?(UndefinedMethod)
       method
     end

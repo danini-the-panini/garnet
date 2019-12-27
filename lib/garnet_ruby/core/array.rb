@@ -28,17 +28,6 @@ module GarnetRuby
 
   module Core
     class << self
-      def to_array_type(ary)
-        ary.rb_convert_type_with_id(Array, "Array", :to_ary)
-      end
-
-      def check_array_type(ary)
-        ary.rb_check_convert_type_with_id(Array, "Array", :to_ary)
-      end
-
-      def check_to_array(ary)
-        ary.rb_check_convert_type_with_id(Array, "Array", :to_a)
-      end
 
       def ary_inspect(ary)
         strings = ary.array_value.map do |item|
@@ -73,9 +62,48 @@ module GarnetRuby
         end
       end
 
+      def ary_join(ary, sep)
+        return RString.from("") if ary.array_value.length.zero?
+
+        if sep != Q_NIL
+          sep = sep.str_to_str
+        end
+        strings = ary.array_value.map do |v|
+          next v if v.type?(String)
+          next ary_join_recursive(ary, sep, v) if v.type?(Array)
+
+          tmp = v.check_string_type
+          next tmp unless tmp == Q_NIL
+
+          tmp = v.check_array_type
+          next ary_join_recursive(ary, sep, v) unless tmp == Q_NIL
+
+          v.obj_as_string
+        end
+
+        RString.from(strings.map(&:string_value).join(sep.string_value))
+      end
+
+      def ary_join_recursive(ary, sep, v)
+        # TODO: exec recursively
+        ary_join(v, sep)
+      end
+
       def ary_plus(x, y)
-        y = to_array_type(y)
-        RArray.from(x.array_value + y.array_value)
+        RArray.from(x.array_value + y.to_array_type.array_value)
+      end
+
+      def ary_times(ary, times)
+        tmp = times.check_string_type
+        
+        return ary_join(ary, tmp) if tmp != Q_NIL
+
+        len = times.value
+        return RArray.from([]) if len.zero?
+        raise ArgumentError, "negative argument" if len.negative?
+        # TODO: check ARY_MAX_SIZE
+
+        RArray.from(ary.array_value * len)
       end
     end
 
@@ -89,6 +117,7 @@ module GarnetRuby
       rb_define_method(cArray, :[]=, &method(:ary_aset))
 
       rb_define_method(cArray, :+, &method(:ary_plus))
+      rb_define_method(cArray, :*, &method(:ary_times))
     end
   end
 end
