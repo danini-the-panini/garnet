@@ -253,6 +253,23 @@ module GarnetRuby
           ary_union.array_value.push(elt)
         end
       end
+
+      def ary_dup(ary)
+        RArray.new(ary.class, [], ary.array_value)
+      end
+
+      def ary_compact_bang(ary)
+        alen = ary.len
+        ary.array_value.delete_if { |e| e == Q_NIL }
+        return Q_NIL if alen == ary.len
+        ary
+      end
+
+      def ary_compact(ary)
+        ary = ary_dup(ary)
+        ary_compact_bang(ary)
+        ary
+      end
     end
 
     def self.init_array
@@ -273,6 +290,9 @@ module GarnetRuby
       rb_define_method(cArray, :-, &method(:ary_diff))
       rb_define_method(cArray, :&, &method(:ary_and))
       rb_define_method(cArray, :|, &method(:ary_or))
+
+      rb_define_method(cArray, :compact, &method(:ary_compact))
+      rb_define_method(cArray, :compact!, &method(:ary_compact_bang))
     end
   end
 end
