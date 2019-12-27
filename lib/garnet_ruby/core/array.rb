@@ -176,6 +176,10 @@ module GarnetRuby
         ary_join(v, sep)
       end
 
+      def ary_pop(ary)
+        ary.array_value.pop
+      end
+
       def ary_plus(x, y)
         RArray.from(x.array_value + y.to_array_type.array_value)
       end
@@ -261,6 +265,7 @@ module GarnetRuby
 
       rb_define_method(cArray, :[], &method(:ary_aref))
       rb_define_method(cArray, :[]=, &method(:ary_aset))
+      rb_define_method(cArray, :pop, &method(:ary_pop))
 
       rb_define_method(cArray, :+, &method(:ary_plus))
       rb_define_method(cArray, :*, &method(:ary_times))
