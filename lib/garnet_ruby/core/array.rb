@@ -258,6 +258,58 @@ module GarnetRuby
         RArray.new(ary.class, [], ary.array_value)
       end
 
+      def ary_make_hash(ary)
+        hash = RHash.from({})
+        ary.array_value.each do |elt|
+          hash_aset(hash, elt, elt)
+        end
+        hash
+      end
+
+      def ary_make_hash_by(ary)
+        hash = RHash.from({})
+        ary.array_value.each do |v|
+          k = rb_yield(v)
+          hash_aset(hash, k, v)
+        end
+        hash
+      end
+
+      def ary_uniq_bang(ary)
+        return Q_NIL if ary.len <= 1
+
+        hash = if rb_block_given?
+                 ary_make_hash_by(ary)
+               else
+                 ary_make_hash(ary)
+               end
+      
+        hash_size = hash.size
+        return Q_NIL if ary.len == hash_size
+        
+        ary.array_value.clear
+        hash.entries.each do |ent|
+          ary.array_value.push(ent.value)
+        end
+
+        ary
+      end
+
+      def ary_uniq(ary)
+        if ary.len <= 1
+          uniq = ary_dup(ary)
+        elsif rb_block_given?
+          hash = ary_make_hash_by(ary)
+          uniq = hash_values(hash)
+        else
+          hash = ary_make_hash(ary)
+          uniq = hash_values(hash)
+        end
+        uniq.klass = ary.klass
+
+        uniq
+      end
+
       def ary_compact_bang(ary)
         alen = ary.len
         ary.array_value.delete_if { |e| e == Q_NIL }
@@ -291,6 +343,8 @@ module GarnetRuby
       rb_define_method(cArray, :&, &method(:ary_and))
       rb_define_method(cArray, :|, &method(:ary_or))
 
+      rb_define_method(cArray, :uniq, &method(:ary_uniq))
+      rb_define_method(cArray, :uniq!, &method(:ary_uniq_bang))
       rb_define_method(cArray, :compact, &method(:ary_compact))
       rb_define_method(cArray, :compact!, &method(:ary_compact_bang))
     end

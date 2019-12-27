@@ -32,6 +32,10 @@ module GarnetRuby
       @table.values.flatten
     end
 
+    def size
+      entries.length
+    end
+
     class Entry
       attr_reader :key
       attr_accessor :value
@@ -118,6 +122,10 @@ module GarnetRuby
 
       def hash_hash(hash)
         RPrimitive.from(hash.entries.reduce(0) { |h, e| h + e.hash_code })
+      end
+
+      def hash_values(hash)
+        RArray.from(hash.entries.map { |e| e.value })
       end
     end
 

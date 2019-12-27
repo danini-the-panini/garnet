@@ -4,7 +4,7 @@ module GarnetRuby
       def rb_catch(_, tag = RObject.new(Core.cObject, []))
         vm = VM.instance
         vm.current_control_frame.tag = tag
-        ret = vm.rb_yield([tag])
+        ret = vm.rb_yield(tag)
         ret = vm.pop_stack if ret.nil?
         ret
       end

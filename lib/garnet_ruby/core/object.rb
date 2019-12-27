@@ -55,7 +55,7 @@ module GarnetRuby
       def rb_loop(_)
         vm = VM.instance
         vm.while_current_control_frame do
-          vm.rb_yield([])
+          vm.rb_yield()
         end
       end
 

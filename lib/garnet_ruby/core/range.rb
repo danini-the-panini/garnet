@@ -77,12 +77,12 @@ module GarnetRuby
       end
 
       def each_i(v, arg)
-        VM.instance.rb_yield(v)
+        rb_yield(v)
         false
       end
 
       def sym_each_i(v, arg)
-        VM.instance.rb_yield(RSymbol.from(v.to_sym))
+        rb_yield(RSymbol.from(v.to_sym))
         false
       end
 
@@ -94,7 +94,7 @@ module GarnetRuby
           i = beg.value
           
           vm.while_current_control_frame do
-            vm.rb_yield([RPrimitive.from(i)])
+            vm.rb_yield(RPrimitive.from(i))
             i += 1
           end
         elsif beg.type?(Integer) && ed.type?(Integer)
@@ -103,7 +103,7 @@ module GarnetRuby
           lim +=1 unless range.excl
           vm.while_current_control_frame do
             break if i >= lim
-            vm.rb_yield([RPrimitive.from(i)])
+            vm.rb_yield(RPrimitive.from(i))
             i += 1
           end
         elsif beg.is_a?(RSymbol) && (ed == Q_NIL || d.is_a?(RSymbol))

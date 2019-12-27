@@ -309,6 +309,14 @@ module GarnetRuby
         true
       end
 
+      def rb_block_given?
+        !VM.instance.current_control_frame.block.nil?
+      end
+
+      def rb_yield(*args)
+        VM.instance.rb_yield(*args)
+      end
+
       def rtest(value)
         value != Q_FALSE && value != Q_NIL
       end

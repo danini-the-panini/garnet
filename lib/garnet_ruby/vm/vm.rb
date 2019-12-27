@@ -626,7 +626,7 @@ module GarnetRuby
       method && !method.is_a?(UndefinedMethod)
     end
 
-    def rb_yield(args)
+    def rb_yield(*args)
       block = current_control_frame.block
       execute_block_iseq(block, args)
     end
