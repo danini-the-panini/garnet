@@ -859,13 +859,15 @@ module GarnetRuby
     end
 
     def push_control_frame(cfp)
-      puts "#{$indent}BEGIN CONTROL FRAME: #{cfp}" if __grb_debug__?
-      $indent += "  "
+      if __grb_debug__?
+        puts "#{$indent}BEGIN CONTROL FRAME: #{cfp}"
+        $indent += "  "
+      end
       @control_frames << cfp
     end
 
     def pop_control_frame
-      $indent.slice!(0, 2)
+      $indent.slice!(0, 2) if __grb_debug__?
       @control_frames.pop.tap { |cfp|
         puts "#{$indent}END CONTROL FRAME: #{cfp}" if __grb_debug__?
       }

@@ -56,11 +56,27 @@ module GarnetRuby
     class << self
       def str_equal(str1, str2)
         return Q_TRUE if str1 == str2
+
         unless str2.is_a?(RString)
           return Q_FALSE unless rb_respond_to?(str2, :to_str)
           return rb_equal(str1, str2)
         end
+
         str1.eql_internal(str2)
+      end
+
+      def str_eql(str1, str2)
+        return Q_TRUE if str1 == str2
+        return Q_FALSE unless str2.type?(String)
+
+        str1.eql_internal(str2)
+      end
+
+      def str_hash(str)
+        result = str.string_value.bytes.reduce(0) do |h, c|
+          31 * h + c
+        end
+        RPrimitive.from(result)
       end
 
       def rb_sprintf(str, *args)
@@ -72,6 +88,9 @@ module GarnetRuby
       @cString = rb_define_class(:String)
 
       rb_define_method(cString, :==, &method(:str_equal))
+      rb_define_method(cString, :===, &method(:str_equal))
+      rb_define_method(cString, :eql?, &method(:str_eql))
+      rb_define_method(cString, :hash, &method(:str_hash))
 
       rb_define_method(cString, :to_s) { |x| x }
       rb_define_method(cString, :inspect) do |x|

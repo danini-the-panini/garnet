@@ -272,6 +272,11 @@ module GarnetRuby
         # TODO: type coersion
         RPrimitive.from(x.value - y.value)
       end
+
+      def int_hash(num)
+        v = num.value
+        RPrimitive.from(v ^ (v >> 32))
+      end
     end
 
     def self.init_numeric
@@ -294,6 +299,7 @@ module GarnetRuby
       rb_define_method(cInteger, :>=, &method(:int_ge))
       rb_define_method(cInteger, :<, &method(:int_lt))
       rb_define_method(cInteger, :<=, &method(:int_le))
+      rb_define_method(cInteger, :hash, &method(:int_hash))
 
       rb_define_method(cInteger, :'@-', &method(:int_uminus))
       rb_define_method(cInteger, :+, &method(:int_plus))

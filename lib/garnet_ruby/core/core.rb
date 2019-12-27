@@ -117,7 +117,7 @@ module GarnetRuby
         init_io
         init_file
 
-        @env_table = RHash.from(ENV)
+        @env_table = RHash.new(cHash, [])
         cObject.rb_const_set(:ENV, env_table)
       end
 
@@ -266,6 +266,12 @@ module GarnetRuby
       def rb_define_global_variable(name, value)
         @initial_gvars ||= {}
         @initial_gvars[name] = value
+      end
+
+      def inject_env(vm)
+        ENV.each do |k, v|
+          hash_aset(@env_table, RString.from(k), RString.from(v))
+        end
       end
 
       def inject_global_variables(vm)

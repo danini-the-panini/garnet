@@ -105,6 +105,13 @@ module GarnetRuby
 
         RArray.from(ary.array_value * len)
       end
+
+      def ary_hash(ary)
+        h = ary.array_value.reduce(1) do |result, element|
+          result = 31 * result + Core.rb_funcall(element, :hash).value
+        end
+        RPrimitive.from(h)
+      end
     end
 
     def self.init_array
@@ -112,6 +119,8 @@ module GarnetRuby
 
       rb_define_method(cArray, :inspect, &method(:ary_inspect))
       rb_alias_method(cArray, :to_s, :inspect)
+
+      rb_define_method(cArray, :hash, &method(:ary_hash))
 
       rb_define_method(cArray, :[], &method(:ary_aref))
       rb_define_method(cArray, :[]=, &method(:ary_aset))

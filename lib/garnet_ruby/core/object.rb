@@ -43,6 +43,11 @@ module GarnetRuby
         rtest(result) ? Q_FALSE : Q_TRUE
       end
 
+      def obj_hash(obj)
+        v = obj.__id__
+        RPrimitive.from(v ^ (v >> 32))
+      end
+
       def rb_caller(_, *args)
         VM.instance.backtrace_to_ary(args, 1, true)
       end
@@ -52,6 +57,20 @@ module GarnetRuby
         vm.while_current_control_frame do
           vm.rb_yield([])
         end
+      end
+
+      def rb_equal(obj1, obj2)
+        return Q_TRUE if obj1 == obj2
+
+        result = rb_funcall(obj1, :==, obj2)
+        rtest(result) ? Q_TRUE : Q_FALSE
+      end
+
+      def rb_eql(obj1, obj2)
+        return Q_TRUE if obj1 == obj2
+
+        result = rb_funcall(obj1, :eql?, obj2)
+        rtest(result) ? Q_TRUE : Q_FALSE
       end
     end
 
@@ -66,6 +85,8 @@ module GarnetRuby
 
       rb_define_method(mKernel, :=~) { Q_NIL }
       rb_define_method(mKernel, :'!~', &method(:obj_not_match))
+      rb_define_method(mKernel, :eql?, &method(:obj_equal))
+      rb_define_method(mKernel, :hash, &method(:obj_hash))
 
       rb_define_method(mKernel, :to_s) do |obj|
         RString.from("#<#{obj.klass.name},#{obj.__id__}>")

@@ -23,6 +23,7 @@ module GarnetRuby
     Compiler.new(iseq).compile_node(node)
 
     vm = VM.new
+    Core.inject_env(vm)
     Core.inject_global_variables(vm)
     vm.execute_main(iseq)
   end
