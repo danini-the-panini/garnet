@@ -119,6 +119,15 @@ module GarnetRuby
         end
       end
 
+      def str_reverse_bang(str)
+        str.string_value.reverse!
+        str
+      end
+
+      def str_reverse(str)
+        RString.from(str.string_value.reverse)
+      end
+
       def rb_sprintf(str, *args)
         str.format(*args)
       end
@@ -139,6 +148,8 @@ module GarnetRuby
       end
 
       rb_define_method(cString, :split, &method(:str_split))
+      rb_define_method(cString, :reverse, &method(:str_reverse))
+      rb_define_method(cString, :reverse!, &method(:str_reverse_bang))
     end
   end
 end
