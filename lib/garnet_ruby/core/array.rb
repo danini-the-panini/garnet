@@ -197,6 +197,29 @@ module GarnetRuby
         RArray.new(ary.klass, [], new_ary)
       end
 
+      def ary_append(x, y)
+        x.array_value[x.len, 0] = y.array_value
+        x
+      end
+
+      def ary_concat(x, y)
+        ary_append(x, y.to_array_type)
+      end
+
+      def ary_concat_multi(ary, *argv)
+        if argv.length == 1
+          ary_concat(ary, argv[0])
+        elsif argv.length > 1
+          args = RArray.from([])
+          argv.each do |arg|
+            ary_concat(args, arg)
+          end
+          ary_append(ary, args)
+        end
+
+        ary
+      end
+
       def ary_pop(ary)
         ary.array_value.pop
       end
@@ -384,6 +407,7 @@ module GarnetRuby
 
       rb_define_method(cArray, :[], &method(:ary_aref))
       rb_define_method(cArray, :[]=, &method(:ary_aset))
+      rb_define_method(cArray, :concat, &method(:ary_concat_multi))
       rb_define_method(cArray, :pop, &method(:ary_pop))
       rb_define_method(cArray, :length, &method(:ary_length))
       rb_alias_method(cArray, :size, :length)
