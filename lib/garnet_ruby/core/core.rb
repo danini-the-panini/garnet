@@ -314,6 +314,10 @@ module GarnetRuby
         !VM.instance.current_control_frame.block.nil?
       end
 
+      def rb_block_arity
+        VM.instance.current_control_frame.block.arity
+      end
+
       def rb_yield(*args)
         VM.instance.rb_yield(*args)
       end

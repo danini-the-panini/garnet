@@ -26,6 +26,10 @@ module GarnetRuby
       @iseq = iseq
     end
 
+    def arity
+      iseq.local_table.count { |_, x| x.first == :arg }
+    end
+
     def to_s
       "<#IseqBlock iseq=#{iseq} env=#{environment} self=#{self_value}>"
     end
@@ -37,6 +41,10 @@ module GarnetRuby
     def initialize(environment, self_value, &block)
       super(environment, self_value)
       @block = block
+    end
+
+    def arity
+      block.arity
     end
 
     def to_s

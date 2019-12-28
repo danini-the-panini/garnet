@@ -124,6 +124,19 @@ module GarnetRuby
         RPrimitive.from(hash.entries.reduce(0) { |h, e| h + e.hash_code })
       end
 
+      def hash_each_pair(hash)
+        if rb_block_arity > 1
+          hash.entries.each do |e|
+            rb_yield(e.key, e.value)
+          end
+        else
+          hash.entries.each do |e|
+            rb_yield(RArray.from([e.key, e.value]))
+          end
+        end
+        hash
+      end
+
       def hash_values(hash)
         RArray.from(hash.entries.map { |e| e.value })
       end
@@ -140,6 +153,9 @@ module GarnetRuby
       rb_define_method(cHash, :hash, &method(:hash_hash))
       rb_define_method(cHash, :eql?, &method(:hash_eql))
       rb_define_method(cHash, :[]=, &method(:hash_aset))
+
+      rb_define_method(cHash, :each_pair, &method(:hash_each_pair))
+      rb_define_method(cHash, :each, &method(:hash_each_pair))
     end
   end
 end
