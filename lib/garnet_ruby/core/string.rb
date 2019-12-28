@@ -130,6 +130,30 @@ module GarnetRuby
         RString.from(str.string_value.reverse)
       end
 
+      def str_scan(str, pattern)
+        if pattern.type?(String)
+          pattern = pattern.string_value
+        elsif pattern.type?(Regexp)
+          pattern = pattern.regexp_value
+        else
+          raise TypeError, "(wrong argument type #{pattern.klass} (expected Regexp))"
+        end
+
+        if rb_block_given?
+          str.string_value.scan(pattern) do |x|
+            if x.is_a?(Array)
+              rb_yield(RArray.from(x))
+            else
+              rb_yield(RString.from(x))
+            end
+          end
+          str
+        else
+          result = str.string_value.scan(pattern)
+          RArray.from(result)
+        end
+      end
+
       def rb_sprintf(str, *args)
         str.format(*args)
       end
@@ -152,6 +176,8 @@ module GarnetRuby
       rb_define_method(cString, :split, &method(:str_split))
       rb_define_method(cString, :reverse, &method(:str_reverse))
       rb_define_method(cString, :reverse!, &method(:str_reverse_bang))
+
+      rb_define_method(cString, :scan, &method(:str_scan))
     end
   end
 end
