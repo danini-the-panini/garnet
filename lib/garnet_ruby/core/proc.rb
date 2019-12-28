@@ -27,7 +27,7 @@ module GarnetRuby
       end
 
       def proc_call(proc, *args)
-        VM.instance.execute_block_iseq(proc.block, args)
+        VM.instance.execute_block(proc.block, args)
       end
 
       def f_proc(_)

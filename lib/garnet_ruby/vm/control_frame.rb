@@ -16,6 +16,10 @@ module GarnetRuby
       environment.block
     end
 
+    def method_entry
+      environment.method_entry
+    end
+
     def to_s
       "CFP(self=#{self_value}, pc=#{pc}, iseq=#{iseq}, stack=#{stack})"
     end

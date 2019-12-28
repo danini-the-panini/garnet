@@ -142,6 +142,13 @@ module GarnetRuby
         end
       end
 
+      def range_to_a(range)
+        if range.ed == Q_NIL
+          raise RangeError, 'cannot convert endless range to an array'
+        end
+        rb_call_super
+      end
+
       def range_values(range)
         if obj_is_kind_of(range, cRange)
           return range.st, range.ed, range.excl
@@ -191,6 +198,7 @@ module GarnetRuby
 
     def self.init_range
       @cRange = rb_define_class(:Range, cObject)
+      cRange.include_module(mEnumerable)
 
       rb_define_method(cRange, :===, &method(:range_eqq))
       rb_define_method(cRange, :each, &method(:range_each))
@@ -200,6 +208,9 @@ module GarnetRuby
         ed_string = rb_funcall(r.ed, :to_s)
         RString.from("#{st_string.string_value}#{r.excl ? '...' : '..'}#{ed_string.string_value}")
       end
+
+      rb_define_method(cRange, :to_a, &method(:range_to_a))
+      rb_define_method(cRange, :entries, &method(:range_to_a))
     end
   end
 end

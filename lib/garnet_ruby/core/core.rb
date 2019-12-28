@@ -108,6 +108,7 @@ module GarnetRuby
         init_exception
         init_symbol
         init_numeric
+        init_enum
         init_range
         init_string
         init_array
@@ -315,6 +316,14 @@ module GarnetRuby
 
       def rb_yield(*args)
         VM.instance.rb_yield(*args)
+      end
+
+      def rb_block_call(recv, mid, *args, &block)
+        VM.instance.rb_block_call(recv, mid, *args, &block)
+      end
+
+      def rb_call_super(*args)
+        VM.instance.call_super(*args)
       end
 
       def rtest(value)

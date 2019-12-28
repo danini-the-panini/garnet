@@ -58,7 +58,7 @@ module GarnetRuby
       iseq = method.iseq
       env = Environment.new(target.klass, method.environment, {})
       env.method_entry = env
-      env.method_name = method.called_id
+      env.method_object = method
       control_frame = ControlFrame.new(target, iseq, env, block)
       control_frame.pc = populate_locals(env, iseq, args)
       push_control_frame(control_frame)
@@ -445,7 +445,7 @@ module GarnetRuby
       end
       target = pop_stack
       method = find_method(target, callinfo.mid)
-      block = Block.new(callinfo.block_iseq, control_frame.environment, control_frame.self_value)
+      block = IseqBlock.new(control_frame.environment, control_frame.self_value, callinfo.block_iseq)
       ret = dispatch_method(target, method, args, block)
       push_stack(ret) unless ret.nil? || ret == Q_UNDEF
     end
@@ -458,7 +458,7 @@ module GarnetRuby
         args = [*pargs, *splat.array_value]
       end
       block = control_frame.block
-      ret = execute_block_iseq(block, args)
+      ret = execute_block(block, args)
       push_stack(ret) unless ret.nil? || ret == Q_UNDEF
     end
 
@@ -470,7 +470,7 @@ module GarnetRuby
         args = [*pargs, *splat.array_value]
       end
       target = control_frame.self_value
-      method = find_super_method(target, control_frame.environment.method_entry.method_name)
+      method = find_super_method(target, control_frame.method_entry.method_name)
       ret = dispatch_method(target, method, args)
       push_stack(ret) unless ret.nil? || ret == Q_UNDEF
     end
@@ -620,6 +620,26 @@ module GarnetRuby
       rb_call(recv, mid, *args)
     end
 
+    def call_super(*args)
+      cfp = current_control_frame
+      recv = cfp.self_value
+      me = cfp.method_entry.method_object
+
+      klass = me.defined_class
+      klass = klass.super_class
+      id = me.called_id
+      me = find_method(recv, id, klass)
+
+      dispatch_method(recv, me, args)
+    end
+
+    def rb_block_call(recv, mid, *args, &block)
+      control_frame = current_control_frame
+      method = find_method(recv, mid)
+      block = BuiltInBlock.new(control_frame.environment, control_frame.self_value, &block)
+      dispatch_method(recv, method, args, block)
+    end
+
     def rb_respond_to(recv, mid)
       # TODO: actually call recv#respond_to?
       method = find_method_unchecked(recv, mid)
@@ -628,7 +648,7 @@ module GarnetRuby
 
     def rb_yield(*args)
       block = current_control_frame.block
-      execute_block_iseq(block, args)
+      execute_block(block, args)
     end
 
     def undefined_method(mid, target)
@@ -655,6 +675,8 @@ module GarnetRuby
       case method
       when BuiltInMethod
         env = Environment.new(target.klass, nil)
+        env.method_entry = env
+        env.method_object = method
         control_frame = ControlFrame.new(target, nil, env, block)
         push_control_frame(control_frame)
         ret = method.block.call(target, *args)
@@ -668,6 +690,17 @@ module GarnetRuby
         raise "CANNOT CALL UNDEFINED METHOD"
       else
         raise "NOT IMPLEMENTED: #{method.class} dispatch"
+      end
+    end
+
+    def execute_block(block, args)
+      case block
+      when BuiltInBlock
+        block.block.call(*args)
+      when IseqBlock
+        execute_block_iseq(block, args)
+      else
+        raise "Unknown Block Type: #{bock.class}"
       end
     end
 
