@@ -176,6 +176,23 @@ module GarnetRuby
         ary_join(v, sep)
       end
 
+      def ary_reverse_bang(ary)
+        ptr = ary.array_value
+        (ary.len / 2).times do |i|
+          ptr[i], ptr[-i - 1] = ptr[-i - 1], ptr[i]
+        end
+        ary
+      end
+
+      def ary_reverse(ary)
+        new_ary = []
+        ary.array_value.reverse_each do |elt|
+          new_ary.push(elt)
+        end
+        
+        RArray.new(ary.klass, [], new_ary)
+      end
+
       def ary_pop(ary)
         ary.array_value.pop
       end
@@ -362,6 +379,8 @@ module GarnetRuby
       rb_define_method(cArray, :pop, &method(:ary_pop))
       rb_define_method(cArray, :empty?, &method(:ary_empty_p))
       rb_define_method(cArray, :join, &method(:ary_join))
+      rb_define_method(cArray, :reverse, &method(:ary_reverse))
+      rb_define_method(cArray, :reverse!, &method(:ary_reverse_bang))
       rb_define_method(cArray, :sort, &method(:ary_sort))
       rb_define_method(cArray, :sort!, &method(:ary_sort_bang))
 
