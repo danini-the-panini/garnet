@@ -91,6 +91,34 @@ module GarnetRuby
         RPrimitive.from(result)
       end
 
+      def str_split(str, *args)
+        limit = nil
+        if args.length == 2
+          limit = num2long(args[1])
+        end
+        
+        pattern = args[0]
+        if pattern.type?(String)
+          pattern = pattern.string_value
+        elsif pattern.type?(Regexp)
+          pattern = pattern.regexp_value
+        else
+          raise TypeError, "(wrong argument type #{pattern.klass} (expected Regexp))"
+        end
+
+        split_args = [pattern, limit].compact
+
+        if rb_block_given?
+          str.string_value.split(*split_args) do |x|
+            rb_yield(RString.from(x))
+          end
+          str
+        else
+          result = str.string_value.split(*split_args)
+          RArray.from(result)
+        end
+      end
+
       def rb_sprintf(str, *args)
         str.format(*args)
       end
@@ -109,6 +137,8 @@ module GarnetRuby
       rb_define_method(cString, :inspect) do |x|
         RString.from(x.string_value.inspect)
       end
+
+      rb_define_method(cString, :split, &method(:str_split))
     end
   end
 end

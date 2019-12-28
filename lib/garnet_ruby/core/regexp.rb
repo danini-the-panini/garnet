@@ -7,6 +7,14 @@ module GarnetRuby
       @regexp_value = value
     end
 
+    def type
+      Regexp
+    end
+
+    def type?(x)
+      x == Regexp
+    end
+
     def operand(s, check)
       if s.is_a?(RSymbol)
         s.sym2str
