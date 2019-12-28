@@ -97,11 +97,13 @@ module GarnetRuby
           limit = num2long(args[1])
         end
         
-        pattern = args[0]
+        pattern = args.empty? ? VM.instance.get_global(:'$;') : args[0]
         if pattern.type?(String)
           pattern = pattern.string_value
         elsif pattern.type?(Regexp)
           pattern = pattern.regexp_value
+        elsif pattern == Q_NIL
+          pattern = ' '
         else
           raise TypeError, "(wrong argument type #{pattern.klass} (expected Regexp))"
         end
