@@ -149,11 +149,15 @@ module GarnetRuby
         ary.array_value.any? { |e| rb_eql(item, e) } ? Q_TRUE : Q_FALSE
       end
 
-      def ary_join(ary, sep)
+      def ary_join(ary, sep = nil)
         return RString.from("") if ary.len.zero?
+
+        sep ||= VM.instance.get_global(:'$,')
 
         if sep != Q_NIL
           sep = sep.str_to_str
+        else
+          sep = RString.from('')
         end
         strings = ary.array_value.map do |v|
           next v if v.type?(String)
