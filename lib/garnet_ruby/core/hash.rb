@@ -85,6 +85,10 @@ module GarnetRuby
         entries.any? { |e| rtest(rb_funcall(e.key, :eql?, k)) } ? Q_TRUE : Q_FALSE
       end
 
+      def hash_size(hash)
+        RPrimitive.from(hash.size)
+      end
+
       def hash_equal(hash1, hash2)
         hash_equal_internal(hash1, hash2, false)
       end
@@ -153,6 +157,8 @@ module GarnetRuby
       rb_define_method(cHash, :hash, &method(:hash_hash))
       rb_define_method(cHash, :eql?, &method(:hash_eql))
       rb_define_method(cHash, :[]=, &method(:hash_aset))
+      rb_define_method(cHash, :size, &method(:hash_size))
+      rb_define_method(cHash, :length, &method(:hash_size))
 
       rb_define_method(cHash, :each_pair, &method(:hash_each_pair))
       rb_define_method(cHash, :each, &method(:hash_each_pair))
