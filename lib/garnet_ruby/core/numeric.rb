@@ -288,6 +288,16 @@ module GarnetRuby
         RPrimitive.from(x.value - y.value)
       end
 
+      def int_mul(x, y)
+        # TODO: type coersion
+        RPrimitive.from(x.value * y.value)
+      end
+
+      def int_div(x, y)
+        # TODO: type coersion
+        RPrimitive.from(x.value / y.value)
+      end
+
       def int_hash(num)
         v = num.value
         RPrimitive.from(v ^ (v >> 32))
@@ -319,6 +329,8 @@ module GarnetRuby
       rb_define_method(cInteger, :'@-', &method(:int_uminus))
       rb_define_method(cInteger, :+, &method(:int_plus))
       rb_define_method(cInteger, :-, &method(:int_minus))
+      rb_define_method(cInteger, :*, &method(:int_mul))
+      rb_define_method(cInteger, :/, &method(:int_div))
     end
   end
 end
