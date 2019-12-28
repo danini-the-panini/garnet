@@ -201,6 +201,10 @@ module GarnetRuby
         ary.array_value.pop
       end
 
+      def ary_length(ary)
+        RPrimitive.from(ary.len)
+      end
+
       def ary_empty_p(ary)
         ary.array_value.empty? ? Q_TRUE : Q_FALSE
       end
@@ -381,6 +385,8 @@ module GarnetRuby
       rb_define_method(cArray, :[], &method(:ary_aref))
       rb_define_method(cArray, :[]=, &method(:ary_aset))
       rb_define_method(cArray, :pop, &method(:ary_pop))
+      rb_define_method(cArray, :length, &method(:ary_length))
+      rb_alias_method(cArray, :size, :length)
       rb_define_method(cArray, :empty?, &method(:ary_empty_p))
       rb_define_method(cArray, :join, &method(:ary_join))
       rb_define_method(cArray, :reverse, &method(:ary_reverse))
