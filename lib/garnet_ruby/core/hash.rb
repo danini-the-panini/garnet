@@ -141,6 +141,14 @@ module GarnetRuby
         hash
       end
 
+      def hash_keys(hash)
+        RArray.from(hash.entries.map(&:key))
+      end
+
+      def hash_values(hash)
+        RArray.from(hash.entries.map(&:value))
+      end
+
       def hash_values_at(hash, *args)
         result = RArray.from([])
 
@@ -156,10 +164,6 @@ module GarnetRuby
           return Q_TRUE if rb_equal(entry.value, value) == Q_TRUE
         end
         Q_FALSE
-      end
-
-      def hash_values(hash)
-        RArray.from(hash.entries.map { |e| e.value })
       end
     end
 
@@ -180,6 +184,8 @@ module GarnetRuby
       rb_define_method(cHash, :each_pair, &method(:hash_each_pair))
       rb_define_method(cHash, :each, &method(:hash_each_pair))
 
+      rb_define_method(cHash, :keys, &method(:hash_keys))
+      rb_define_method(cHash, :values, &method(:hash_values))
       rb_define_method(cHash, :values_at, &method(:hash_values_at))
 
       rb_define_method(cHash, :include?, &method(:hash_has_key))
