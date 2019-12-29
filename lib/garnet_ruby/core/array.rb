@@ -220,6 +220,16 @@ module GarnetRuby
         ary
       end
 
+      def ary_push(ary, item)
+        ary.array_value << item
+        ary
+      end
+
+      def ary_cat(ary, *args)
+        ary.array_value.concat(args)
+        ary
+      end
+
       def ary_pop(ary)
         ary.array_value.pop
       end
@@ -408,6 +418,9 @@ module GarnetRuby
       rb_define_method(cArray, :[], &method(:ary_aref))
       rb_define_method(cArray, :[]=, &method(:ary_aset))
       rb_define_method(cArray, :concat, &method(:ary_concat_multi))
+      rb_define_method(cArray, :<<, &method(:ary_push))
+      rb_define_method(cArray, :push, &method(:ary_cat))
+      rb_alias_method(cArray, :append, :push)
       rb_define_method(cArray, :pop, &method(:ary_pop))
       rb_define_method(cArray, :length, &method(:ary_length))
       rb_alias_method(cArray, :size, :length)
