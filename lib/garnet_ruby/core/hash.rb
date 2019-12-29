@@ -48,6 +48,10 @@ module GarnetRuby
       def hash_code
         Core.rb_funcall(key, :hash).value ^ Core.rb_funcall(value, :hash).value
       end
+
+      def key_eql?(k)
+        Core.rtest(Core.rb_funcall(key, :eql?, k))
+      end
     end
   end
 
@@ -63,7 +67,7 @@ module GarnetRuby
       def hash_aset(hash, k, v)
         kh = rb_funcall(k, :hash).value
         entries = hash.table[kh] ||= []
-        entry = entries.find { |e| rtest(rb_funcall(e.key, :eql?, k)) }
+        entry = entries.find { |e| e.key_eql?(k) }
         if entry
           entry.value = v
         else
@@ -73,7 +77,7 @@ module GarnetRuby
 
       def hash_aref(hash, k)
         kh = rb_funcall(k, :hash).value
-        entry = hash.table[kh]&.find { |e| rtest(rb_funcall(e.key, :eql?, k)) }
+        entry = hash.table[kh]&.find { |e| e.key_eql?(k) }
         entry&.value || Q_NIL
       end
 
@@ -82,7 +86,21 @@ module GarnetRuby
         entries = hash.table[kh]
         return Q_FALSE unless entries
 
-        entries.any? { |e| rtest(rb_funcall(e.key, :eql?, k)) } ? Q_TRUE : Q_FALSE
+        entries.any? { |e| e.key_eql?(k) } ? Q_TRUE : Q_FALSE
+      end
+
+      def hash_delete_entry(hash, key)
+        kh = rb_funcall(key, :hash).value
+        entries = hash.table[kh]
+        return Q_UNDEF if entries.nil?
+
+        entry = entries.find { |e| e.key_eql?(key) }
+        return Q_UNDEF if entry.nil?
+
+        entries.delete(entry)
+        hash.table.delete(kh) if entries.empty?
+
+        entry.value
       end
 
       def hash_size(hash)
@@ -159,6 +177,16 @@ module GarnetRuby
         result
       end
 
+      def hash_shift(hash)
+        # TODO: default value
+        return Q_NIL if hash.size.zero?
+
+        entry = hash.entries.first
+        hash_delete_entry(hash, entry.key)
+
+        RArray.from([entry.key, entry.value])
+      end
+
       def hash_has_value(hash, value)
         hash.entries.each do |entry|
           return Q_TRUE if rb_equal(entry.value, value) == Q_TRUE
@@ -187,6 +215,8 @@ module GarnetRuby
       rb_define_method(cHash, :keys, &method(:hash_keys))
       rb_define_method(cHash, :values, &method(:hash_values))
       rb_define_method(cHash, :values_at, &method(:hash_values_at))
+
+      rb_define_method(cHash, :shift, &method(:hash_shift))
 
       rb_define_method(cHash, :include?, &method(:hash_has_key))
       rb_define_method(cHash, :member?, &method(:hash_has_key))
