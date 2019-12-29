@@ -278,6 +278,31 @@ module GarnetRuby
         ary
       end
 
+      def ary_collect(ary)
+        # TODO: return enumerator
+        collect = RArray.from([])
+        i = 0
+        VM.instance.while_current_control_frame do
+          break if i >= ary.len
+
+          ary_push(collect, rb_yield(ary.array_value[i]))
+          i += 1
+        end
+        collect
+      end
+
+      def ary_collect_bang(ary)
+        # TODO: return enumerator
+        i = 0
+        VM.instance.while_current_control_frame do
+          break if i >= ary.len
+
+          ary.array_value[i] = rb_yield(ary.array_value[i])
+          i += 1
+        end
+        ary
+      end
+
       def ary_plus(x, y)
         RArray.from(x.array_value + y.to_array_type.array_value)
       end
@@ -449,6 +474,10 @@ module GarnetRuby
       rb_define_method(cArray, :reverse!, &method(:ary_reverse_bang))
       rb_define_method(cArray, :sort, &method(:ary_sort))
       rb_define_method(cArray, :sort!, &method(:ary_sort_bang))
+      rb_define_method(cArray, :collect, &method(:ary_collect))
+      rb_define_method(cArray, :collect!, &method(:ary_collect_bang))
+      rb_define_method(cArray, :map, &method(:ary_collect))
+      rb_define_method(cArray, :map!, &method(:ary_collect_bang))
 
       rb_define_method(cArray, :+, &method(:ary_plus))
       rb_define_method(cArray, :*, &method(:ary_times))
