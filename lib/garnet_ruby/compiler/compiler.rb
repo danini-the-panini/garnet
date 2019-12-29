@@ -868,6 +868,7 @@ module GarnetRuby
       argc, flags = compile_call_args(node)
       add_instruction(:setn, argc + 1)
       add_instruction(:send_without_block, CallInfo.new(node[2], argc, flags))
+      add_instruction(:pop)
     end
 
     def compile_op_asgn_or(node)

@@ -9,6 +9,15 @@ module GarnetRuby
       @is_lambda = is_lambda
     end
 
+    def type
+      Proc
+    end
+
+    def type?(x)
+      x == Proc
+    end
+
+
     def lambda?
       @is_lambda
     end

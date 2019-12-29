@@ -21,7 +21,8 @@ module GarnetRuby
     end
 
     def to_s
-      "CFP(self=#{self_value}, pc=#{pc}, iseq=#{iseq}, stack=#{stack})"
+      inmethod = method_entry ? " in method #{method_entry.method_name}" : ""
+      "CFP(self=#{self_value}, pc=#{pc}, iseq=#{iseq}, stack=#{stack})#{inmethod}"
     end
   end
 end

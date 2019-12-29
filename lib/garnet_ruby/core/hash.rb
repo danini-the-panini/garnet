@@ -40,6 +40,16 @@ module GarnetRuby
       entries.length
     end
 
+    def default=(ifnone)
+      @ifnone = ifnone
+      @proc_default = false
+    end
+
+    def default_proc=(ifnone)
+      @ifnone = ifnone
+      @proc_default = true
+    end
+
     class Entry
       attr_reader :key
       attr_accessor :value
@@ -65,6 +75,16 @@ module GarnetRuby
         RHash.new(klass, [])
       end
 
+      def hash_initialize(hash, *args)
+        if rb_block_given?
+          hash.ifnone = rb_block_proc
+          hash.proc_default = true
+        else
+          hash.ifnone = args.length == 0 ? Q_NIL : args.first
+          hash.proc_default = false
+        end
+      end
+
       def hash_inspect(hash)
         strings = hash.entries.map do |e|
           [rb_funcall(e.key, :inspect).string_value, rb_funcall(e.value, :inspect).string_value]
@@ -86,7 +106,7 @@ module GarnetRuby
       def hash_aref(hash, k)
         kh = rb_funcall(k, :hash).value
         entry = hash.table[kh]&.find { |e| e.key_eql?(k) }
-        entry&.value || hash_default_value(hash)
+        entry&.value || hash_default_value(hash, k)
       end
 
       def hash_default_value(hash, key = Q_UNDEF)
@@ -101,9 +121,27 @@ module GarnetRuby
       end
 
       def hash_set_default(hash, ifnone)
-        hash.proc_default = false
-        hash.ifnone = ifnone
+        hash.default = ifnone
         ifnone
+      end
+
+      def hash_default_proc(hash)
+        return hash.ifnone if hash.proc_default
+        Q_NIL
+      end
+
+      def hash_set_default_proc(hash, prc)
+        if prc == Q_NIL
+          hash_set_default(hash, prc)
+          return prc
+        end
+        b = prc.rb_check_convert_type_with_id(Proc, "Proc", :to_proc)
+        if b == Q_NIL || !b.type?(Proc)
+          raise TypeError, "wrong default_proc type #{prc.klass} (expected Proc)"
+        end
+        prc = b
+        hash.default_proc = prc
+        prc
       end
 
       def hash_has_key(hash, k)
@@ -225,6 +263,7 @@ module GarnetRuby
       cHash.include_module(mEnumerable)
 
       rb_define_alloc_func(cHash, &method(:empty_hash_alloc))
+      rb_define_method(cHash, :initialize, &method(:hash_initialize))
 
       rb_define_method(cHash, :inspect, &method(:hash_inspect))
       rb_alias_method(cHash, :to_s, :inspect)
@@ -236,6 +275,8 @@ module GarnetRuby
       rb_define_method(cHash, :[]=, &method(:hash_aset))
       rb_define_method(cHash, :default, &method(:hash_default_value))
       rb_define_method(cHash, :default=, &method(:hash_set_default))
+      rb_define_method(cHash, :default_proc, &method(:hash_default_proc))
+      rb_define_method(cHash, :default_proc=, &method(:hash_set_default_proc))
       rb_define_method(cHash, :size, &method(:hash_size))
       rb_define_method(cHash, :length, &method(:hash_size))
 
