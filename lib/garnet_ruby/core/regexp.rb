@@ -95,6 +95,14 @@ module GarnetRuby
 
   module Core
     class << self
+      def regexp_alloc(klass)
+        RRegexp.new(klass, [], nil)
+      end
+
+      def match_alloc(klass)
+        RMatch.new(klass, [], nil)
+      end
+
       def backref_set(value)
         VM.instance.special_variables[:backref] = value
       end
@@ -137,11 +145,13 @@ module GarnetRuby
 
     def self.init_regexp
       @cRegexp = rb_define_class(:Regexp, cObject)
+      rb_define_alloc_func(cRegexp, &method(:regexp_alloc))
 
       rb_define_method(cRegexp, :=~) { |re, str| re.match(str) }
       rb_define_method(cRegexp, :===) { |re, str| rtest(re.match(str)) ? Q_TRUE : Q_FALSE }
 
       @cMatch = rb_define_class(:MatchData, cObject)
+      rb_define_alloc_func(cMatch, &method(:match_alloc))
     end
   end
 end

@@ -57,6 +57,10 @@ module GarnetRuby
 
   module Core
     class << self
+      def empty_hash_alloc(klass)
+        RHash.new(klass, [])
+      end
+
       def hash_inspect(hash)
         strings = hash.entries.map do |e|
           [rb_funcall(e.key, :inspect).string_value, rb_funcall(e.value, :inspect).string_value]
@@ -197,6 +201,10 @@ module GarnetRuby
 
     def self.init_hash
       @cHash = rb_define_class(:Hash)
+
+      cHash.include_module(mEnumerable)
+
+      rb_define_alloc_func(cHash, &method(:empty_hash_alloc))
 
       rb_define_method(cHash, :inspect, &method(:hash_inspect))
       rb_alias_method(cHash, :to_s, :inspect)

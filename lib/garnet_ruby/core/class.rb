@@ -1,9 +1,11 @@
 module GarnetRuby
   class RClass < RObject
     attr_reader :method_table, :super_class, :const_table
-    attr_accessor :parent_subclasses, :subclasses
+    attr_accessor :parent_subclasses, :subclasses, :allocator
 
     SubclassEntry = Struct.new(:klass, :next_entry)
+
+    UNDEF_ALLOC_FUNC = -1
 
     def initialize(klass, flags)
       super
@@ -13,7 +15,23 @@ module GarnetRuby
     end
 
     def alloc
-      RObject.new(self, [])
+      alloc_func.call(self)
+    end
+
+    def alloc_func
+      return nil if @allocator == UNDEF_ALLOC_FUNC
+      return nil if super_class.nil?
+      return super_class.alloc_func if @allocator.nil?
+
+      @allocator
+    end
+
+    def define_alloc_func(func)
+      @allocator = func
+    end
+
+    def undef_alloc_func
+      @allocator = UNDEF_ALLOC_FUNC
     end
 
     def rb_const_defined?(name)

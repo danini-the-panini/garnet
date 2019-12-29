@@ -32,6 +32,10 @@ module GarnetRuby
 
   module Core
     class << self
+      def empty_ary_alloc(klass)
+        RArray.new(klass, [], [])
+      end
+
       def ary_inspect(ary)
         strings = ary.array_value.map do |item|
           rb_funcall(item, :to_s).string_value
@@ -409,6 +413,9 @@ module GarnetRuby
 
     def self.init_array
       @cArray = rb_define_class(:Array)
+      cArray.include_module(mEnumerable)
+
+      rb_define_alloc_func(cArray, &method(:empty_ary_alloc))
 
       rb_define_method(cArray, :inspect, &method(:ary_inspect))
       rb_alias_method(cArray, :to_s, :inspect)

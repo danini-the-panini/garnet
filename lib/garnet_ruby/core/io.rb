@@ -76,6 +76,10 @@ module GarnetRuby
 
   module Core
     class << self
+      def io_alloc(klass)
+        RIO.new(klass, [], nil)
+      end
+
       def rb_printf(*args)
         return Q_NIL if args.length.zero?
 
@@ -109,6 +113,8 @@ module GarnetRuby
       end
 
       @cIO = rb_define_class(:IO, cObject)
+
+      rb_define_alloc_func(cIO, &method(:io_alloc))
 
       rb_define_global_variable(:'$/', RString.from($/))
 

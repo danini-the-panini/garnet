@@ -54,6 +54,10 @@ module GarnetRuby
 
   module Core
     class << self
+      def empty_str_alloc(klass)
+        RString.new(klass, [], "")
+      end
+
       def str_cmp(str1, str2)
         str1.string_value <=> str2.string_value
       end
@@ -161,6 +165,7 @@ module GarnetRuby
 
     def self.init_string
       @cString = rb_define_class(:String)
+      rb_define_alloc_func(cString, &method(:empty_str_alloc))
 
       rb_define_method(cString, :<=>, &method(:str_cmp_m))
       rb_define_method(cString, :==, &method(:str_equal))

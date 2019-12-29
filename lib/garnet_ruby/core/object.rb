@@ -18,6 +18,18 @@ module GarnetRuby
 
   module Core
     class << self
+      def rb_class_allocate_instance(klass)
+        RObject.new(klass, [])
+      end
+
+      def rb_module_s_alloc(_)
+        RClass.new(cModule, [:MODULE])
+      end
+
+      def rb_class_s_alloc(_)
+        RClass.new(cClass, [:CLASS])
+      end
+
       def obj_is_kind_of(obj, c)
         cl = obj.klass
 
@@ -75,7 +87,8 @@ module GarnetRuby
     end
 
     def self.init_object
-      rb_define_private_method(cBasicObject, :initialize) { nil }
+      rb_define_private_method(cBasicObject, :initialize) { Q_NIL }
+      rb_define_alloc_func(cBasicObject, &method(:rb_class_allocate_instance))
       rb_define_method(cBasicObject, :==, &method(:obj_equal))
       rb_define_method(cBasicObject, :'!', &method(:obj_not))
       rb_define_method(cBasicObject, :'!=', &method(:obj_not_equal))
@@ -105,11 +118,14 @@ module GarnetRuby
         obj_is_kind_of(arg, mod)
       end
 
+      rb_define_alloc_func(cModule, &method(:rb_module_s_alloc))
+
       rb_define_method(cClass, :new) do |klass, *args|
         obj = klass.alloc
         rb_funcall(obj, :initialize, *args)
         obj
       end
+      rb_define_alloc_func(cClass, &method(:rb_class_s_alloc))
 
       @cTrueClass = rb_define_class(:TrueClass)
       ::GarnetRuby.const_set(:Q_TRUE, RPrimitive.new(@cTrueClass, [], true))

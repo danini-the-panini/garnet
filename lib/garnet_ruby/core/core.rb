@@ -205,6 +205,10 @@ module GarnetRuby
         rb_add_method_cfunc(klass, name, :PUBLIC, &block)
       end
 
+      def rb_define_alloc_func(klass, &func)
+        klass.allocator = func
+      end
+
       def rb_alias_method(klass, alias_name, orig_name)
         orig_me = search_method(klass, orig_name)
         if !orig_me || orig_me.is_a?(UndefinedMethod)
