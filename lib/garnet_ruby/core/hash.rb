@@ -141,6 +141,16 @@ module GarnetRuby
         hash
       end
 
+      def hash_values_at(hash, *args)
+        result = RArray.from([])
+
+        args.each do |arg|
+          ary_push(result, hash_aref(hash, arg))
+        end
+
+        result
+      end
+
       def hash_has_value(hash, value)
         hash.entries.each do |entry|
           return Q_TRUE if rb_equal(entry.value, value) == Q_TRUE
@@ -169,6 +179,8 @@ module GarnetRuby
 
       rb_define_method(cHash, :each_pair, &method(:hash_each_pair))
       rb_define_method(cHash, :each, &method(:hash_each_pair))
+
+      rb_define_method(cHash, :values_at, &method(:hash_values_at))
 
       rb_define_method(cHash, :include?, &method(:hash_has_key))
       rb_define_method(cHash, :member?, &method(:hash_has_key))
