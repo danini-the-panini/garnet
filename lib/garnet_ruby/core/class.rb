@@ -19,10 +19,9 @@ module GarnetRuby
     end
 
     def alloc_func
+      return super_class&.alloc_func if @allocator.nil?
       return nil if @allocator == UNDEF_ALLOC_FUNC
-      return nil if super_class.nil?
-      return super_class.alloc_func if @allocator.nil?
-
+      
       @allocator
     end
 
