@@ -201,6 +201,11 @@ module GarnetRuby
         klass
       end
 
+      def method_entry_create(name, klass, visibility, definition)
+        flags = ruby_running ? [] : [:basic]
+        MethodEntry.new(name, klass, visibility, definition, flags)
+      end
+
       def rb_define_method(klass, name, &block)
         rb_add_method_cfunc(klass, name, :PUBLIC, &block)
       end
@@ -211,11 +216,12 @@ module GarnetRuby
 
       def rb_alias_method(klass, alias_name, orig_name)
         orig_me = search_method(klass, orig_name)
-        if !orig_me || orig_me.is_a?(UndefinedMethod)
+        if !orig_me || orig_me.definition.is_a?(UndefinedMethodDef)
           raise "undefined method #{orig_name} for #{klass}"
         end
 
-        klass.method_table[alias_name] = AliasMethod.new(alias_name, klass, :PUBLIC, orig_me)
+        definition = AliasMethodDef.new(orig_me)
+        klass.method_table[alias_name] = method_entry_create(alias_name, klass, :PUBLIC, definition)
       end
 
       def search_method(klass, name)
@@ -226,6 +232,10 @@ module GarnetRuby
           klass = klass.super_class
           return nil if klass.nil?
         end
+      end
+
+      def ruby_running
+        VM.instance&.running
       end
 
       def rb_define_protected_method(klass, name, &block)
@@ -251,7 +261,8 @@ module GarnetRuby
         # TODO: check re-definition
 
         # create method entry
-        me = BuiltInMethod.new(name, klass, visibility, &block)
+        definition = BuiltInMethodDef.new(&block)
+        me = method_entry_create(name, klass, visibility, definition)
 
         # TODO: check mid
 
@@ -310,7 +321,7 @@ module GarnetRuby
 
       def rb_respond_to?(value, mid)
         method = find_method(value.klass, mid)
-        return false if method.nil? || method.is_a?(UndefinedMethod)
+        return false if method.nil? || method.definition.is_a?(UndefinedMethodDef)
         true
       end
 
@@ -332,6 +343,11 @@ module GarnetRuby
 
       def rb_call_super(*args)
         VM.instance.call_super(*args)
+      end
+
+      def rb_method_basic_definition?(klass, mid)
+        me = find_method(klass, mid)
+        me.basic?
       end
 
       def rtest(value)

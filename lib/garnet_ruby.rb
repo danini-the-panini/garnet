@@ -25,6 +25,7 @@ module GarnetRuby
     vm = VM.new
     Core.inject_env(vm)
     Core.inject_global_variables(vm)
+    vm.running = true
     vm.execute_main(iseq)
   end
 end

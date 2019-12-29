@@ -15,8 +15,11 @@ module GarnetRuby
     end
 
     attr_reader :special_variables
+    attr_accessor :running
 
     def initialize
+      $indent = '' if __grb_debug__?
+      @running = false
       @control_frames = []
       @global_variables = {}
       @special_variables = {
@@ -29,8 +32,6 @@ module GarnetRuby
     end
 
     def execute_main(iseq)
-      $indent = '';
-
       main = RObject.new(Core.cObject, [])
       control_frame = ControlFrame.new(main, iseq, Environment.new(Core.cObject, nil))
       @control_frames.push(control_frame)
@@ -55,8 +56,8 @@ module GarnetRuby
     end
 
     def execute_method_iseq(target, method, args, block=nil)
-      iseq = method.iseq
-      env = Environment.new(target.klass, method.environment, {})
+      iseq = method.definition.iseq
+      env = Environment.new(target.klass, method.definition.environment, {})
       env.method_entry = env
       env.method_object = method
       control_frame = ControlFrame.new(target, iseq, env, block)
@@ -280,7 +281,8 @@ module GarnetRuby
       mid = mid_sym.symbol_value
 
       klass = control_frame.environment.lexical_scope.klass
-      method = ISeqMethod.new(mid, klass, :public, method_iseq, control_frame.environment)
+      definition = ISeqMethodDef.new(method_iseq, control_frame.environment)
+      method = Core.method_entry_create(mid, klass, :public, definition)
       klass.method_table[mid] = method
 
       push_stack(mid_sym)
@@ -293,7 +295,8 @@ module GarnetRuby
       target = pop_stack
       singleton = Core.singleton_class_of(target)
 
-      method = ISeqMethod.new(mid, singleton, :public, method_iseq, control_frame.environment)
+      definition = ISeqMethodDef.new(method_iseq, control_frame.environment)
+      method = Core.method_entry_create(mid, singleton, :public, definition)
       singleton.method_table[mid] = method
 
       push_stack(mid_sym)
@@ -306,7 +309,8 @@ module GarnetRuby
       klass = control_frame.environment.lexical_scope.klass
       original_method = find_method(klass, old_mid_sym.symbol_value, klass)
 
-      method = AliasMethod.new(mid, klass, :public, original_method)
+      definition = AliasMethodDef.new(original_method)
+      method = Core.method_entry_create(mid, klass, :public, definition)
       klass.method_table[mid] = method
 
       push_stack(new_mid_sym)
@@ -317,7 +321,8 @@ module GarnetRuby
       mid = mid_sym.symbol_value
 
       klass = control_frame.environment.lexical_scope.klass
-      method = UndefinedMethod.new(mid, klass, :public)
+      definition = UndefinedMethodDef.new
+      method = Core.method_entry_create(mid, klass, :public, definition)
       klass.method_table[mid] = method
 
       push_stack(mid_sym)
@@ -643,7 +648,7 @@ module GarnetRuby
     def rb_respond_to(recv, mid)
       # TODO: actually call recv#respond_to?
       method = find_method_unchecked(recv, mid)
-      method && !method.is_a?(UndefinedMethod)
+      method && !method.definition.is_a?(UndefinedMethodDef)
     end
 
     def rb_yield(*args)
@@ -663,7 +668,7 @@ module GarnetRuby
 
     def find_method(target, mid, klass = target.klass)
       method = find_method_unchecked(target, mid, klass)
-      undefined_method(mid, target) if method.nil? || method.is_a?(UndefinedMethod)
+      undefined_method(mid, target) if method.nil? || method.definition.is_a?(UndefinedMethodDef)
       method
     end
 
@@ -672,21 +677,21 @@ module GarnetRuby
     end
 
     def dispatch_method(target, method, args, block=nil)
-      case method
-      when BuiltInMethod
+      case method.definition
+      when BuiltInMethodDef
         env = Environment.new(target.klass, nil)
         env.method_entry = env
         env.method_object = method
         control_frame = ControlFrame.new(target, nil, env, block)
         push_control_frame(control_frame)
-        ret = method.block.call(target, *args)
+        ret = method.definition.block.call(target, *args)
         pop_control_frame if current_control_frame == control_frame
         ret
-      when ISeqMethod
+      when ISeqMethodDef
         execute_method_iseq(target, method, args, block)
-      when AliasMethod
-        dispatch_method(target, method.original_method, args, block)
-      when UndefinedMethod
+      when AliasMethodDef
+        dispatch_method(target, method.definition.original_method, args, block)
+      when UndefinedMethodDef
         raise "CANNOT CALL UNDEFINED METHOD"
       else
         raise "NOT IMPLEMENTED: #{method.class} dispatch"

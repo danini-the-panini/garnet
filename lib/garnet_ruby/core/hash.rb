@@ -2,9 +2,13 @@ module GarnetRuby
   class RHash < RObject
     attr_reader :table
 
+    attr_accessor :ifnone, :proc_default
+
     def initialize(klass, flags)
       super(klass, flags)
       @table = {}
+      @ifnone = Q_NIL
+      @proc_default = false
     end
 
     def type
@@ -82,7 +86,24 @@ module GarnetRuby
       def hash_aref(hash, k)
         kh = rb_funcall(k, :hash).value
         entry = hash.table[kh]&.find { |e| e.key_eql?(k) }
-        entry&.value || Q_NIL
+        entry&.value || hash_default_value(hash)
+      end
+
+      def hash_default_value(hash, key = Q_UNDEF)
+        if rb_method_basic_definition?(hash.klass, :default)
+          ifnone = hash.ifnone
+          return ifnone unless hash.proc_default
+          return Q_NIL if key == Q_UNDEF
+          rb_funcall(ifnone, :yield, hash, key)
+        else
+          rb_funcall(hash, :default, key)
+        end
+      end
+
+      def hash_set_default(hash, ifnone)
+        hash.proc_default = false
+        hash.ifnone = ifnone
+        ifnone
       end
 
       def hash_has_key(hash, k)
@@ -182,8 +203,7 @@ module GarnetRuby
       end
 
       def hash_shift(hash)
-        # TODO: default value
-        return Q_NIL if hash.size.zero?
+        return hash_default_value(hash) if hash.size.zero?
 
         entry = hash.entries.first
         hash_delete_entry(hash, entry.key)
@@ -214,6 +234,8 @@ module GarnetRuby
       rb_define_method(cHash, :hash, &method(:hash_hash))
       rb_define_method(cHash, :eql?, &method(:hash_eql))
       rb_define_method(cHash, :[]=, &method(:hash_aset))
+      rb_define_method(cHash, :default, &method(:hash_default_value))
+      rb_define_method(cHash, :default=, &method(:hash_set_default))
       rb_define_method(cHash, :size, &method(:hash_size))
       rb_define_method(cHash, :length, &method(:hash_size))
 
