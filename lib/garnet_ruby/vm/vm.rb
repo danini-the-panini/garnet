@@ -31,6 +31,10 @@ module GarnetRuby
       @control_frames.last
     end
 
+    def previous_control_frame
+      @control_frames[-2]
+    end
+
     def execute_main(iseq)
       main = RObject.new(Core.cObject, [])
       control_frame = ControlFrame.new(main, iseq, Environment.new(Core.cObject, nil))
