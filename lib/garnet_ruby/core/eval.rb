@@ -18,7 +18,10 @@ module GarnetRuby
       end
 
       def rb_f_block_given(_)
-        return Q_FALSE if VM.instance.previous_control_frame.block.nil?
+        vm = VM.instance
+        if vm.caller_environment(vm.previous_control_frame).block.nil?
+          return Q_FALSE
+        end
         Q_TRUE
       end
     end

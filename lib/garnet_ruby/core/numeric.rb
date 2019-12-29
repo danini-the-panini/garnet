@@ -298,6 +298,77 @@ module GarnetRuby
         RPrimitive.from(x.value / y.value)
       end
 
+      def int_upto(from, to)
+        # TODO: return enumerator if no block given
+        if fixnum?(from) && fixnum?(to)
+          i = from.value
+          VM.instance.while_current_control_frame do
+            break unless i <= to.value
+            rb_yield(RPrimitive.from(i))
+            i += 1
+          end
+        else
+          i = from
+          c = nil
+
+          VM.instance.while_current_control_frame do
+            c = rb_funcall(i, :>, to)
+            break if rtest(c)
+            rb_yield(i)
+            i = rb_funcall(i, :+, RPrimitive.from(1))
+          end
+          rb_cmperr(i, to) if c == Q_NIL
+        end
+        from
+      end
+
+      def int_downto(from, to)
+        # TODO: return enumerator if no block given
+        if fixnum?(from) && fixnum?(to)
+          i = from.value
+          
+          VM.instance.while_current_control_frame do
+            break unless i >= to.value
+            rb_yield(RPrimitive.from(i))
+            i -= 1
+          end
+        else
+          i = from
+          c = nil
+
+          VM.instance.while_current_control_frame do
+            c = rb_funcall(i, :<, to)
+            break if rtest(c)
+            rb_yield(i)
+            i = rb_funcall(i, :-, RPrimitive.from(1))
+          end
+          rb_cmperr(i, to) if c == Q_NIL
+        end
+        from
+      end
+
+      def int_dotimes(num)
+        # TODO: return enumerator if no block given
+
+        if fixnum?(num)
+          i = 0
+          VM.instance.while_current_control_frame do
+            break unless i < num.value
+            rb_yield(RPrimitive.from(i))
+            i += 1
+          end
+        else
+          i = RPrimitive.from(0)
+
+          VM.instance.while_current_control_frame do
+            break unless rtest(rb_funcall(i, :<, num))
+            rb_yield(i)
+            i = rb_funcall(i, :+, RPrimitive.from(1))
+          end
+        end
+        num
+      end
+
       def int_hash(num)
         v = num.value
         RPrimitive.from(v ^ (v >> 32))
@@ -316,6 +387,9 @@ module GarnetRuby
       rb_alias_method(cInteger, :inspect, :to_s)
       rb_define_method(cInteger, :odd?, &method(:int_odd_p))
       rb_define_method(cInteger, :even?, &method(:int_even_p))
+      rb_define_method(cInteger, :upto, &method(:int_upto))
+      rb_define_method(cInteger, :downto, &method(:int_downto))
+      rb_define_method(cInteger, :times, &method(:int_dotimes))
       rb_define_method(cInteger, :<=>, &method(:int_cmp))
 
       rb_define_method(cInteger, :===, &method(:int_equal))

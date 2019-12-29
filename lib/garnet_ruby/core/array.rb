@@ -240,8 +240,11 @@ module GarnetRuby
 
       def ary_each(ary)
         # TODO: return enumerator unless block_given?
-        ary.array_value.each do |elt|
-          rb_yield(elt)
+        i = 0
+        VM.instance.while_current_control_frame do
+          break if i >= ary.len
+          rb_yield(ary.array_value[i])
+          i += 1
         end
         ary
       end

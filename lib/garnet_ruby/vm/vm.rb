@@ -35,6 +35,12 @@ module GarnetRuby
       @control_frames[-2]
     end
 
+    def caller_environment(cfp = current_control_frame)
+      env = cfp.environment
+      env = env.previous until env.previous.nil?
+      env
+    end
+
     def execute_main(iseq)
       main = RObject.new(Core.cObject, [])
       control_frame = ControlFrame.new(main, iseq, Environment.new(Core.cObject, nil))
@@ -78,7 +84,7 @@ module GarnetRuby
 
       iseq = block.iseq
       env = Environment.new(block.self_value.klass, block.environment, {}, block.environment, prev_control_frame.environment.method_entry)
-      control_frame = ControlFrame.new(block.self_value, iseq, env, prev_control_frame.block)
+      control_frame = ControlFrame.new(block.self_value, iseq, env)
       control_frame.pc = populate_locals(env, iseq, args)
       push_control_frame(control_frame)
 
@@ -466,7 +472,7 @@ module GarnetRuby
         *pargs, splat = args
         args = [*pargs, *splat.array_value]
       end
-      block = control_frame.block
+      block = caller_environment.block
       ret = execute_block(block, args)
       push_stack(ret) unless ret.nil? || ret == Q_UNDEF
     end
@@ -656,7 +662,7 @@ module GarnetRuby
     end
 
     def rb_yield(*args)
-      block = current_control_frame.block
+      block = caller_environment.block
       execute_block(block, args)
     end
 
@@ -709,7 +715,7 @@ module GarnetRuby
       when IseqBlock
         execute_block_iseq(block, args)
       else
-        raise "Unknown Block Type: #{bock.class}"
+        raise "Unknown Block Type: #{block.class}"
       end
     end
 
