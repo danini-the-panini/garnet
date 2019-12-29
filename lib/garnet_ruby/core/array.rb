@@ -303,6 +303,25 @@ module GarnetRuby
         ary
       end
 
+      def ary_cmp(ary1, ary2)
+        ary2 = ary2.check_array_type
+        return Q_NIL if ary2 == Q_NIL
+        return RPrimitive.from(0) if ary1 == ary2
+
+        len = ary1.len
+        len = ary2.len if len > ary2.len
+        len.times do |i|
+          e1 = ary1.array_value[i]
+          e2 = ary2.array_value[i]
+          v = rb_funcall(e1, :<=>, e2)
+          return v unless v == RPrimitive.from(0)
+        end
+        len = ary1.len - ary2.len
+        return RPrimitive.from(0) if len.zero?
+        return RPrimitive.from(1) if len > 0
+        RPrimitive.from(-1)
+      end
+
       def ary_plus(x, y)
         RArray.from(x.array_value + y.to_array_type.array_value)
       end
@@ -478,6 +497,7 @@ module GarnetRuby
       rb_define_method(cArray, :collect!, &method(:ary_collect_bang))
       rb_define_method(cArray, :map, &method(:ary_collect))
       rb_define_method(cArray, :map!, &method(:ary_collect_bang))
+      rb_define_method(cArray, :<=>, &method(:ary_cmp))
 
       rb_define_method(cArray, :+, &method(:ary_plus))
       rb_define_method(cArray, :*, &method(:ary_times))
