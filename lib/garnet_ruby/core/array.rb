@@ -238,6 +238,14 @@ module GarnetRuby
         ary.array_value.pop
       end
 
+      def ary_each(ary)
+        # TODO: return enumerator unless block_given?
+        ary.array_value.each do |elt|
+          rb_yield(elt)
+        end
+        ary
+      end
+
       def ary_length(ary)
         RPrimitive.from(ary.len)
       end
@@ -429,6 +437,7 @@ module GarnetRuby
       rb_define_method(cArray, :push, &method(:ary_cat))
       rb_alias_method(cArray, :append, :push)
       rb_define_method(cArray, :pop, &method(:ary_pop))
+      rb_define_method(cArray, :each, &method(:ary_each))
       rb_define_method(cArray, :length, &method(:ary_length))
       rb_alias_method(cArray, :size, :length)
       rb_define_method(cArray, :empty?, &method(:ary_empty_p))
