@@ -90,6 +90,7 @@ module GarnetRuby
       rb_define_private_method(cBasicObject, :initialize) { Q_NIL }
       rb_define_alloc_func(cBasicObject, &method(:rb_class_allocate_instance))
       rb_define_method(cBasicObject, :==, &method(:obj_equal))
+      rb_define_method(cBasicObject, :equal?, &method(:obj_equal))
       rb_define_method(cBasicObject, :'!', &method(:obj_not))
       rb_define_method(cBasicObject, :'!=', &method(:obj_not_equal))
 
