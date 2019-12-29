@@ -709,6 +709,10 @@ module GarnetRuby
     end
 
     def execute_block(block, args)
+      if args.length == 1 && args.first.type?(Array) && block.arity > 1
+        args = args[0].array_value
+      end
+
       case block
       when BuiltInBlock
         block.block.call(*args)
