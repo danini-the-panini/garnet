@@ -79,12 +79,12 @@ module GarnetRuby
       control_frame.stack.pop
     end
 
-    def execute_block_iseq(block, args)
+    def execute_block_iseq(block, args, block_block=nil)
       prev_control_frame = current_control_frame
 
       iseq = block.iseq
       env = Environment.new(block.self_value.klass, block.environment, {}, block.environment, prev_control_frame.environment.method_entry)
-      control_frame = ControlFrame.new(block.self_value, iseq, env)
+      control_frame = ControlFrame.new(block.self_value, iseq, env, block_block)
       control_frame.pc = populate_locals(env, iseq, args)
       push_control_frame(control_frame)
 
@@ -713,16 +713,22 @@ module GarnetRuby
       end
     end
 
-    def execute_block(block, args)
+    def execute_block(block, args, block_block = nil)
       if args.length == 1 && args.first.type?(Array) && block.arity > 1
         args = args[0].array_value
       end
 
       case block
       when BuiltInBlock
-        block.block.call(*args)
+        if block_block
+          block.block.call(*args) do |*blargs|
+            execute_block(block_block, *blargs)
+          end
+        else
+          block.block.call(*args)
+        end
       when IseqBlock
-        execute_block_iseq(block, args)
+        execute_block_iseq(block, args, block_block)
       else
         raise "Unknown Block Type: #{block.class}"
       end

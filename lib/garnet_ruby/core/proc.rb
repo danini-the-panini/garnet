@@ -1,13 +1,14 @@
 module GarnetRuby
   class RProc < RObject
-    attr_accessor :block, :is_from_method
+    attr_accessor :block
+    attr_reader :is_lambda, :is_from_method
 
-    def initialize(klass, flags, block, is_lambda = false)
+    def initialize(klass, flags, block, is_lambda = false, is_from_method = false)
       super(klass, flags)
       @block = block
       block.proc = self
       @is_lambda = is_lambda
-      @is_from_method = false
+      @is_from_method = is_from_method
     end
 
     def type
@@ -53,7 +54,7 @@ module GarnetRuby
       end
 
       def proc_call(proc, *args)
-        VM.instance.execute_block(proc.block, args)
+        VM.instance.execute_block(proc.block, args, VM.instance.current_control_frame.block)
       end
 
       def f_proc(_)
@@ -62,6 +63,15 @@ module GarnetRuby
 
       def f_lambda(_)
         new_proc(true)
+      end
+
+      def proc_clone(prc)
+        # TODO: clone setup (I think it copies singleton classes)
+        proc_dup(prc)
+      end
+
+      def proc_dup(prc)
+        RProc.new(cProc, [], prc.block, prc.is_lambda, prc.is_from_method)
       end
 
       def method_call(m, *args)
@@ -77,8 +87,7 @@ module GarnetRuby
         block = BuiltInBlock.new(env, m) do |*args|
           method_call(m, *args)
         end
-        prc = RProc.new(cProc, [], block, true)
-        prc.is_from_method = true
+        prc = RProc.new(cProc, [], block, true, true)
         prc
       end
     end
@@ -94,6 +103,8 @@ module GarnetRuby
       rb_define_method(cProc, :yield, &method(:proc_call))
 
       rb_define_method(cProc, :to_proc) { |x| x }
+      rb_define_method(cProc, :clone, &method(:proc_clone))
+      rb_define_method(cProc, :dup, &method(:proc_dup))
 
       # utility functions
       rb_define_global_function(:proc, &method(:f_proc))
