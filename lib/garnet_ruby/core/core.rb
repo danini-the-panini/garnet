@@ -104,6 +104,7 @@ module GarnetRuby
         cBasicObject.klass = cClass
 
         init_object
+        init_vm_eval
         init_eval
         init_exception
         init_symbol
