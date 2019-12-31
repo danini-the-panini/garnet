@@ -21,7 +21,7 @@ module GarnetRuby
       elsif s.is_a?(RString)
         s
       else
-        # TODO
+        check ? s.str_to_str : s.check_string_type
       end
     end
 
@@ -141,6 +141,28 @@ module GarnetRuby
         match.check!
         match.nth_match(nth)
       end
+
+      def reg_match(re, *args)
+        str = args[0]
+
+        if args.length == 2
+          pos = num2long(args[1])
+        else
+          pos = 0
+        end
+
+        m = re.regexp_value.match(re.operand(str, true).string_value, pos)
+        if m.nil?
+          Core.backref_set(Q_NIL)
+          return Q_NIL
+        end
+        m = RMatch.from(m)
+        Core.backref_set(m)
+        if rb_block_given?
+          rb_yield(m)
+        end
+        m
+      end
     end
 
     def self.init_regexp
@@ -149,6 +171,7 @@ module GarnetRuby
 
       rb_define_method(cRegexp, :=~) { |re, str| re.match(str) }
       rb_define_method(cRegexp, :===) { |re, str| rtest(re.match(str)) ? Q_TRUE : Q_FALSE }
+      rb_define_method(cRegexp, :match, &method(:reg_match))
 
       @cMatch = rb_define_class(:MatchData, cObject)
       rb_define_alloc_func(cMatch, &method(:match_alloc))
