@@ -43,6 +43,27 @@ module GarnetRuby
         RString.from("[#{strings.join(', ')}]")
       end
 
+      def ary_check_equality(ary1, ary2, &block)
+        return Q_TRUE if ary1 == ary2
+        ary2 = ary2.check_to_array
+        return Q_FALSE if ary2 == Q_NIL
+        return Q_FALSE if ary1.len != ary2.len
+        result = ary1.array_value.zip(ary2.array_value).all?(&block)
+        result ? Q_TRUE : Q_FALSE
+      end
+
+      def ary_equal(ary1, ary2)
+        ary_check_equality(ary1, ary2) do |elt1, elt2|
+          rtest(rb_equal(elt1, elt2))
+        end
+      end
+      
+      def ary_eql(ary1, ary2)
+        ary_check_equality(ary1, ary2) do |elt1, elt2|
+          rtest(rb_eql(elt1, elt2))
+        end
+      end
+
       def ary_entry(ary, offset)
         len = ary.len
         return Q_NIL if len.zero?
@@ -475,6 +496,8 @@ module GarnetRuby
       rb_define_method(cArray, :inspect, &method(:ary_inspect))
       rb_alias_method(cArray, :to_s, :inspect)
 
+      rb_define_method(cArray, :==, &method(:ary_equal))
+      rb_define_method(cArray, :eql?, &method(:ary_eql))
       rb_define_method(cArray, :hash, &method(:ary_hash))
 
       rb_define_method(cArray, :[], &method(:ary_aref))
