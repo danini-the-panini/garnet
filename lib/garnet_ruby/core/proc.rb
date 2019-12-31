@@ -41,6 +41,12 @@ module GarnetRuby
 
   module Core
     class << self
+      def proc_s_new(_, *args)
+        prc = new_proc(false)
+        rb_funcall(prc, :initialize, *args)
+        prc
+      end
+
       def new_proc(is_lambda)
         block = VM.instance.current_control_frame.block
         RProc.new(cProc, [], block, is_lambda)
@@ -79,6 +85,8 @@ module GarnetRuby
 
     def self.init_proc
       @cProc = rb_define_class(:Proc, cObject)
+      rb_undef_alloc_func(cProc)
+      rb_define_singleton_method(cProc, :new, &method(:proc_s_new))
 
       rb_define_method(cProc, :call, &method(:proc_call))
       rb_define_method(cProc, :[], &method(:proc_call))
