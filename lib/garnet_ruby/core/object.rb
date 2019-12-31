@@ -60,6 +60,30 @@ module GarnetRuby
         RPrimitive.from(v ^ (v >> 32))
       end
 
+      def check_id(name)
+        if name.type?(Symbol)
+          name.symbol_value
+        elsif name.type?(String)
+          name.string_value.to_sym
+        else
+          tmp = name.check_string_type
+          if tmp == Q_NIL
+            raise TypeError, "#{name} is not a symbol or a string"
+          end
+          tmp.string_value.to_sym
+        end
+      end
+
+      def obj_method(obj, vid)
+        id = check_id(vid)
+        klass = obj.klass
+        mclass = cMethod
+
+        me = find_method(klass, id)
+
+        RMethod.new(mclass, [], me, obj)
+      end
+
       def rb_caller(_, *args)
         VM.instance.backtrace_to_ary(args, 1, true)
       end
@@ -101,6 +125,7 @@ module GarnetRuby
       rb_define_method(mKernel, :'!~', &method(:obj_not_match))
       rb_define_method(mKernel, :eql?, &method(:obj_equal))
       rb_define_method(mKernel, :hash, &method(:obj_hash))
+      rb_define_method(mKernel, :method, &method(:obj_method))
 
       rb_define_method(mKernel, :to_s) do |obj|
         RString.from("#<#{obj.klass.name},#{obj.__id__}>")

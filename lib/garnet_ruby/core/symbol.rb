@@ -30,6 +30,14 @@ module GarnetRuby
 
       symbol_value == other.symbol_value
     end
+
+    def type
+      Symbol
+    end
+
+    def type?(x)
+      x == Symbol
+    end
   end
 
   module Core

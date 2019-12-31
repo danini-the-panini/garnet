@@ -1,7 +1,7 @@
 module GarnetRuby
   class RClass < RObject
-    attr_reader :method_table, :super_class, :const_table
-    attr_accessor :parent_subclasses, :subclasses, :allocator
+    attr_reader :method_table, :super_class, :const_table, :allocator
+    attr_accessor :parent_subclasses, :subclasses
 
     SubclassEntry = Struct.new(:klass, :next_entry)
 

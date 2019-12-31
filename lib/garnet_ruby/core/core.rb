@@ -210,8 +210,19 @@ module GarnetRuby
         rb_add_method_cfunc(klass, name, :PUBLIC, &block)
       end
 
+      def rb_undef_method(klass, name)
+        definition = UndefinedMethodDef.new(&block)
+        me = method_entry_create(name, klass, :PUBLIC, definition)
+        klass.method_table[name] = me
+        me
+      end
+
       def rb_define_alloc_func(klass, &func)
-        klass.allocator = func
+        klass.define_alloc_func(func)
+      end
+
+      def rb_undef_alloc_func(klass)
+        klass.undef_alloc_func
       end
 
       def rb_alias_method(klass, alias_name, orig_name)
