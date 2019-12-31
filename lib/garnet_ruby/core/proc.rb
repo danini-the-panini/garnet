@@ -106,6 +106,9 @@ module GarnetRuby
       rb_define_method(cProc, :clone, &method(:proc_clone))
       rb_define_method(cProc, :dup, &method(:proc_dup))
 
+      # Exceptions
+      @eLocalJumpError = rb_define_class(:LocalJumpError, eStandardError)
+
       # utility functions
       rb_define_global_function(:proc, &method(:f_proc))
       rb_define_global_function(:lambda, &method(:f_lambda))

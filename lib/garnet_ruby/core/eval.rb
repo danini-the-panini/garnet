@@ -1,6 +1,10 @@
 module GarnetRuby
   module Core
     class << self
+      def errinfo_getter
+        VM.instance.get_errinfo
+      end
+
       def rb_mod_include(mod, *args)
         # TODO: check type if args (they must be Module)
         # TODO: check that module has not already been included
@@ -13,9 +17,9 @@ module GarnetRuby
     end
 
     def self.init_eval
+      rb_define_virtual_variable(:'$!', method(:errinfo_getter), nil)
+
       rb_define_method(cModule, :include, &method(:rb_mod_include))
-
-
     end
   end
 end

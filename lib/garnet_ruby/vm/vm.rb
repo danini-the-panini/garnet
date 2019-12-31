@@ -96,6 +96,7 @@ module GarnetRuby
     def execute_rescue_iseq(iseq, exception, prev_control_frame=current_control_frame)
       locals = { :"\#$!" => exception }
       env = Environment.new(prev_control_frame.self_value.klass, prev_control_frame.environment, locals, prev_control_frame.environment, prev_control_frame.environment.method_entry)
+      env.errinfo = exception
       control_frame = ControlFrame.new(prev_control_frame.self_value, iseq, env, prev_control_frame.block)
       push_control_frame(control_frame)
 
@@ -382,18 +383,25 @@ module GarnetRuby
 
       case throw_type
       when :break
-        until @control_frames.empty?
-          cfp = current_control_frame
+        found_cfp = nil
+        @control_frames.reverse_each do |cfp|
           unless cfp.iseq.nil?
             cr = cfp.iseq.catch_table.find do |x|
               x.type == :break && x.iseq == control_frame.iseq && (x.st..x.ed).include?(cfp.pc)
             end
             if cr
+              found_cfp = cfp
               cfp.pc = cr.cont
               break
             end
           end
-          pop_control_frame
+        end
+
+        if found_cfp
+          pop_control_frame until current_control_frame == found_cfp
+        else
+          do_raise(RObject.new(Core.eLocalJumpError, []))
+          # raise LocalJumpError, 'break from proc-closure'
         end
       when :retry
         # TODO
@@ -561,7 +569,15 @@ module GarnetRuby
     end
 
     def exec_get_global(control_frame, insn)
-      push_stack(get_global(insn.arguments[0]))
+      name = insn.arguments[0]
+      
+      value = if Core.virtual_variable?(name)
+                Core.virtual_variable_get(name)
+              else
+                get_global(name)
+              end
+
+      push_stack(value)
     end
 
     def exec_get_special(control_frame, insn)
@@ -870,6 +886,10 @@ module GarnetRuby
         pop_control_frame
       end
       raise "Uncaught Exception: #{exception}"
+    end
+
+    def get_errinfo
+      current_control_frame.environment.errinfo
     end
 
     def find_tag(tag)

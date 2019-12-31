@@ -4,7 +4,7 @@ module GarnetRuby
       def make_exception(*args)
         # TODO: parse args
 
-        RBasic.new(eRuntimeError, [])
+        RObject.new(eRuntimeError, [])
       end
     end
 

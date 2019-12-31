@@ -87,6 +87,8 @@ module GarnetRuby
       attr_reader :env_table, :stdin, :stdout, :stderr
 
       def init
+        @virtual_variables = {}
+
         @cBasicObject = boot_defclass(:BasicObject, nil)
         @cObject = boot_defclass(:Object, cBasicObject)
         # rb_gc_register_mark_object(rb_cObject) # TODO
@@ -294,6 +296,28 @@ module GarnetRuby
       def rb_define_global_variable(name, value)
         @initial_gvars ||= {}
         @initial_gvars[name] = value
+      end
+
+      def rb_define_virtual_variable(name, getter, setter)
+        @virtual_variables[name] = [getter, setter]
+      end
+
+      def virtual_variable_get(name)
+        @virtual_variables[name][0].call
+      end
+
+      def virtual_variable?(name)
+        @virtual_variables.key?(name)
+      end
+
+      def virtual_variable_set(name, value)
+        setter = @virtual_variables[name][1]
+        if setter
+          setter.call(value)
+        else
+          raise NameError, "#{name} is a read-only variable"
+        end
+        value
       end
 
       def inject_env(vm)
