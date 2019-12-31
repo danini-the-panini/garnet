@@ -533,7 +533,12 @@ module GarnetRuby
     def exec_get_block_param_proxy(control_frame, insn)
       level = insn.arguments[0]
       local_env = get_local_env(level)
-      push_stack(local_env.block.proc)
+      block_param = local_env.block
+      if block_param
+        push_stack(block_param.proc)
+      else
+        push_stack(Q_NIL)
+      end
     end
 
     def exec_set_constant(control_frame, insn)
