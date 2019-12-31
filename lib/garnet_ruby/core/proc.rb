@@ -74,6 +74,21 @@ module GarnetRuby
         RProc.new(cProc, [], prc.block, prc.is_lambda, prc.is_from_method)
       end
 
+      def make_localjump_error(message, value, reason)
+        exc = RObject.new(eLocalJumpError, [])
+        exc.ivar_set(:@exit_value, value)
+        exc.ivar_set(:@reason, RSymbol.from(reason))
+        exc
+      end
+
+      def localjump_exit_value(exc)
+        exc.ivar_get(:@exit_value)
+      end
+
+      def localjump_reason(exc)
+        exc.ivar_get(:@reason)
+      end
+
       def method_call(m, *args)
         if m.recv == Q_UNDEF
           raise TypeError, "can't call unbound method; bind first"
@@ -108,6 +123,8 @@ module GarnetRuby
 
       # Exceptions
       @eLocalJumpError = rb_define_class(:LocalJumpError, eStandardError)
+      rb_define_method(eLocalJumpError, :exit_value, &method(:localjump_exit_value))
+      rb_define_method(eLocalJumpError, :reason, &method(:localjump_reason))
 
       # utility functions
       rb_define_global_function(:proc, &method(:f_proc))

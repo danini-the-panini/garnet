@@ -400,8 +400,7 @@ module GarnetRuby
         if found_cfp
           pop_control_frame until current_control_frame == found_cfp
         else
-          do_raise(RObject.new(Core.eLocalJumpError, []))
-          # raise LocalJumpError, 'break from proc-closure'
+          do_raise(Core.make_localjump_error('break from proc-closure', peek_stack, :break))
         end
       when :retry
         # TODO
