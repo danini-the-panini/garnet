@@ -84,6 +84,10 @@ module GarnetRuby
         RMethod.new(mclass, [], me, obj)
       end
 
+      def obj_class(obj)
+        obj.klass
+      end
+
       def rb_caller(_, *args)
         VM.instance.backtrace_to_ary(args, 1, true)
       end
@@ -126,6 +130,8 @@ module GarnetRuby
       rb_define_method(mKernel, :eql?, &method(:obj_equal))
       rb_define_method(mKernel, :hash, &method(:obj_hash))
       rb_define_method(mKernel, :method, &method(:obj_method))
+
+      rb_define_method(mKernel, :class, &method(:obj_class))
 
       rb_define_method(mKernel, :to_s) do |obj|
         RString.from("#<#{obj.klass.name},#{obj.__id__}>")
