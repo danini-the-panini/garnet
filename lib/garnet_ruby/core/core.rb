@@ -132,8 +132,8 @@ module GarnetRuby
       end
 
       def rb_define_class(name, super_class=cObject)
-        if cObject.rb_const_defined?(name)
-          klass = cObject.rb_const_get(name)
+        if cObject.has_const_direct?(name)
+          klass = cObject.rb_const_get(name, false)
           raise TypeError, "#{name} is not a class (#{klass})" unless klass.flags.include?(:CLASS)
           raise TypeError, "superclass mismatch for class #{name}" if klass.super_class != super_class
           return klass
@@ -149,8 +149,8 @@ module GarnetRuby
       end
 
       def rb_define_module(name)
-        if cObject.rb_const_defined?(name)
-          mdl = cObject.rb_const_get(name)
+        if cObject.has_const_direct?(name)
+          mdl = cObject.rb_const_get(name, false)
           raise TypeError, "#{name} is not a module (#{mdl})" unless mdl.flags.include?(:MODULE)
 
           return mdl

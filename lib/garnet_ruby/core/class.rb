@@ -34,13 +34,50 @@ module GarnetRuby
     end
 
     def rb_const_defined?(name)
-      # TODO: recurse
+      return true if @const_table.key?(name)
+
+      result = find_constant_in_lexical_scope(name) || 
+        find_constant_in_superclass(name)
+
+      result ? true : false
+    end
+
+    def const_direct(name)
+      @const_table[name]
+    end
+
+    def has_const_direct?(name)
       @const_table.key?(name)
     end
 
-    def rb_const_get(name)
-      # TODO: recurse
-      @const_table[name]
+    def rb_const_get(name, check = true)
+      return const_direct(name) if @const_table.key?(name)
+
+      result = find_constant_in_lexical_scope(name) || 
+        find_constant_in_superclass(name)
+
+      # TODO: call missing const
+
+      raise NameError, "uninitialized constant #{name}" if check && result.nil?
+
+      result
+    end
+
+    def find_constant_in_lexical_scope(name)
+      scope = VM.instance.current_control_frame.environment
+      while scope
+        klass = scope.klass
+        return klass.const_direct(name) if klass.has_const_direct?(name)
+        scope = scope.next_scope
+      end
+      nil
+    end
+
+    def find_constant_in_superclass(name)
+      return const_direct(name) if @const_table.key?(name)
+      return nil unless super_class
+
+      super_class.find_constant_in_superclass(name)
     end
 
     def rb_const_set(name, value)

@@ -764,7 +764,7 @@ module GarnetRuby
       end
 
       check_if_namespace(cbase)
-      klass = cbase.rb_const_get(id)
+      klass = cbase.rb_const_get(id, false)
       if klass
         check_class_redefinition(id, flags, super_class, klass)
         return klass
@@ -775,7 +775,7 @@ module GarnetRuby
 
     def define_module(id, flags, cbase)
       check_if_namespace(cbase)
-      klass = cbase.rb_const_get(id)
+      klass = cbase.rb_const_get(id, false)
       if klass
         check_module_redefinition(id, flags, klass)
         return klass
