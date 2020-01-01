@@ -6,10 +6,23 @@ module GarnetRuby
 
         RObject.new(eRuntimeError, [])
       end
+
+      def exc_to_s(exc)
+        mesg = exc.ivar_get(:message) || Q_NIL
+
+        return exc.klass.name if mesg == Q_NIL
+        mesg.rb_string
+      end
+
+      def exc_message(exc)
+        rb_funcall(exc, :to_s)
+      end
     end
 
     def self.init_exception
       @eException = rb_define_class(:Exception, cObject)
+      rb_define_method(eException, :to_s, &method(:exc_to_s))
+      rb_define_method(eException, :message, &method(:exc_message))
 
       @eSystemExit = rb_define_class(:SystemExit, eException)
 

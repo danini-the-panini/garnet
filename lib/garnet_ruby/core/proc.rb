@@ -76,6 +76,7 @@ module GarnetRuby
 
       def make_localjump_error(message, value, reason)
         exc = RObject.new(eLocalJumpError, [])
+        exc.ivar_set(:message, RString.from(message))
         exc.ivar_set(:@exit_value, value)
         exc.ivar_set(:@reason, RSymbol.from(reason))
         exc

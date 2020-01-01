@@ -55,6 +55,14 @@ module GarnetRuby
       "<#{self.klass.name}:#{self.__id__}>"
     end
 
+    def rb_string
+      tmp = check_string_type
+      if tmp == Q_NIL
+        tmp = convert_type_with_id(String, "String", :to_s)
+      end
+      tmp
+    end
+
     def check_string_type
       rb_check_convert_type_with_id(String, "String", :to_str)
     end
