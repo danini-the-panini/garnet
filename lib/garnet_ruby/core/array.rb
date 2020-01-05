@@ -262,7 +262,7 @@ module GarnetRuby
       def ary_each(ary)
         # TODO: return enumerator unless block_given?
         i = 0
-        VM.instance.while_current_control_frame do
+        loop do
           break if i >= ary.len
           rb_yield(ary.array_value[i])
           i += 1
@@ -303,7 +303,7 @@ module GarnetRuby
         # TODO: return enumerator
         collect = RArray.from([])
         i = 0
-        VM.instance.while_current_control_frame do
+        loop do
           break if i >= ary.len
 
           ary_push(collect, rb_yield(ary.array_value[i]))
@@ -315,7 +315,7 @@ module GarnetRuby
       def ary_collect_bang(ary)
         # TODO: return enumerator
         i = 0
-        VM.instance.while_current_control_frame do
+        loop do
           break if i >= ary.len
 
           ary.array_value[i] = rb_yield(ary.array_value[i])

@@ -302,7 +302,7 @@ module GarnetRuby
         # TODO: return enumerator if no block given
         if fixnum?(from) && fixnum?(to)
           i = from.value
-          VM.instance.while_current_control_frame do
+          loop do
             break unless i <= to.value
             rb_yield(RPrimitive.from(i))
             i += 1
@@ -311,7 +311,7 @@ module GarnetRuby
           i = from
           c = nil
 
-          VM.instance.while_current_control_frame do
+          loop do
             c = rb_funcall(i, :>, to)
             break if rtest(c)
             rb_yield(i)
@@ -327,7 +327,7 @@ module GarnetRuby
         if fixnum?(from) && fixnum?(to)
           i = from.value
           
-          VM.instance.while_current_control_frame do
+          loop do
             break unless i >= to.value
             rb_yield(RPrimitive.from(i))
             i -= 1
@@ -336,7 +336,7 @@ module GarnetRuby
           i = from
           c = nil
 
-          VM.instance.while_current_control_frame do
+          loop do
             c = rb_funcall(i, :<, to)
             break if rtest(c)
             rb_yield(i)
@@ -352,7 +352,7 @@ module GarnetRuby
 
         if fixnum?(num)
           i = 0
-          VM.instance.while_current_control_frame do
+          loop do
             break unless i < num.value
             rb_yield(RPrimitive.from(i))
             i += 1
@@ -360,7 +360,7 @@ module GarnetRuby
         else
           i = RPrimitive.from(0)
 
-          VM.instance.while_current_control_frame do
+          loop do
             break unless rtest(rb_funcall(i, :<, num))
             rb_yield(i)
             i = rb_funcall(i, :+, RPrimitive.from(1))

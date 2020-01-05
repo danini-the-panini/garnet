@@ -14,6 +14,14 @@ module GarnetRuby
       @const_table = {}
     end
 
+    def type
+      Class
+    end
+
+    def type?(x)
+      x == Class
+    end
+
     def alloc
       alloc_func.call(self)
     end
@@ -131,6 +139,9 @@ module GarnetRuby
     def self.new_class(super_class)
       klass = new(Core.cClass, [:CLASS])
       klass.super_class = super_class
+      if super_class && super_class != Q_UNDEF && super_class.has_metaclass?
+        klass.ensure_eigenclass
+      end
       klass
     end
 
@@ -185,7 +196,7 @@ module GarnetRuby
     end
 
     def has_metaclass?
-      metaclass.flags.include?(:SINGLETON)
+      metaclass&.flags&.include?(:SINGLETON)
     end
 
     def ensure_eigenclass

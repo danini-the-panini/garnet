@@ -48,14 +48,14 @@ module GarnetRuby
       v = b
 
       if excl
-        vm.while_current_control_frame do
+        loop do
           break unless r_less(v, e) < 0
           break if yield(v, arg)
 
           v = Core.rb_funcall(v, :succ)
         end
       else
-        vm.while_current_control_frame do
+        loop do
           c = r_less(v, e)
           break unless c <= 0
           break if yield(v, arg)
@@ -93,7 +93,7 @@ module GarnetRuby
         if beg.type?(Integer) && ed == Q_NIL
           i = beg.value
           
-          vm.while_current_control_frame do
+          loop do
             vm.rb_yield(RPrimitive.from(i))
             i += 1
           end
@@ -101,7 +101,7 @@ module GarnetRuby
           i = beg.value
           lim = ed.value
           lim +=1 unless range.excl
-          vm.while_current_control_frame do
+          loop do
             break if i >= lim
             vm.rb_yield(RPrimitive.from(i))
             i += 1
@@ -133,7 +133,7 @@ module GarnetRuby
             if ed != Q_NIL
               range.each_func(nil, &method(:each_i))
             else
-              vm.while_current_control_frame do
+              loop do
                 vm.rb_yield(beg)
                 beg = Core.rb_funcall(beg, :succ)
               end

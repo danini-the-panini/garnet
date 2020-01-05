@@ -4,16 +4,16 @@ module GarnetRuby
       def rb_catch(_, tag = RObject.new(Core.cObject, []))
         vm = VM.instance
         vm.current_control_frame.tag = tag
-        ret = vm.rb_yield(tag)
-        ret = vm.pop_stack if ret.nil?
-        ret
+        begin
+          vm.rb_yield(tag)
+        rescue VM::GarnetThrow => e
+          raise unless e.throw_type == :throw && e.tag == tag
+          e.value
+        end
       end
 
       def rb_throw(_, tag, value = Q_NIL)
-        vm = VM.instance
-        vm.find_tag(tag)
-        vm.push_stack(value)
-
+        raise VM::GarnetThrow.new(:throw, value, VM.instance.current_control_frame, nil, tag)
         Q_UNDEF
       end
 

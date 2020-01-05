@@ -30,6 +30,32 @@ module GarnetRuby
         RClass.new(cClass, [:CLASS])
       end
 
+      def rb_class_new_instance(klass, *args)
+        obj = klass.alloc
+        rb_funcall(obj, :initialize, *args)
+        obj
+      end
+
+      def rb_obj_clone(obj)
+        clone = obj.klass.alloc
+        # TODO: clone singleton class and attach
+
+        init_copy(clone, obj)
+        rb_funcall(clone, :initialize_clone, obj)
+
+        clone
+      end
+
+      def init_copy(clone, obj)
+        rb_copy_generic_ivar(clone, obj)
+      end
+      
+      def rb_copy_generic_ivar(clone, obj)
+        obj.ivars.each do |k, v|
+          clone.ivar_set(clone, obj)
+        end
+      end
+
       def obj_is_kind_of(obj, c)
         cl = obj.klass
 
@@ -93,10 +119,12 @@ module GarnetRuby
       end
 
       def rb_loop(_)
-        vm = VM.instance
-        vm.while_current_control_frame do
-          vm.rb_yield()
+        loop do
+          rb_yield
         end
+      rescue VM::GarnetThrow => e
+        raise unless e.throw_type == :break
+        e.value
       end
 
       def rb_equal(obj1, obj2)
@@ -152,11 +180,7 @@ module GarnetRuby
 
       rb_define_alloc_func(cModule, &method(:rb_module_s_alloc))
 
-      rb_define_method(cClass, :new) do |klass, *args|
-        obj = klass.alloc
-        rb_funcall(obj, :initialize, *args)
-        obj
-      end
+      rb_define_method(cClass, :new, &method(:rb_class_new_instance))
       rb_define_alloc_func(cClass, &method(:rb_class_s_alloc))
 
       @cTrueClass = rb_define_class(:TrueClass)

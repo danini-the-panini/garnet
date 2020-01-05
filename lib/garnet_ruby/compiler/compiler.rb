@@ -58,8 +58,8 @@ module GarnetRuby
         @line = nil
       end
 
-      def add
-        @line = @iseq.instructions.length
+      def add(line = @iseq.instructions.length)
+        @line = line
         @insns.each do |insns|
           insns.arguments[0] = @line
         end
@@ -106,6 +106,14 @@ module GarnetRuby
 
     def compile_node(node)
       compile_nodes([node])
+    end
+
+    def compile_block_node(node)
+      @iseq.start_label = new_label
+      @iseq.end_label = new_label
+      add_label(@iseq.start_label)
+      compile_nodes([node])
+      add_label_at_line(@iseq.end_label, @iseq.instructions.length - 1)
     end
 
     def compile_resbodies(resbodies)
@@ -683,11 +691,14 @@ module GarnetRuby
     end
 
     def compile_redo(node)
-      if @iseq.redo_label
-        add_instruction_with_label(:jump, @iseq.redo_label)
-      else
-        # TODO: redo in block
-      end
+      add_instruction_with_label(:jump, @iseq.start_label)
+      # if @iseq.redo_label
+      #   add_instruction_with_label(:jump, @iseq.start_label)
+      # elsif @iseq.end_label
+      #   add_instruction_with_label(:jump, @iseq.end_label)
+      # else
+      #   # TODO: ??
+      # end
     end
 
     def compile_retry(node)
@@ -695,7 +706,11 @@ module GarnetRuby
     end
 
     def compile_break(node)
-      compile(node[1]) if node.length > 1
+      if node.length > 1
+        compile(node[1])
+      else
+        add_instruction(:put_nil)
+      end
       add_instruction(:throw, :break)
     end
 
@@ -718,7 +733,7 @@ module GarnetRuby
       add_label(cont_label)
 
       @iseq.add_catch_type(:rescue, start_label.line, end_label.line, cont_label.line, rescue_iseq)
-      @iseq.add_catch_type(:retry, end_label.line, cont_label.line, nil, rescue_iseq)
+      @iseq.add_catch_type(:retry, end_label.line, cont_label.line, start_label.line, rescue_iseq)
     end
 
     def compile_ensure(node)
@@ -784,7 +799,7 @@ module GarnetRuby
       block_iseq = Iseq.new("block in #{@iseq.name}", :block, @iseq, {})
       compiler = Compiler.new(block_iseq)
       populate_local_table(block_args, compiler, block_iseq)
-      compiler.compile_node(node[3] || [:nil])
+      compiler.compile_block_node(node[3] || [:nil])
 
       call_node = node[1]
       if call_node[0] == :lambda
@@ -815,7 +830,7 @@ module GarnetRuby
       block_iseq = Iseq.new("block in #{@iseq.name}", :block, @iseq, {})
       compiler = Compiler.new(block_iseq)
       populate_local_table(for_block_args(node[2]), compiler, block_iseq)
-      compiler.compile_node(node[3])
+      compiler.compile_block_node(node[3])
 
       compile(node[1])
       add_instruction(:send, CallInfo.new(:each, 0, [:simple], block_iseq))
@@ -1007,12 +1022,16 @@ module GarnetRuby
       label.add
     end
 
+    def add_label_at_line(label, line)
+      label.add(line)
+    end
+
     def add_instruction(type, *args, node: @node)
       @iseq.add_instruction(node, type, *args)
     end
 
     def add_instruction_with_label(type, label, node: @node)
-      @iseq.add_instruction(node, type, nil, node: node).tap { |i| label.ref(i) }
+      @iseq.add_instruction(node, type, nil).tap { |i| label.ref(i) }
     end
 
     def add_set_local(name, node: @node)

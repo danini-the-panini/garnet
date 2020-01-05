@@ -19,7 +19,6 @@ module GarnetRuby
       x == Proc
     end
 
-
     def lambda?
       @is_lambda
     end
@@ -54,7 +53,18 @@ module GarnetRuby
       end
 
       def proc_call(proc, *args)
-        VM.instance.execute_block(proc.block, args, VM.instance.current_control_frame.block)
+        vm = VM.instance
+        begin
+          vm.execute_block(proc.block, args, vm.current_control_frame.block)
+        rescue VM::GarnetThrow => e
+          if e.throw_type == :break
+            if proc.lambda?
+              return e.value
+            else
+              vm.do_raise(make_localjump_error('break from proc-closure', e.value, :break))
+            end
+          end
+        end
       end
 
       def f_proc(_)

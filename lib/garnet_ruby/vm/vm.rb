@@ -1,5 +1,18 @@
 module GarnetRuby
   class VM
+    class GarnetThrow < StandardError
+      attr_reader :throw_type, :value, :cfp, :exc, :tag
+
+      def initialize(throw_type, value, cfp, exc = nil, tag = nil)
+        super(throw_type.to_s)
+        @throw_type = throw_type
+        @value = value
+        @cfp = cfp
+        @exc = exc
+        @tag = tag
+      end
+    end
+
     class << self
       attr_reader :instance
 
@@ -44,9 +57,13 @@ module GarnetRuby
     def execute_main(iseq)
       main = RObject.new(Core.cObject, [])
       control_frame = ControlFrame.new(main, iseq, Environment.new(Core.cObject, nil))
-      @control_frames.push(control_frame)
+      push_control_frame(control_frame)
 
-      execute(iseq) until @control_frames.empty?
+      begin
+        execute(iseq) until @control_frames.empty?
+      rescue GarnetThrow => e
+        handle_uncaught_throw(e)
+      end
     end
 
     def populate_locals(env, iseq, args)
@@ -93,16 +110,19 @@ module GarnetRuby
       control_frame.stack.pop
     end
 
-    def execute_rescue_iseq(iseq, exception, prev_control_frame=current_control_frame)
-      locals = { :"\#$!" => exception }
+    def execute_rescue_iseq(iseq, throw_data, prev_control_frame=current_control_frame)
+      locals = { :"\#$!" => throw_data.exc }
       env = Environment.new(prev_control_frame.self_value.klass, prev_control_frame.environment, locals, prev_control_frame.environment, prev_control_frame.environment.method_entry)
-      env.errinfo = exception
+      env.errinfo = throw_data.exc
       control_frame = ControlFrame.new(prev_control_frame.self_value, iseq, env, prev_control_frame.block)
+      control_frame.throw_data = throw_data
       push_control_frame(control_frame)
 
       execute(iseq) until current_control_frame != control_frame
 
       control_frame.stack.pop
+    rescue GarnetThrow => e
+      handle_rescue_throw(e)
     end
 
     def execute_class_iseq(iseq, klass)
@@ -128,6 +148,8 @@ module GarnetRuby
       prev_pc = control_frame.pc
       begin
         __send__(method_name, control_frame, insn)
+      rescue GarnetThrow => e
+        handle_rescue_throw(e)
       rescue => e
         raise ExecutionError.new(e.message, insn)
       end
@@ -380,66 +402,7 @@ module GarnetRuby
 
     def exec_throw(control_frame, insn)
       throw_type = insn.arguments[0]
-
-      case throw_type
-      when :break
-        found_cfp = nil
-        @control_frames.reverse_each do |cfp|
-          unless cfp.iseq.nil?
-            cr = cfp.iseq.catch_table.find do |x|
-              x.type == :break && x.iseq == control_frame.iseq && (x.st..x.ed).include?(cfp.pc)
-            end
-            if cr
-              found_cfp = cfp
-              cfp.pc = cr.cont
-              break
-            end
-          end
-        end
-
-        if found_cfp
-          pop_control_frame until current_control_frame == found_cfp
-        else
-          do_raise(Core.make_localjump_error('break from proc-closure', peek_stack, :break))
-        end
-      when :retry
-        # TODO
-      when :continue
-        exception = pop_stack
-
-        pop_control_frame
-        prev_control_frame = current_control_frame
-
-        cr = nil
-        if control_frame.iseq.type == :rescue
-          cfp = current_control_frame
-          cr = cfp.iseq.catch_table.find do |x|
-            x.type == :ensure && (x.st..x.ed).include?(cfp.pc)
-          end
-          pop_control_frame
-        end
-
-        if !cr
-          until @control_frames.empty?
-            cfp = current_control_frame
-            cr = cfp.iseq.catch_table.find do |x|
-              x.type == :rescue && x.iseq != control_frame.iseq && (x.st..x.ed).include?(cfp.pc)
-            end
-            cr ||= cfp.iseq.catch_table.find do |x|
-              x.type == :ensure && x.iseq != control_frame.iseq && (x.st..x.ed).include?(cfp.pc)
-            end
-            break if cr
-            pop_control_frame
-          end
-        end
-
-        if cr
-          execute_rescue_iseq(cr.iseq, exception, prev_control_frame)
-          return
-        end
-
-        raise "Uncaught Exception: #{exception}"
-      end
+      raise GarnetThrow.new(throw_type, pop_stack, current_control_frame)
     end
 
     def exec_send_without_block(control_frame, insn)
@@ -624,10 +587,7 @@ module GarnetRuby
     end
 
     def push_stack(obj)
-      raise "PUSH NIL!" if obj.nil?
-      raise "PUSH UNDEF!" if obj == Q_UNDEF
-      control_frame = current_control_frame
-      control_frame.stack.push obj
+      current_control_frame.push_stack(obj)
     end
 
     def pop_stack
@@ -714,7 +674,11 @@ module GarnetRuby
         env.method_object = method
         control_frame = ControlFrame.new(target, nil, env, block)
         push_control_frame(control_frame)
-        ret = method.definition.block.call(target, *args)
+        begin
+          ret = method.definition.block.call(target, *args)
+        rescue GarnetThrow => e
+          handle_rescue_throw(e)
+        end
         pop_control_frame if current_control_frame == control_frame
         ret
       when ISeqMethodDef
@@ -867,35 +831,71 @@ module GarnetRuby
     end
 
     def do_raise(exception)
-      until @control_frames.empty?
-        cfp = current_control_frame
-        unless cfp.iseq.nil?
-          cr = cfp.iseq.catch_table.find do |x|
-            x.type == :rescue && (x.st..x.ed).include?(cfp.pc)
+      raise GarnetThrow.new(:raise, exception, current_control_frame, exception)
+    end
+
+    def handle_rescue_throw(e)
+      cfp = current_control_frame
+      unless cfp.iseq.nil?
+        case e.throw_type
+        when :raise
+          unless cfp.iseq.nil?
+            cr = cfp.iseq.catch_table.find do |x|
+              (x.type == :rescue || x.type == :ensure) && (x.st..x.ed).include?(cfp.pc)
+            end
+            if cr
+              cfp.pc = cr.cont
+              execute_rescue_iseq(cr.iseq, e)
+              return
+            end
           end
-          cr ||= cfp.iseq.catch_table.find do |x|
-            x.type == :ensure && (x.st..x.ed).include?(cfp.pc)
+        when :break
+           unless cfp.iseq.nil?
+            cr = cfp.iseq.catch_table.find do |x|
+              next false unless (x.st..x.ed).include?(cfp.pc)
+              (x.type == :ensure && x.iseq != e.cfp.iseq) || (x.type == :break && x.iseq == e.cfp.iseq)
+            end
+            if cr
+              cfp.pc = cr.cont
+              case cr.type
+              when :break
+                cfp.push_stack(e.value)
+              when :ensure
+                execute_rescue_iseq(cr.iseq, e, cfp)
+              end
+              return
+            end
           end
-          if cr
-            cfp.pc = cr.cont
-            execute_rescue_iseq(cr.iseq, exception)
-            return
+        when :retry
+          unless cfp.iseq.nil?
+            cr = cfp.iseq.catch_table.find do |x|
+              x.type == :retry && x.iseq == e.cfp.iseq && (x.st..x.ed).include?(cfp.pc)
+            end
+            if cr
+              cfp.pc = cr.cont
+              return
+            end
           end
+        when :continue
+          pop_control_frame
+          raise e.cfp.throw_data
         end
-        pop_control_frame
       end
-      raise "Uncaught Exception: #{exception}"
+      pop_control_frame
+      raise e
+    end
+
+    def handle_uncaught_throw(e)
+      case e.throw_type
+      when :raise
+        raise "Uncaught Exception: #{e.exc.inspect}"
+      else
+        raise "Uncaught throw of type #{e.throw_type}"
+      end
     end
 
     def get_errinfo
       current_control_frame.environment.errinfo
-    end
-
-    def find_tag(tag)
-      cfp = @control_frames.reverse.find { |c| c.tag == tag }
-      raise UncaughtThrowError, "(uncaught throw #{tag})" if !cfp
-
-      pop_control_frame until current_control_frame == cfp
     end
 
     def backtrace
@@ -942,7 +942,7 @@ module GarnetRuby
 
     def push_control_frame(cfp)
       if __grb_debug__?
-        puts "#{$indent}BEGIN CONTROL FRAME: #{cfp}"
+        puts "#{$indent}BEGIN CONTROL FRAME: #{cfp} (#{caller.first})"
         $indent += "  "
       end
       @control_frames << cfp
@@ -951,7 +951,7 @@ module GarnetRuby
     def pop_control_frame
       $indent.slice!(0, 2) if __grb_debug__?
       @control_frames.pop.tap { |cfp|
-        puts "#{$indent}END CONTROL FRAME: #{cfp}" if __grb_debug__?
+        puts "#{$indent}END CONTROL FRAME: #{cfp} (#{caller(3, 1).first})" if __grb_debug__?
       }
     end
 
