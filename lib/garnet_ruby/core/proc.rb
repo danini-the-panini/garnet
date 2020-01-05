@@ -60,8 +60,10 @@ module GarnetRuby
           if e.throw_type == :break
             if proc.lambda?
               return e.value
-            else
+            elsif vm.is_block_orphan?(proc.block)
               vm.do_raise(make_localjump_error('break from proc-closure', e.value, :break))
+            else
+              raise
             end
           end
         end

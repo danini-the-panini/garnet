@@ -646,6 +646,17 @@ module GarnetRuby
       execute_block(block, args)
     end
 
+    def is_block_orphan?(block)
+      @control_frames.reverse_each do |cfp|
+        next if cfp.iseq.nil?
+        cr = cfp.iseq.catch_table.find do |x|
+          x.type == :break && x.iseq == block.iseq && (x.st..x.ed).include?(cfp.pc)
+        end
+        return false if cr
+      end
+      true
+    end
+
     def undefined_method(mid, target)
       # method_missing
       raise "undefined method #{mid} for #{target}"
