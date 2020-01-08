@@ -1,14 +1,15 @@
 module GarnetRuby
   class RProc < RObject
     attr_accessor :block
-    attr_reader :is_lambda, :is_from_method
+    attr_reader :is_lambda, :is_from_method, :arity
 
-    def initialize(klass, flags, block, is_lambda = false, is_from_method = false)
+    def initialize(klass, flags, block, is_lambda = false, is_from_method = false, arity = block&.arity)
       super(klass, flags)
       @block = block
       block.proc = self
       @is_lambda = is_lambda
       @is_from_method = is_from_method
+      @arity = arity
     end
 
     def type
@@ -36,6 +37,10 @@ module GarnetRuby
       super(klass, flags)
       @method_entry = method_entry
       @recv = recv
+    end
+
+    def arity
+      method_entry.arity
     end
   end
 
@@ -77,6 +82,10 @@ module GarnetRuby
         new_proc(true)
       end
 
+      def proc_arity(prc)
+        RPrimitive.from(prc.arity)
+      end
+
       def proc_clone(prc)
         # TODO: clone setup (I think it copies singleton classes)
         proc_dup(prc)
@@ -110,12 +119,16 @@ module GarnetRuby
         VM.instance.dispatch_method(m.recv, m.method_entry, args, block)
       end
 
+      def method_arity(m)
+        RPrimitive.from(m.arity)
+      end
+
       def method_to_proc(m)
         env = VM.instance.current_control_frame.environment
         block = BuiltInBlock.new(env, m) do |*args|
           method_call(m, *args)
         end
-        prc = RProc.new(cProc, [], block, true, true)
+        prc = RProc.new(cProc, [], block, true, true, m.arity)
         prc
       end
     end
@@ -131,6 +144,7 @@ module GarnetRuby
       rb_define_method(cProc, :yield, &method(:proc_call))
 
       rb_define_method(cProc, :to_proc) { |x| x }
+      rb_define_method(cProc, :arity, &method(:proc_arity))
       rb_define_method(cProc, :clone, &method(:proc_clone))
       rb_define_method(cProc, :dup, &method(:proc_dup))
 
@@ -147,6 +161,7 @@ module GarnetRuby
       @cMethod = rb_define_class(:Method, cObject)
       rb_undef_alloc_func(cMethod)
       rb_define_method(cMethod, :call, &method(:method_call))
+      rb_define_method(cMethod, :arity, &method(:method_arity))
       rb_define_method(cMethod, :to_proc, &method(:method_to_proc))
     end
   end

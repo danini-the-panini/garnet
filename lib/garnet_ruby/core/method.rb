@@ -13,9 +13,16 @@ module GarnetRuby
     def basic?
       flags.include?(:basic)
     end
+
+    def arity
+      definition.arity
+    end
   end
 
   class MethodDef
+    def arity
+      nil
+    end
   end
 
   class BuiltInMethodDef < MethodDef
@@ -23,6 +30,10 @@ module GarnetRuby
 
     def initialize(&block)
       @block = block
+    end
+
+    def arity
+      block.arity
     end
   end
 
@@ -33,6 +44,10 @@ module GarnetRuby
       @iseq = iseq
       @environment = environment
     end
+
+    def arity
+      iseq.local_table.count { |_, x| x.first == :arg }
+    end
   end
 
   class AliasMethodDef < MethodDef
@@ -40,6 +55,10 @@ module GarnetRuby
 
     def initialize(original_method)
       @original_method = original_method.definition.is_a?(AliasMethodDef) ? original_method.definition.original_method : original_method
+    end
+
+    def arity
+      original_method.arity
     end
   end
 
