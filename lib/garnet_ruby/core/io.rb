@@ -93,6 +93,24 @@ module GarnetRuby
         Q_NIL
       end
 
+      def rb_p(obj)
+        str = rb_funcall(obj, :inspect).obj_as_string
+        puts str.string_value
+      end
+
+      def rb_f_p(*args)
+        args.each do |arg|
+          rb_p(arg)
+        end
+        if args.length == 1
+          args[0]
+        elsif args.length > 1
+          RArray.from(args)
+        else
+          Q_NIL
+        end
+      end
+
       def rb_open(path, mode = "r", perm = nil, opt = nil)
         if path.string_value.start_with?('|')
           # TODO
@@ -111,6 +129,8 @@ module GarnetRuby
       rb_define_global_function(:`) do |_, str|
         RString.from(`#{str.string_value}`)
       end
+
+      rb_define_global_function(:p) { |_, *args| rb_f_p(*args) }
 
       @cIO = rb_define_class(:IO, cObject)
 
