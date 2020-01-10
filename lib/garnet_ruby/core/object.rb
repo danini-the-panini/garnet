@@ -49,7 +49,7 @@ module GarnetRuby
       def init_copy(clone, obj)
         rb_copy_generic_ivar(clone, obj)
       end
-      
+
       def rb_copy_generic_ivar(clone, obj)
         obj.ivars.each do |k, v|
           clone.ivar_set(clone, obj)
@@ -61,6 +61,10 @@ module GarnetRuby
 
         # TODO: make sure c is a module/class
         c.search_ancestor(cl) ? Q_TRUE : Q_FALSE
+      end
+
+      def f_sprintf(_, *args)
+        rb_sprintf(*args)
       end
 
       def obj_not_match(obj1, obj2)
@@ -167,6 +171,8 @@ module GarnetRuby
       rb_alias_method(cObject, :inspect, :to_s)
 
       rb_define_method(mKernel, :kind_of?, &method(:obj_is_kind_of))
+
+      rb_define_global_function(:sprintf, &method(:f_sprintf))
 
       @cNilClass = rb_define_class(:NilClass)
       ::GarnetRuby.const_set(:Q_NIL, RPrimitive.new(@cNilClass, [], nil))

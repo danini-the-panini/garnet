@@ -95,6 +95,10 @@ module GarnetRuby
         RPrimitive.from(result)
       end
 
+      def str_to_f(str)
+        RPrimitive.from(str.string_value.to_f)
+      end
+
       def str_split(str, *args)
         limit = nil
         if args.length == 2
@@ -173,6 +177,7 @@ module GarnetRuby
       rb_define_method(cString, :eql?, &method(:str_eql))
       rb_define_method(cString, :hash, &method(:str_hash))
 
+      rb_define_method(cString, :to_f, &method(:str_to_f))
       rb_define_method(cString, :to_s) { |x| x }
       rb_define_method(cString, :inspect) do |x|
         RString.from(x.string_value.inspect)
