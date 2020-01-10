@@ -303,6 +303,16 @@ module GarnetRuby
         RPrimitive.from(x.value ** y.value)
       end
 
+      def int_lshift(x, y)
+        # TODO: type coersion
+        RPrimitive.from(x.value << y.value)
+      end
+
+      def int_rshift(x, y)
+        # TODO: type coersion
+        RPrimitive.from(x.value >> y.value)
+      end
+
       def int_upto(from, to)
         # TODO: return enumerator if no block given
         if fixnum?(from) && fixnum?(to)
@@ -518,6 +528,9 @@ module GarnetRuby
       rb_define_method(cInteger, :*, &method(:int_mul))
       rb_define_method(cInteger, :/, &method(:int_div))
       rb_define_method(cInteger, :**, &method(:int_pow))
+
+      rb_define_method(cInteger, :<<, &method(:int_lshift))
+      rb_define_method(cInteger, :>>, &method(:int_rshift))
 
       @cFloat = rb_define_class(:Float, cNumeric)
 
