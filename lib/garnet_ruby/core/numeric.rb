@@ -2,7 +2,7 @@ module GarnetRuby
   module Core
     class << self
       def fixnum?(value)
-        value.is_a?(RPrimitive) && value.type?(Integer)
+        value.numeric? && value.type?(Integer)
       end
 
       def modf(x)
@@ -373,6 +373,113 @@ module GarnetRuby
         v = num.value
         RPrimitive.from(v ^ (v >> 32))
       end
+
+      def float_minus(x, y)
+        if y.numeric?
+          RPrimitive.from(x.value - y.value)
+        else
+          rb_num_coerce_bin(x, y, :-)
+        end
+      end
+
+      def float_div(x, y)
+        num = x.value
+        if y.numeric?
+          den = y.value.to_f
+        else
+          return rb_num_coerce_bin(x, y, :/)
+        end
+
+        ret = double_div_double(num, den)
+        RPrimitive.from(ret)
+      end
+
+      def double_div_double(x, y)
+        if y != 0.0
+          x / y
+        elsif x == 0.0
+          Float::NAN
+        else
+          Float::INFINITY
+        end
+      end
+
+      def float_mod(x, y)
+        if y.numeric?
+          RPrimitive.from(x.value % y.value)
+        else
+          rb_num_coerce_bin(x, y, :%)
+        end
+      end
+
+      def float_gt(x, y)
+        if y.numeric?
+          x.value > y.value ? Q_TRUE : Q_FALSE
+        else
+          rb_num_coerce_relop(x, y, :>)
+        end
+      end
+
+      def float_ge(x, y)
+        if y.numeric?
+          x.value >= y.value ? Q_TRUE : Q_FALSE
+        else
+          rb_num_coerce_relop(x, y, :>=)
+        end
+      end
+
+      def float_lt(x, y)
+        if y.numeric?
+          x.value < y.value ? Q_TRUE : Q_FALSE
+        else
+          rb_num_coerce_relop(x, y, :<)
+        end
+      end
+
+      def float_le(x, y)
+        if y.numeric?
+          x.value <= y.value ? Q_TRUE : Q_FALSE
+        else
+          rb_num_coerce_relop(x, y, :<=)
+        end
+      end
+
+      def float_abs(num)
+        RPrimitive.from(num.value.abs)
+      end
+
+      def float_floor(num, *args)
+        if args.length.zero?
+          RPrimitive.from(num.value.floor)
+        else
+          RPrimitive.from(num.value.floor(num2long(args.first)))
+        end
+      end
+
+      def float_ceil(num, *args)
+        if args.length.zero?
+          RPrimitive.from(num.value.ceil)
+        else
+          RPrimitive.from(num.value.ceil(num2long(args.first)))
+        end
+      end
+
+      def float_round(num, *args)
+        # TODO: half kwarg
+        if args.length.zero?
+          RPrimitive.from(num.value.round)
+        else
+          RPrimitive.from(num.value.round(num2long(args.first)))
+        end
+      end
+
+      def float_truncate(num, *args)
+        if args.length.zero?
+          RPrimitive.from(num.value.truncate)
+        else
+          RPrimitive.from(num.value.truncate(num2long(args.first)))
+        end
+      end
     end
 
     def self.init_numeric
@@ -405,6 +512,22 @@ module GarnetRuby
       rb_define_method(cInteger, :-, &method(:int_minus))
       rb_define_method(cInteger, :*, &method(:int_mul))
       rb_define_method(cInteger, :/, &method(:int_div))
+
+      @cFloat = rb_define_class(:Float, cNumeric)
+
+      rb_define_method(cFloat, :-, &method(:float_minus))
+      rb_define_method(cFloat, :/, &method(:float_div))
+      rb_define_method(cFloat, :%, &method(:float_mod))
+      rb_define_method(cFloat, :>, &method(:float_gt))
+      rb_define_method(cFloat, :>=, &method(:float_ge))
+      rb_define_method(cFloat, :<, &method(:float_lt))
+      rb_define_method(cFloat, :<=, &method(:float_le))
+      rb_define_method(cFloat, :abs, &method(:float_abs))
+
+      rb_define_method(cFloat, :floor, &method(:float_floor))
+      rb_define_method(cFloat, :ceil, &method(:float_ceil))
+      rb_define_method(cFloat, :round, &method(:float_round))
+      rb_define_method(cFloat, :truncate, &method(:float_truncate))
     end
   end
 end

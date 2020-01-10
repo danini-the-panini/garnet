@@ -683,6 +683,7 @@ module GarnetRuby
 
     def find_method_unchecked(target, mid, klass = target.klass)
       raise "TRYING TO CALL #{mid} on NIL" if target.nil?
+      raise "TRYING TO CALL #{mid} on NIL KLASS (#{target})" if klass.nil?
       Core.find_method(klass, mid)
     end
 

@@ -20,6 +20,10 @@ module GarnetRuby
       false
     end
 
+    def numeric?
+      false
+    end
+
     def discrete_object?
       return false if obj_is_kind_of(self, Core.cTime) == Q_TRUE # TODO: until Time#succ removed
       VM.instance.rb_respond_to(self, :succ)
