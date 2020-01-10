@@ -269,6 +269,11 @@ module GarnetRuby
         rb_define_singleton_method(obj, name, &block)
       end
 
+      def rb_add_method(klass, name, visibility, definition)
+        me = method_entry_create(name, klass, visibility, definition)
+        klass.method_table[name] = me
+      end
+
       def rb_add_method_cfunc(klass, name, visibility, &block)
         klass ||= cObject
 
@@ -276,13 +281,10 @@ module GarnetRuby
 
         # create method entry
         definition = BuiltInMethodDef.new(&block)
-        me = method_entry_create(name, klass, visibility, definition)
 
         # TODO: check mid
 
-        klass.method_table[name] = me
-
-        me
+        rb_add_method(klass, name, visibility, definition)
       end
 
       def rb_define_global_function(name, &block)

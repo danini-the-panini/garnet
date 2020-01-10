@@ -64,4 +64,16 @@ module GarnetRuby
 
   class UndefinedMethodDef < MethodDef
   end
+
+  class ProcMethodDef < MethodDef
+    attr_reader :proc_value
+
+    def initialize(proc_value)
+      @proc_value = proc_value
+    end
+
+    def arity
+      proc_value.arity
+    end
+  end
 end

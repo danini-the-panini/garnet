@@ -131,6 +131,37 @@ module GarnetRuby
         prc = RProc.new(cProc, [], block, true, true, m.arity)
         prc
       end
+
+      def obj_is_method(m)
+        m.is_a?(RMethod)
+      end
+
+      def mod_define_method(mod, *args)
+        name = args.first
+        id = check_id(name)
+        if args.length == 1
+          body = VM.instance.current_control_frame.block
+        else
+          body = args[1]
+
+          if body.is_a?(RMethod)
+            is_method = true
+          elsif body.is_a?(RProc)
+            is_method = false
+          else
+            rb_raise(eTypeError, "wrong argument type #{body.klass} (expected Proc/Method/UnboundMethod)")
+          end
+        end
+
+        if is_method
+          # TODO
+        else
+          definition = ProcMethodDef.new(body.proc)
+          rb_add_method(singleton_class_of(mod), id, :PUBLIC, definition)
+        end
+
+        RSymbol.from(id)
+      end
     end
 
     def self.init_proc
@@ -163,6 +194,9 @@ module GarnetRuby
       rb_define_method(cMethod, :call, &method(:method_call))
       rb_define_method(cMethod, :arity, &method(:method_arity))
       rb_define_method(cMethod, :to_proc, &method(:method_to_proc))
+
+      # Module#*_method
+      rb_define_method(cModule, :define_method, &method(:mod_define_method))
     end
   end
 end
