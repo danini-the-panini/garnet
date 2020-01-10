@@ -271,10 +271,10 @@ module GarnetRuby
       end
 
       def int_uminus(num)
-        if fixnum?(x)
-          fix_uminuns(num)
+        if fixnum?(num)
+          fix_uminus(num)
         else
-          Core.rb_funcall(num, :'@-')
+          Core.rb_funcall(num, :'-@')
         end
       end
 
@@ -507,7 +507,7 @@ module GarnetRuby
       rb_define_method(cInteger, :<=, &method(:int_le))
       rb_define_method(cInteger, :hash, &method(:int_hash))
 
-      rb_define_method(cInteger, :'@-', &method(:int_uminus))
+      rb_define_method(cInteger, :'-@', &method(:int_uminus))
       rb_define_method(cInteger, :+, &method(:int_plus))
       rb_define_method(cInteger, :-, &method(:int_minus))
       rb_define_method(cInteger, :*, &method(:int_mul))
