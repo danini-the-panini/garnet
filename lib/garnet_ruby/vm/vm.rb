@@ -68,15 +68,21 @@ module GarnetRuby
 
     def populate_locals(env, iseq, args)
       offset = 0
+      num_locals = iseq.local_table.size
+      num_post = iseq.local_table.count { |_, v| v[0] == :post }
       iseq.local_table.each_with_index do |(k, v), i|
         case v[0]
         when :arg
           env.locals[k] = args[i]
+        when :post
+          env.locals[k] = args[i - num_locals]
         when :opt
           if args[i]
             env.locals[k] = args[i]
             offset = v[1]
           end
+        when :splat
+          env.locals[k] = RArray.from(args[i, args.length - num_post - i])
         end
       end
       offset
@@ -410,11 +416,7 @@ module GarnetRuby
       if callinfo.flags.include?(:blockarg)
         blockarg = Core.rb_funcall(pop_stack, :to_proc)
       end
-      args = pop_stack_multi(callinfo.argc)
-      if callinfo.flags.include?(:splat)
-        *pargs, splat = args
-        args = [*pargs, *splat.array_value]
-      end
+      args = collect_args(callinfo)
       target = pop_stack
       method = find_method(target, callinfo.mid)
       ret = dispatch_method(target, method, args, blockarg&.block)
@@ -423,11 +425,7 @@ module GarnetRuby
 
     def exec_send(control_frame, insn)
       callinfo = insn.arguments[0]
-      args = pop_stack_multi(callinfo.argc)
-      if callinfo.flags.include?(:splat)
-        *pargs, splat = args
-        args = [*pargs, *splat.array_value]
-      end
+      args = collect_args(callinfo)
       target = pop_stack
       method = find_method(target, callinfo.mid)
       block = IseqBlock.new(control_frame.environment, control_frame.self_value, callinfo.block_iseq)
@@ -437,11 +435,7 @@ module GarnetRuby
 
     def exec_invoke_block(control_frame, insn)
       callinfo = insn.arguments[0]
-      args = pop_stack_multi(callinfo.argc)
-      if callinfo.flags.include?(:splat)
-        *pargs, splat = args
-        args = [*pargs, *splat.array_value]
-      end
+      args = collect_args(callinfo)
       block = caller_environment.block
       ret = execute_block(block, args)
       push_stack(ret) unless ret.nil? || ret == Q_UNDEF
@@ -449,15 +443,20 @@ module GarnetRuby
 
     def exec_invoke_super(control_frame, insn)
       callinfo = insn.arguments[0]
+      args = collect_args(callinfo)
+      target = control_frame.self_value
+      method = find_super_method(target, control_frame.method_entry.method_name)
+      ret = dispatch_method(target, method, args, control_frame.block)
+      push_stack(ret) unless ret.nil? || ret == Q_UNDEF
+    end
+
+    def collect_args(callinfo)
       args = pop_stack_multi(callinfo.argc)
       if callinfo.flags.include?(:splat)
         *pargs, splat = args
         args = [*pargs, *splat.array_value]
       end
-      target = control_frame.self_value
-      method = find_super_method(target, control_frame.method_entry.method_name)
-      ret = dispatch_method(target, method, args)
-      push_stack(ret) unless ret.nil? || ret == Q_UNDEF
+      args
     end
 
     def exec_get_local(control_frame, insn)

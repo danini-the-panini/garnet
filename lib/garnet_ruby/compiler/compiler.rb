@@ -784,12 +784,8 @@ module GarnetRuby
     end
 
     def compile_zsuper(node)
-      flags = [:simple]
-      args = @iseq.method_iseq.local_table.select { |id, type| type[0] == :arg }.keys
-      args.each do |arg|
-        add_get_local(arg)
-      end
-      add_instruction(:invoke_super, CallInfo.new(nil, args.count, flags | [:super, :zsuper]))
+      argc, flags = compile_zsuper_args
+      add_instruction(:invoke_super, CallInfo.new(nil, argc, flags))
     end
 
     def compile_iter(node)
@@ -855,6 +851,7 @@ module GarnetRuby
     end
 
     def populate_local_table(args, compiler, iseq)
+      splatted = false;
       args.each do |a|
         next if a.nil?
         if a.is_a?(Symbol)
@@ -863,11 +860,13 @@ module GarnetRuby
           when /^\*\*/
             iseq.local_table[s[2..-1].to_sym] = [:kwsplat]
           when /^\*/
-            iseq.local_table[s[1..-1].to_sym] = [:splat]
+            id = s == :* ? :"?" : s[1..-1].to_sym
+            iseq.local_table[id] = [:splat]
+            splatted = true
           when /^&/
             iseq.local_table[s[1..-1].to_sym] = [:block]
           else
-            iseq.local_table[a] = [:arg]
+            iseq.local_table[a] = splatted ? [:post] : [:arg]
           end
         elsif a[0] == :lasgn
           iseq.local_table[a[1]] = [:opt]
@@ -1010,6 +1009,28 @@ module GarnetRuby
       if block_pass
         flags << :blockarg
         compile(block_pass[1])
+      end
+      [count, flags]
+    end
+
+    def compile_zsuper_args
+      args = @iseq.local_table.to_a
+      count = args.count { |_, v| [:arg, :opt, :splat].include?(v[0]) }
+      post_count = args.count { |k, v| v[0] == :post }
+      has_splat = args.find { |_, x| x[0] == :splat }
+      flags = has_splat ? [:splat] : [:simple]
+      args.each do |k, v|
+        case v[0]
+        when :arg, :opts, :post
+          add_get_local(k)
+        when :splat
+          add_get_local(k)
+          add_instruction(:splat_array, false)
+        end
+      end
+      if post_count.positive?
+        add_instruction(:new_array, post_count)
+        add_instruction(:concat_array)
       end
       [count, flags]
     end
