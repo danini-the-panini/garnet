@@ -413,9 +413,8 @@ module GarnetRuby
 
     def exec_send_without_block(control_frame, insn)
       callinfo = insn.arguments[0]
-      if callinfo.flags.include?(:blockarg)
-        blockarg = Core.rb_funcall(pop_stack, :to_proc)
-      end
+      blockarg = get_block_arg(callinfo)
+      blockarg = nil if blockarg == Q_NIL
       args = collect_args(callinfo)
       target = pop_stack
       method = find_method(target, callinfo.mid)
@@ -443,10 +442,11 @@ module GarnetRuby
 
     def exec_invoke_super(control_frame, insn)
       callinfo = insn.arguments[0]
+      block = get_block_for_super(control_frame, callinfo)
       args = collect_args(callinfo)
       target = control_frame.self_value
       method = find_super_method(target, control_frame.method_entry.method_name)
-      ret = dispatch_method(target, method, args, control_frame.block)
+      ret = dispatch_method(target, method, args, block)
       push_stack(ret) unless ret.nil? || ret == Q_UNDEF
     end
 
@@ -457,6 +457,26 @@ module GarnetRuby
         args = [*pargs, *splat.array_value]
       end
       args
+    end
+
+    def get_block_arg(callinfo)
+      return nil unless callinfo.flags.include?(:blockarg)
+
+      block_value = pop_stack
+      return block_value if block_value == Q_NIL
+
+      Core.rb_funcall(block_value, :to_proc)
+    end
+
+    def get_block_for_super(control_frame, callinfo)
+      blockarg = get_block_arg(callinfo)
+      if blockarg.nil?
+        control_frame.block
+      elsif blockarg == Q_NIL
+        nil
+      else
+        blockarg.block
+      end
     end
 
     def exec_get_local(control_frame, insn)
