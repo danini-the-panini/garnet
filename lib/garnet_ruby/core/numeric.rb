@@ -298,6 +298,11 @@ module GarnetRuby
         RPrimitive.from(x.value / y.value)
       end
 
+      def int_pow(x, y)
+        # TODO: type coersion
+        RPrimitive.from(x.value ** y.value)
+      end
+
       def int_upto(from, to)
         # TODO: return enumerator if no block given
         if fixnum?(from) && fixnum?(to)
@@ -512,6 +517,7 @@ module GarnetRuby
       rb_define_method(cInteger, :-, &method(:int_minus))
       rb_define_method(cInteger, :*, &method(:int_mul))
       rb_define_method(cInteger, :/, &method(:int_div))
+      rb_define_method(cInteger, :**, &method(:int_pow))
 
       @cFloat = rb_define_class(:Float, cNumeric)
 
