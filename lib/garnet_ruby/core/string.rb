@@ -368,6 +368,14 @@ module GarnetRuby
       def str_squeeze_bang(str, *args)
         RString.from(str.string_value.squeeze!(*args.map { |a| a.obj_as_string.string_value }))
       end
+
+      def str_each_byte(str)
+        # TODO: return enumerator
+        str.string_value.each_byte do |byte|
+          rb_yield(RPrimitive.from(byte))
+        end
+        str
+      end
     end
 
     def self.init_string
@@ -418,6 +426,8 @@ module GarnetRuby
       rb_define_method(cString, :tr_s!, &method(:str_tr_s_bang))
       rb_define_method(cString, :delete!, &method(:str_delete_bang))
       rb_define_method(cString, :squeeze!, &method(:str_squeeze_bang))
+      
+      rb_define_method(cString, :each_byte, &method(:str_each_byte))
     end
   end
 end
