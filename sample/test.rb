@@ -1860,32 +1860,32 @@ test_ok(done)
 File.unlink "script_tmp" or `/bin/rm -f "script_tmp"`
 # File.unlink "script_tmp.bak" or `/bin/rm -f "script_tmp.bak"` # TODO: once -i works
 
-$bad = false
-if (dir = File.dirname(File.dirname(__FILE__))) == '.'
-  dir = ""
-else
-  dir << "/"
-end
+# $bad = false
+# if (dir = File.dirname(File.dirname(__FILE__))) == '.'
+#   dir = ""
+# else
+#   dir << "/"
+# end
 
-def valid_syntax?(code, fname)
-  p fname
-  code.force_encoding("ascii-8bit")
-  code = code.sub(/\A(?:\s*\#.*$)*(\n)?/n) {
-    "#$&#{"\n" if $1 && !$2}BEGIN{return true}\n"
-  }
-  eval(code, nil, fname, 0)
-rescue Exception
-  STDERR.puts $!.message
-  false
-end
+# def valid_syntax?(code, fname)
+#   p fname
+#   code.force_encoding("ascii-8bit")
+#   code = code.sub(/\A(?:\s*\#.*$)*(\n)?/n) {
+#     "#$&#{"\n" if $1 && !$2}BEGIN{return true}\n"
+#   }
+#   eval(code, nil, fname, 0)
+# rescue Exception
+#   STDERR.puts $!.message
+#   false
+# end
 
-for script in Dir["#{dir}{lib,sample,ext,test}/**/*.rb"]
-  unless valid_syntax? IO::read(script), script
-    STDERR.puts script
-    $bad = true
-  end
-end
-test_ok(!$bad)
+# for script in Dir["#{dir}{lib,sample,ext,test}/**/*.rb"]
+#   unless valid_syntax? IO::read(script), script
+#     STDERR.puts script
+#     $bad = true
+#   end
+# end
+# test_ok(!$bad)
 
 test_check "const"
 TEST1 = 1
