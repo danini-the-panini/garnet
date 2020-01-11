@@ -138,6 +138,8 @@ module GarnetRuby
 
       rb_define_global_variable(:'$/', RString.from($/))
 
+      rb_define_method(cIO, :print) { |io, *args| io.io_print(*args) }
+
       rb_define_method(cIO, :gets) { |io, *args| io.io_gets(*args) }
       rb_define_method(cIO, :flush) { |io| io.io_flush }
       rb_define_method(cIO, :eof?) { |io| io.io.eof? ? Q_TRUE : Q_FALSE }
