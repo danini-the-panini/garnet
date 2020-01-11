@@ -107,6 +107,10 @@ module GarnetRuby
         VM.instance.special_variables[:backref] = value
       end
 
+      def backref_get
+        VM.instance.special_variables[:backref]
+      end
+
       def reg_last_match(match)
         return Q_NIL if match == Q_NIL
 

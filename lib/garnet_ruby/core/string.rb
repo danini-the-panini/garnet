@@ -112,6 +112,37 @@ module GarnetRuby
         RString.from(str.string_value * len)
       end
 
+      def str_aref_m(str, *args)
+        if args.length == 2
+          # TODO
+        end
+        str_aref(str, args.first)
+      end
+
+      def str_subpat(str, re)
+        if re.match_pos(str).positive?
+          return RString.from(backref_get.match_value[0])
+        end
+        Q_NIL
+      end
+
+      def str_aref(str, indx)
+        if fixnum?(indx)
+          idx = indx.value
+        elsif indx.type?(Regexp)
+          return RString.from(str_subpat(str, indx))
+        elsif indx.type?(String)
+          if str.string_value.include?(indx.string_value)
+            return rb_str_dup(indx)
+          end
+          return Q_NIL
+        else
+          # TODO: check if indx is a range
+        end
+
+        RString.from(str.string_value[idx])
+      end
+
       def str_to_f(str)
         RPrimitive.from(str.string_value.to_f)
       end
@@ -238,16 +269,16 @@ module GarnetRuby
         case mode
         when :string
           str.string_value.__send__(mid, pat, repl)
-          Core.backref_set(RMatch.from($~))
+          backref_set(RMatch.from($~))
         when :map
           str.string_value.__send__(mid, pat) do |s|
-            Core.backref_set(RMatch.from($~))
+            backref_set(RMatch.from($~))
             val = hash_aref(hash, RString.from(s))
             val = val.obj_as_string.string_value
           end
         when :iter
           str.string_value.__send__(mid, pat) do |s|
-            Core.backref_set(RMatch.from($~))
+            backref_set(RMatch.from($~))
             rb_yield(RString.from(s)).obj_as_string.string_value
           end
         end
@@ -267,6 +298,7 @@ module GarnetRuby
       rb_define_method(cString, :hash, &method(:str_hash))
       rb_define_method(cString, :+, &method(:str_plus))
       rb_define_method(cString, :*, &method(:str_times))
+      rb_define_method(cString, :[], &method(:str_aref_m))
 
       rb_define_method(cString, :to_f, &method(:str_to_f))
       rb_define_method(cString, :to_s) { |x| x }
