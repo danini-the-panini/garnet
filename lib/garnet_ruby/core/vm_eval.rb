@@ -6,7 +6,13 @@ module GarnetRuby
 
         src = args.first.obj_as_string.string_value
 
-        parser = Parser.new(src, "eval")
+        if args.length > 2
+          fname = args[2].obj_as_string.string_value
+        else
+          fname = "(eval)"
+        end
+
+        parser = Parser.new(src, fname)
         node = parser.parse
         if __grb_debug__?
           puts '-eval-'
@@ -14,7 +20,7 @@ module GarnetRuby
           puts '------'
         end
 
-        if args.length > 1
+        if args.length > 1 && args[1] != Q_NIL
           cfp = args[1].cfp
         else
           cfp = vm.previous_control_frame
