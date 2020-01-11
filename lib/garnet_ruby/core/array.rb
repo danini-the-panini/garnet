@@ -489,6 +489,23 @@ module GarnetRuby
         ary_compact_bang(ary)
         ary
       end
+
+      def ary_pack(ary, fmt)
+        # TODO: build this properly
+
+        rb_ary = ary.array_value.map do |v|
+          case v
+          when RString
+            v.string_value
+          when RPrimitive
+            v.value
+          else
+            raise "ARY PACK CAN ONLY DO STRINGS AND NUMBERS RIGHT NOW"
+          end
+        end
+
+        RString.from(rb_ary.pack(fmt.obj_as_string.string_value))
+      end
     end
 
     def self.init_array
@@ -538,6 +555,8 @@ module GarnetRuby
       rb_define_method(cArray, :uniq!, &method(:ary_uniq_bang))
       rb_define_method(cArray, :compact, &method(:ary_compact))
       rb_define_method(cArray, :compact!, &method(:ary_compact_bang))
+
+      rb_define_method(cArray, :pack, &method(:ary_pack))
     end
   end
 end
