@@ -1858,7 +1858,7 @@ tmp.close
 test_ok(done)
 
 File.unlink "script_tmp" or `/bin/rm -f "script_tmp"`
-File.unlink "script_tmp.bak" or `/bin/rm -f "script_tmp.bak"`
+# File.unlink "script_tmp.bak" or `/bin/rm -f "script_tmp.bak"` # TODO: once -i works
 
 $bad = false
 if (dir = File.dirname(File.dirname(__FILE__))) == '.'
