@@ -28,6 +28,10 @@ module GarnetRuby
         args.each { |f| File.unlink(f.string_value) }
       end
 
+      def file_s_dirname(_, fname)
+        RString.from(File.dirname(fname.obj_as_string.string_value))
+      end
+
       def define_filetest_function(name)
         x = -> (_, *args) { File.__send__(name, *args.map(&:string_value)) ? Q_TRUE : Q_FALSE }
         rb_define_module_function(mFileTest, name, &x)
@@ -72,6 +76,7 @@ module GarnetRuby
       define_filetest_function(:identical?)
 
       rb_define_singleton_method(cFile, :unlink, &method(:file_s_unlink))
+      rb_define_singleton_method(cFile, :dirname, &method(:file_s_dirname))
     end
   end
 end
