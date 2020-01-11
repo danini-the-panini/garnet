@@ -324,6 +324,30 @@ module GarnetRuby
 
         str
       end
+
+      def str_tr(str, src, repl)
+        str = rb_str_dup(str)
+        str_tr_bang(str, src, repl)
+        str
+      end
+
+      def str_tr_s(str, src, repl)
+        str = rb_str_dup(str)
+        str_tr_s_bang(str, src, repl)
+        str
+      end
+
+      def str_tr_bang(str, src, repl)
+        src = src.obj_as_string
+        repl = repl.obj_as_string
+        RString.from(str.string_value.tr!(src.string_value, repl.string_value))
+      end
+
+      def str_tr_s_bang(str, src, repl)
+        src = src.obj_as_string
+        repl = repl.obj_as_string
+        RString.from(str.string_value.tr_s!(src.string_value, repl.string_value))
+      end
     end
 
     def self.init_string
@@ -364,6 +388,12 @@ module GarnetRuby
 
       rb_define_method(cString, :sub!, &method(:str_sub_bang))
       rb_define_method(cString, :gsub!, &method(:str_gsub_bang))
+
+      rb_define_method(cString, :tr, &method(:str_tr))
+      rb_define_method(cString, :tr_s, &method(:str_tr_s))
+
+      rb_define_method(cString, :tr!, &method(:str_tr_bang))
+      rb_define_method(cString, :tr_s!, &method(:str_tr_s_bang))
     end
   end
 end
