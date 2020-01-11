@@ -86,6 +86,11 @@ module GarnetRuby
         Q_NIL
       end
 
+      def int_chr(num)
+        # TODO: encoding
+        RString.from(num.value.chr)
+      end
+
       def int_cmp(x, y)
         if fixnum?(x)
           fix_cmp(x, y)
@@ -558,6 +563,7 @@ module GarnetRuby
       rb_define_method(cInteger, :upto, &method(:int_upto))
       rb_define_method(cInteger, :downto, &method(:int_downto))
       rb_define_method(cInteger, :times, &method(:int_dotimes))
+      rb_define_method(cInteger, :chr, &method(:int_chr))
       rb_define_method(cInteger, :<=>, &method(:int_cmp))
 
       rb_define_method(cInteger, :===, &method(:int_equal))
