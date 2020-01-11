@@ -94,6 +94,10 @@ module GarnetRuby
       rb_check_convert_type_with_id(Array, "Array", :to_a)
     end
 
+    def check_hash_type
+      rb_check_convert_type_with_id(Hash, "Hash", :to_hash)
+    end
+
     def rb_check_convert_type_with_id(type, tname, method)
       return self if self.type == type
       v = convert_type_with_id(tname, method, false, -1)

@@ -171,6 +171,66 @@ module GarnetRuby
       def rb_sprintf(str, *args)
         str.format(*args)
       end
+
+      def rb_str_dup(str)
+        RString.from(str.string_value.dup)
+      end
+
+      def str_gsub(str, *args)
+        str = rb_str_dup(str)
+        str_gsub_bang(str)
+        str
+      end
+
+      def str_gsub_bang(str, *args)
+        mode = :string
+
+        case args.length
+        when 1
+          # TODO: return enumerator
+          mode = :iter
+        when 2
+          repl = args[1]
+          hash = repl.check_hash_type
+          if hash == Q_NIL
+            repl = repl.string_value
+          else
+            mode = :map
+          end
+        else
+          # TODO: arity error
+        end
+
+        pat = args.first
+        tmp = pat.check_string_type
+        if tmp == Q_NIL
+          raise ArgumentError unless pat.is_a?(RRegexp)
+          pat = pat.regexp_value
+        else
+          pat = tmp.string_value
+        end
+
+        case mode
+        when :string
+          str.string_value.gsub!(pat) do |_|
+            Core.backref_set(RMatch.from($~))
+            repl
+          end
+        when :map
+          str.string_value.gsub!(pat) do |s|
+            Core.backref_set(RMatch.from($~))
+            val = hash_aref(hash, RString.from(s))
+            val = val.obj_as_string.string_value
+          end
+        when :iter
+          str.string_value.gsub!(pat) do |s|
+            Core.backref_set(RMatch.from($~))
+            rb_yield(RString.from(s)).obj_as_string.string_value
+          end
+        end
+
+        str
+      end
     end
 
     def self.init_string
@@ -195,6 +255,10 @@ module GarnetRuby
       rb_define_method(cString, :reverse!, &method(:str_reverse_bang))
 
       rb_define_method(cString, :scan, &method(:str_scan))
+
+      rb_define_method(cString, :gsub, &method(:str_gsub))
+
+      rb_define_method(cString, :gsub!, &method(:str_gsub_bang))
     end
   end
 end
