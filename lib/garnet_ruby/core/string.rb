@@ -119,6 +119,10 @@ module GarnetRuby
         str_aref(str, args.first)
       end
 
+      def str_length(str)
+        RPrimitive.from(str.string_value.length)
+      end
+
       def str_subpat(str, re)
         if re.match_pos(str).positive?
           return RString.from(backref_get.match_value[0])
@@ -390,6 +394,8 @@ module GarnetRuby
       rb_define_method(cString, :+, &method(:str_plus))
       rb_define_method(cString, :*, &method(:str_times))
       rb_define_method(cString, :[], &method(:str_aref_m))
+      rb_define_method(cString, :length, &method(:str_length))
+      rb_define_method(cString, :size, &method(:str_length))
 
       rb_define_method(cString, :to_f, &method(:str_to_f))
       rb_define_method(cString, :to_s) { |x| x }
