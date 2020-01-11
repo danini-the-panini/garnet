@@ -26,6 +26,14 @@ module GarnetRuby
         val.to_integer("to_int", :to_int)
       end
 
+      def int_to_s(x, *args)
+        base = 10
+        if args.length == 1
+          base = num2long(args.first)
+        end
+        RString.from(x.value.to_s(base))
+      end
+
       def int_odd_p(num)
         if fixnum?(num)
           return Q_TRUE if num.value.odd?
@@ -554,9 +562,7 @@ module GarnetRuby
       rb_define_method(cNumeric, :<=>, &method(:num_cmp))
 
       @cInteger = rb_define_class(:Integer, cNumeric)
-      rb_define_method(cInteger, :to_s) do |x, base = 10|
-        RString.from(x.value.to_s(base))
-      end
+      rb_define_method(cInteger, :to_s, &method(:int_to_s))
       rb_alias_method(cInteger, :inspect, :to_s)
       rb_define_method(cInteger, :odd?, &method(:int_odd_p))
       rb_define_method(cInteger, :even?, &method(:int_even_p))
