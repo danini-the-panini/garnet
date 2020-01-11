@@ -53,22 +53,26 @@ module GarnetRuby
       else
         script_name = ARGV.shift
         options[:script_name] = script_name
+        options[:progname] = script_name
         options[:source] = File.read(script_name)
+      end
+    end
 
-        if options[:switch_parsing]
-          options[:global_variables] = {}
-          while (arg = ARGV.first)&.start_with?('-')
-            val = true
-            if arg.include?('=')
-              arg, val = arg.split('=')
-            end
-            arg = arg[1..].tr('-', '_')
-            options[:global_variables][arg] = val
-            ARGV.shift
+    if options[:progname]
+      if options[:switch_parsing]
+        options[:global_variables] = {}
+        while (arg = ARGV.first)&.start_with?('-')
+          val = true
+          if arg.include?('=')
+            arg, val = arg.split('=')
           end
+          arg = arg[1..].tr('-', '_')
+          options[:global_variables][arg] = val
+          ARGV.shift
         end
       end
     end
+
     options[:argv] = ARGV
     options
   end
@@ -76,7 +80,16 @@ module GarnetRuby
   def self.run
     options = parse_options
 
-    crunchbang_line = options[:source].each_line.find_index { |l| l.match?(/\A\#\!.*ruby/) }
+    crunchbang_line = options[:source].each_line.find_index { |l| l =~ /\A\#\!.*ruby/ }
+
+    if crunchbang_line
+      crunchbang = options[:source].each_line.drop(crunchbang_line).first.chomp
+
+      if crunchbang =~ /\A\#\!\s?\S+\s+(.*)\z/
+        argv = $1.split(/\s/)
+        options = parse_options(argv + options[:argv], options)
+      end
+    end
 
     if options[:strip_before_crunchbang]
       if !crunchbang_line
