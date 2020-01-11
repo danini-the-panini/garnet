@@ -95,6 +95,12 @@ module GarnetRuby
         RPrimitive.from(result)
       end
 
+      def str_plus(str1, str2)
+        str2 = str2.obj_as_string
+
+        RString.from(str1.string_value + str2.string_value)
+      end
+
       def str_to_f(str)
         RPrimitive.from(str.string_value.to_f)
       end
@@ -176,6 +182,7 @@ module GarnetRuby
       rb_define_method(cString, :===, &method(:str_equal))
       rb_define_method(cString, :eql?, &method(:str_eql))
       rb_define_method(cString, :hash, &method(:str_hash))
+      rb_define_method(cString, :+, &method(:str_plus))
 
       rb_define_method(cString, :to_f, &method(:str_to_f))
       rb_define_method(cString, :to_s) { |x| x }
