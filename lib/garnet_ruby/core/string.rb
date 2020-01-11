@@ -420,6 +420,11 @@ module GarnetRuby
         end
         str
       end
+
+      def str_force_encoding(str, enc)
+        # TODO: actually implement encoding logic
+        str
+      end
     end
 
     def self.init_string
@@ -476,6 +481,8 @@ module GarnetRuby
       rb_define_method(cString, :squeeze!, &method(:str_squeeze_bang))
       
       rb_define_method(cString, :each_byte, &method(:str_each_byte))
+
+      rb_define_method(cString, :force_encoding, &method(:str_force_encoding))
     end
   end
 end
