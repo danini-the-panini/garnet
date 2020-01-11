@@ -120,6 +120,7 @@ module GarnetRuby
         init_proc
         init_io
         init_file
+        init_dir
         init_signal
         init_process
 
