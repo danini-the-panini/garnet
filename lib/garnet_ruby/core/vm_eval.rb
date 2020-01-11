@@ -2,15 +2,17 @@ module GarnetRuby
   module Core
     class << self
       def rb_f_eval(_, *args)
+        vm = VM.instance
+
         src = args.first.obj_as_string.string_value
 
         parser = Parser.new(src, "eval")
         node = parser.parse
 
-        iseq = Iseq.new('eval', :eval)
+        iseq = Iseq.new('eval', :eval, vm.previous_control_frame.iseq)
         Compiler.new(iseq).compile_node(node)
 
-        VM.instance.execute_eval_iseq(iseq)
+        vm.execute_eval_iseq(iseq)
       end
 
       def rb_catch(_, tag = RObject.new(Core.cObject, []))
