@@ -87,7 +87,7 @@ module GarnetRuby
 
       if crunchbang =~ /\A\#\!\s?\S+\s+(.*)\z/
         argv = $1.split(/\s/)
-        options = parse_options(argv + options[:argv], options)
+        options = parse_options(argv + ['--'] + options[:argv], options)
       end
     end
 
