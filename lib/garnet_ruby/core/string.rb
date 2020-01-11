@@ -337,6 +337,12 @@ module GarnetRuby
         str
       end
 
+      def str_delete(str, *args)
+        str = rb_str_dup(str)
+        str_delete_bang(str, *args)
+        str
+      end
+
       def str_squeeze(str, *args)
         str = rb_str_dup(str)
         str_squeeze_bang(str, *args)
@@ -353,6 +359,10 @@ module GarnetRuby
         src = src.obj_as_string
         repl = repl.obj_as_string
         RString.from(str.string_value.tr_s!(src.string_value, repl.string_value))
+      end
+
+      def str_delete_bang(str, *args)
+        RString.from(str.string_value.delete!(*args.map { |a| a.obj_as_string.string_value }))
       end
 
       def str_squeeze_bang(str, *args)
@@ -401,10 +411,12 @@ module GarnetRuby
 
       rb_define_method(cString, :tr, &method(:str_tr))
       rb_define_method(cString, :tr_s, &method(:str_tr_s))
+      rb_define_method(cString, :delete, &method(:str_delete))
       rb_define_method(cString, :squeeze, &method(:str_squeeze))
 
       rb_define_method(cString, :tr!, &method(:str_tr_bang))
       rb_define_method(cString, :tr_s!, &method(:str_tr_s_bang))
+      rb_define_method(cString, :delete!, &method(:str_delete_bang))
       rb_define_method(cString, :squeeze!, &method(:str_squeeze_bang))
     end
   end
