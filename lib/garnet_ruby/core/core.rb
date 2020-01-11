@@ -330,9 +330,18 @@ module GarnetRuby
         end
       end
 
-      def inject_global_variables(vm)
+      def inject_global_variables(vm, cmd_gvars)
         @initial_gvars.each do |k, v|
           vm.set_global(k, v)
+        end
+        if cmd_gvars
+          cmd_gvars.each do |k, v|
+            val = case v
+                  when TrueClass then Q_TRUE
+                  else RString.from(v)
+                  end
+            vm.set_global("$#{k}".to_sym, val)
+          end
         end
       end
 

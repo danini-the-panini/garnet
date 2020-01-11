@@ -17,12 +17,16 @@ module GarnetRuby
       opts.banner = "Usage: garnet [switches] [--] [progfile] [arguments]"
 
       opts.on("-e 'command'", "one line of script. Several -e's allowed. Omit [programfile]") do |v|
-        options[:scriptname] = '-e'
+        options[:script_name] = '-e'
         if options[:source]
           options[:source] += "\n#{v}"
         else
           options[:source] = v
         end
+      end
+
+      opts.on('-s', 'enable some switch parsing for switches after script name') do |v|
+        options[:switch_parsing] = v
       end
 
       opts.on("-v", "--version", "print the version number, then exit") do
@@ -34,15 +38,32 @@ module GarnetRuby
         puts opts
         exit
       end
-    end.parse!
-    if !options[:scriptname]
+    end.order! do |v|
+      ARGV.unshift(v)
+      break
+    end
+
+    if !options[:script_name]
       if ARGV.empty?
-        options[:scriptname] = '-'
+        options[:script_name] = '-'
         options[:source] = STDIN.read
       else
-        scriptname = ARGV.shift
-        options[:scriptname] = scriptname
-        options[:source] = File.read(scriptname)
+        script_name = ARGV.shift
+        options[:script_name] = script_name
+        options[:source] = File.read(script_name)
+
+        if options[:switch_parsing]
+          options[:global_variables] = {}
+          while (arg = ARGV.first)&.start_with?('-')
+            val = true
+            if arg.include?('=')
+              arg, val = arg.split('=')
+            end
+            arg = arg[1..].tr('-', '_')
+            options[:global_variables][arg] = val
+            ARGV.shift
+          end
+        end
       end
     end
     options[:argv] = ARGV
@@ -54,7 +75,7 @@ module GarnetRuby
 
     Core.init
 
-    parser = Parser.new(options[:source], options[:scriptname])
+    parser = Parser.new(options[:source], options[:script_name])
     node = parser.parse
     if __grb_debug__?
       pp node
@@ -66,7 +87,7 @@ module GarnetRuby
 
     vm = VM.new
     Core.inject_env(vm)
-    Core.inject_global_variables(vm)
+    Core.inject_global_variables(vm, options[:global_variables])
     vm.running = true
     vm.execute_main(iseq)
   end

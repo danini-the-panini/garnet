@@ -176,9 +176,8 @@ module GarnetRuby
 
       @cNilClass = rb_define_class(:NilClass)
       ::GarnetRuby.const_set(:Q_NIL, RPrimitive.new(@cNilClass, [], nil))
-      rb_define_method(cNilClass, :to_s) do |obj|
-        RString.from('')
-      end
+      rb_define_method(cNilClass, :to_s) { |_| RString.from('') }
+      rb_define_method(cNilClass, :inspect) { |_| RString.from('nil') }
       rb_define_global_const(:NIL, Q_NIL)
 
       rb_define_method(cModule, :===) do |mod, arg|
@@ -192,10 +191,14 @@ module GarnetRuby
 
       @cTrueClass = rb_define_class(:TrueClass)
       ::GarnetRuby.const_set(:Q_TRUE, RPrimitive.new(@cTrueClass, [], true))
+      rb_define_method(cTrueClass, :to_s) { |_| RString.from("true") }
+      rb_alias_method(cTrueClass, :inspect, :to_s)
       rb_define_global_const(:TRUE, Q_TRUE)
 
       @cFalseClass = rb_define_class(:FalseClass)
       ::GarnetRuby.const_set(:Q_FALSE, RPrimitive.new(@cFalseClass, [], false))
+      rb_define_method(cFalseClass, :to_s) { |_| RString.from("false") }
+      rb_alias_method(cFalseClass, :inspect, :to_s)
       rb_define_global_const(:FALSE, Q_FALSE)
 
       rb_define_global_function(:caller, &method(:rb_caller))
