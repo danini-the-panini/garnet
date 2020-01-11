@@ -256,7 +256,11 @@ module GarnetRuby
       end
 
       def ary_pop(ary)
-        ary.array_value.pop
+        ary.array_value.pop || Q_NIL
+      end
+
+      def ary_shift(ary)
+        ary.array_value.shift || Q_NIL
       end
 
       def ary_each(ary)
@@ -507,6 +511,7 @@ module GarnetRuby
       rb_define_method(cArray, :push, &method(:ary_cat))
       rb_alias_method(cArray, :append, :push)
       rb_define_method(cArray, :pop, &method(:ary_pop))
+      rb_define_method(cArray, :shift, &method(:ary_shift))
       rb_define_method(cArray, :each, &method(:ary_each))
       rb_define_method(cArray, :length, &method(:ary_length))
       rb_alias_method(cArray, :size, :length)
