@@ -119,6 +119,37 @@ module GarnetRuby
         str_aref(str, args.first)
       end
 
+      def str_splice(str, beg, len, val)
+        val = val.obj_as_string
+        str.string_value[beg, len] = val.string_value
+      end
+
+      def str_aset(str, indx, val)
+        if fixnum?(indx)
+          idx = indx.value
+        else
+          # TODO: some other stuff
+
+          result, beg, len = range_beg_len(indx, str.length, 1)
+          if rtest(result)
+            str_splice(str, beg, len, val)
+            return val
+          end
+
+          idx = num2long(indx)
+        end
+
+        str_splice(str, idx, 1, val)
+        val
+      end
+
+      def str_aset_m(str, *args)
+        if args.length == 3
+          # TODO
+        end
+        str_aset(str, args[0], args[1])
+      end
+
       def str_length(str)
         RPrimitive.from(str.string_value.length)
       end
@@ -394,6 +425,7 @@ module GarnetRuby
       rb_define_method(cString, :+, &method(:str_plus))
       rb_define_method(cString, :*, &method(:str_times))
       rb_define_method(cString, :[], &method(:str_aref_m))
+      rb_define_method(cString, :[]=, &method(:str_aset_m))
       rb_define_method(cString, :length, &method(:str_length))
       rb_define_method(cString, :size, &method(:str_length))
 
