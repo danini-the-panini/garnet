@@ -80,6 +80,13 @@ module GarnetRuby
         RIO.new(klass, [], nil)
       end
 
+      def io_s_read(_, *args)
+        name = args.first.obj_as_string.string_value
+        # TODO: more args
+
+        RString.from(IO::read(name))
+      end
+
       def rb_printf(*args)
         return Q_NIL if args.length.zero?
 
@@ -135,6 +142,7 @@ module GarnetRuby
       @cIO = rb_define_class(:IO, cObject)
 
       rb_define_alloc_func(cIO, &method(:io_alloc))
+      rb_define_singleton_method(cIO, :read, &method(:io_s_read))
 
       rb_define_global_variable(:'$/', RString.from($/))
 
