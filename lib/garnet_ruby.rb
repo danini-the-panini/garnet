@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require 'optparse'
+
 def __grb_debug__?
   ENV['GARNET_DEBUG']
 end
@@ -9,10 +11,50 @@ module GarnetRuby
 
   Q_UNDEF = Object.new
 
-  def self.run(source, filename)
+  def self.parse_options
+    options = {}
+    OptionParser.new do |opts|
+      opts.banner = "Usage: garnet [switches] [--] [progfile] [arguments]"
+
+      opts.on("-e 'command'", "one line of script. Several -e's allowed. Omit [programfile]") do |v|
+        options[:scriptname] = '-e'
+        if options[:source]
+          options[:source] += "\n#{v}"
+        else
+          options[:source] = v
+        end
+      end
+
+      opts.on("-v", "--version", "print the version number, then exit") do
+        puts "garnet #{VERSION}"
+        exit
+      end
+
+      opts.on("-h", "--help", "show this message") do
+        puts opts
+        exit
+      end
+    end.parse!
+    if !options[:scriptname]
+      if ARGV.empty?
+        options[:scriptname] = '-'
+        options[:source] = STDIN.read
+      else
+        scriptname = ARGV.shift
+        options[:scriptname] = scriptname
+        options[:source] = File.read(scriptname)
+      end
+    end
+    options[:argv] = ARGV
+    options
+  end
+
+  def self.run
+    options = parse_options
+
     Core.init
 
-    parser = Parser.new(source, filename)
+    parser = Parser.new(options[:source], options[:scriptname])
     node = parser.parse
     if __grb_debug__?
       pp node

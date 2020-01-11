@@ -1,7 +1,7 @@
 #! /usr/bin/env ruby
 # -*- coding: us-ascii -*-
 
-RUBY_EXE = ENV['RUBY_EXE'] || './exe/rbruby'
+RUBY_EXE = ENV['RUBY_EXE'] || './exe/garnet'
 
 $testnum=0
 $ntest=0
