@@ -146,6 +146,10 @@ module GarnetRuby
         match.nth_match(nth)
       end
 
+      def reg_s_quote(_, str)
+        RString.from(Regexp.quote(str.obj_as_string.string_value))
+      end
+
       def reg_match(re, *args)
         str = args[0]
 
@@ -172,6 +176,7 @@ module GarnetRuby
     def self.init_regexp
       @cRegexp = rb_define_class(:Regexp, cObject)
       rb_define_alloc_func(cRegexp, &method(:regexp_alloc))
+      rb_define_singleton_method(cRegexp, :quote, &method(:reg_s_quote))
 
       rb_define_method(cRegexp, :=~) { |re, str| re.match(str) }
       rb_define_method(cRegexp, :===) { |re, str| rtest(re.match(str)) ? Q_TRUE : Q_FALSE }
