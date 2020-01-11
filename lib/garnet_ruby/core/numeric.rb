@@ -298,6 +298,52 @@ module GarnetRuby
         RPrimitive.from(x.value / y.value)
       end
 
+      def int_modulo(x, y)
+        # TODO: type coersion
+        RPrimitive.from(x.value % y.value)
+      end
+
+      def num_positive_int?(num)
+        mid = :>
+
+        if fixnum?(num) && rb_method_basic_definition?(cInteger, mid)
+          return num.value.positive?
+        end
+
+        rtest(rb_num_compare_with_zero(num, mid))
+      end
+
+      def num_negative_int?(num)
+        mid = :<
+
+        if fixnum?(num) && rb_method_basic_definition?(cInteger, mid)
+          return num.value.negative?
+        end
+
+        rtest(rb_num_compare_with_zero(num, mid))
+      end
+
+      def num_remainder(x, y)
+        z = rb_funcall(x, :%, y)
+
+        if (!rtest(rb_equal(z, RPrimitive.from(0)))) &&
+          ((num_negative_int?(x) && num_positive_int?(y)) ||
+           (num_positive_int?(x) && num_negative_int?(y)))
+
+          return rb_funcall(z, :-, y)
+        end
+
+        z
+      end
+
+      def int_remainder(x, y)
+        if fixnum?(x)
+          num_remainder(x, y)
+        else
+          Q_NIL
+        end
+      end
+
       def int_pow(x, y)
         # TODO: type coersion
         RPrimitive.from(x.value ** y.value)
@@ -527,6 +573,9 @@ module GarnetRuby
       rb_define_method(cInteger, :-, &method(:int_minus))
       rb_define_method(cInteger, :*, &method(:int_mul))
       rb_define_method(cInteger, :/, &method(:int_div))
+      rb_define_method(cInteger, :%, &method(:int_modulo))
+      rb_define_method(cInteger, :modulo, &method(:int_modulo))
+      rb_define_method(cInteger, :remainder, &method(:int_remainder))
       rb_define_method(cInteger, :**, &method(:int_pow))
 
       rb_define_method(cInteger, :<<, &method(:int_lshift))
