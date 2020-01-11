@@ -187,13 +187,27 @@ module GarnetRuby
         RString.from(str.string_value.dup)
       end
 
-      def str_gsub(str, *args)
+      def str_sub(str, *args)
         str = rb_str_dup(str)
-        str_gsub_bang(str)
+        str_sub_bang(str, *args)
         str
       end
 
+      def str_gsub(str, *args)
+        str = rb_str_dup(str)
+        str_gsub_bang(str, *args)
+        str
+      end
+
+      def str_sub_bang(str, *args)
+        rb_str_sub(str, :sub!, *args)
+      end
+
       def str_gsub_bang(str, *args)
+        rb_str_sub(str, :gsub!, *args)
+      end
+
+      def rb_str_sub(str, mid, *args)
         mode = :string
 
         case args.length
@@ -223,18 +237,16 @@ module GarnetRuby
 
         case mode
         when :string
-          str.string_value.gsub!(pat) do |_|
-            Core.backref_set(RMatch.from($~))
-            repl
-          end
+          str.string_value.__send__(mid, pat, repl)
+          Core.backref_set(RMatch.from($~))
         when :map
-          str.string_value.gsub!(pat) do |s|
+          str.string_value.__send__(mid, pat) do |s|
             Core.backref_set(RMatch.from($~))
             val = hash_aref(hash, RString.from(s))
             val = val.obj_as_string.string_value
           end
         when :iter
-          str.string_value.gsub!(pat) do |s|
+          str.string_value.__send__(mid, pat) do |s|
             Core.backref_set(RMatch.from($~))
             rb_yield(RString.from(s)).obj_as_string.string_value
           end
@@ -268,8 +280,10 @@ module GarnetRuby
 
       rb_define_method(cString, :scan, &method(:str_scan))
 
+      rb_define_method(cString, :sub, &method(:str_sub))
       rb_define_method(cString, :gsub, &method(:str_gsub))
 
+      rb_define_method(cString, :sub!, &method(:str_sub_bang))
       rb_define_method(cString, :gsub!, &method(:str_gsub_bang))
     end
   end
