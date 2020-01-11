@@ -147,6 +147,45 @@ module GarnetRuby
         RPrimitive.from(str.string_value.to_f)
       end
 
+      def str_upcase(str)
+        # TODO: options
+        str = rb_str_dup(str)
+        str_upcase_bang(str)
+        str
+      end
+
+      def str_downcase(str)
+        # TODO: options
+        str = rb_str_dup(str)
+        str_downcase_bang(str)
+        str
+      end
+
+      def str_swapcase(str)
+        # TODO: options
+        str = rb_str_dup(str)
+        str_swapcase_bang(str)
+        str
+      end
+
+      def str_upcase_bang(str)
+        # TODO: options
+        str.string_value.upcase!
+        str
+      end
+
+      def str_downcase_bang(str)
+        # TODO: options
+        str.string_value.downcase!
+        str
+      end
+
+      def str_swapcase_bang(str)
+        # TODO: options
+        str.string_value.swapcase!
+        str
+      end
+
       def str_split(str, *args)
         limit = nil
         if args.length == 2
@@ -305,6 +344,14 @@ module GarnetRuby
       rb_define_method(cString, :inspect) do |x|
         RString.from(x.string_value.inspect)
       end
+
+      rb_define_method(cString, :upcase, &method(:str_upcase))
+      rb_define_method(cString, :downcase, &method(:str_downcase))
+      rb_define_method(cString, :swapcase, &method(:str_swapcase))
+
+      rb_define_method(cString, :upcase!, &method(:str_upcase_bang))
+      rb_define_method(cString, :downcase!, &method(:str_downcase_bang))
+      rb_define_method(cString, :swapcase!, &method(:str_swapcase_bang))
 
       rb_define_method(cString, :split, &method(:str_split))
       rb_define_method(cString, :reverse, &method(:str_reverse))
