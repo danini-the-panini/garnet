@@ -260,7 +260,7 @@ module GarnetRuby
 
     def compile_dxstr(node)
       add_instruction(:put_self)
-      compile_dstr_nodes(node[1..-1])
+      compile_dstr(node)
       add_instruction(:send_without_block, CallInfo.new(:`, 1, [:simple]))
     end
 
