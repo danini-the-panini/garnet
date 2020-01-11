@@ -142,6 +142,17 @@ module GarnetRuby
       control_frame.stack.pop || Q_NIL
     end
 
+    def execute_eval_iseq(iseq)
+      prev_control_frame = current_control_frame
+      env = Environment.new(previous_control_frame.klass, prev_control_frame.environment)
+      control_frame = ControlFrame.new(prev_control_frame.klass, iseq, env)
+      push_control_frame(control_frame)
+
+      execute(iseq) until current_control_frame != control_frame
+
+      control_frame.stack.pop || Q_NIL
+    end
+
     def execute(iseq)
       control_frame = current_control_frame
       insn = iseq.instructions[control_frame.pc]

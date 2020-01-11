@@ -1,6 +1,18 @@
 module GarnetRuby
   module Core
     class << self
+      def rb_f_eval(_, *args)
+        src = args.first.obj_as_string.string_value
+
+        parser = Parser.new(src, "eval")
+        node = parser.parse
+
+        iseq = Iseq.new('eval', :eval)
+        Compiler.new(iseq).compile_node(node)
+
+        VM.instance.execute_eval_iseq(iseq)
+      end
+
       def rb_catch(_, tag = RObject.new(Core.cObject, []))
         vm = VM.instance
         vm.current_control_frame.tag = tag
@@ -27,6 +39,8 @@ module GarnetRuby
     end
 
     def self.init_vm_eval
+      rb_define_global_function(:eval, &method(:rb_f_eval))
+
       rb_define_global_function(:iterator?, &method(:rb_f_block_given))
       rb_define_global_function(:block_given?, &method(:rb_f_block_given))
 

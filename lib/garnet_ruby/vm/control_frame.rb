@@ -25,6 +25,10 @@ module GarnetRuby
       "CFP(self=#{self_value}, pc=#{pc}, iseq=#{iseq}, stack=#{stack})#{inmethod}"
     end
 
+    def klass
+      environment.klass
+    end
+
     def push_stack(obj)
       raise "PUSH NIL!" if obj.nil?
       raise "PUSH UNDEF!" if obj == Q_UNDEF
