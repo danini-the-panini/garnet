@@ -7,7 +7,7 @@ module GarnetRuby
         exc
       end
 
-      def exc_init(exc, message = Q_NIL)
+      def exc_initialize(exc, message = Q_NIL)
         exc.ivar_set(:message, message)
         exc
       end
@@ -34,12 +34,8 @@ module GarnetRuby
         end
 
         if exception_call
-          p exc.name
-          p exception_call
-          p VM.instance.rb_respond_to(exc, :exception)
           mesg = rb_check_funcall(exc, :exception, *exception_call)
           if mesg == Q_UNDEF
-            raise mesg
             rb_raise(eTypeError, "exception class/object expected")
           end
         end
@@ -82,6 +78,7 @@ module GarnetRuby
       @eException = rb_define_class(:Exception, cObject)
       rb_define_singleton_method(eException, :exception, &method(:rb_class_new_instance))
       rb_define_method(eException, :exception, &method(:exc_exception))
+      rb_define_method(eException, :initialize, &method(:exc_initialize))
       rb_define_method(eException, :to_s, &method(:exc_to_s))
       rb_define_method(eException, :message, &method(:exc_message))
 

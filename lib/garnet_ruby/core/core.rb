@@ -120,6 +120,8 @@ module GarnetRuby
         init_proc
         init_io
         init_file
+        init_signal
+        init_process
 
         @env_table = RHash.new(cHash, [])
         cObject.rb_const_set(:ENV, env_table)
@@ -264,7 +266,7 @@ module GarnetRuby
         rb_define_method(singleton_class_of(obj), name, &block)
       end
 
-      def rb_define_module_method(obj, name, &block)
+      def rb_define_module_function(obj, name, &block)
         rb_define_private_method(obj, name, &block)
         rb_define_singleton_method(obj, name, &block)
       end
@@ -288,7 +290,7 @@ module GarnetRuby
       end
 
       def rb_define_global_function(name, &block)
-        rb_define_module_method(mKernel, name, &block)
+        rb_define_module_function(mKernel, name, &block)
       end
 
       def rb_define_global_const(name, value)
@@ -334,7 +336,7 @@ module GarnetRuby
         end
       end
 
-      def rb_define_module_method(mdl, name, &block)
+      def rb_define_module_function(mdl, name, &block)
         rb_define_private_method(mdl, name, &block)
         rb_define_singleton_method(mdl, name, &block)
       end
@@ -377,6 +379,16 @@ module GarnetRuby
 
       def rb_block_call(recv, mid, *args, &block)
         VM.instance.rb_block_call(recv, mid, *args, &block)
+      end
+
+      def rb_block_proc
+        VM.instance.current_control_frame.block.proc
+      end
+
+      def proc_ptr(proc)
+        -> (*args) {
+          rb_funcall(proc, :call, *args.map { |a| ruby2garnet(a) })
+        }
       end
 
       def rb_call_super(*args)

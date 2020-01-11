@@ -30,7 +30,7 @@ module GarnetRuby
 
       def define_filetest_function(name)
         x = -> (_, *args) { File.__send__(name, *args.map(&:string_value)) ? Q_TRUE : Q_FALSE }
-        rb_define_module_method(mFileTest, name, &x)
+        rb_define_module_function(mFileTest, name, &x)
         rb_define_singleton_method(cFile, name, &x)
       end
     end
