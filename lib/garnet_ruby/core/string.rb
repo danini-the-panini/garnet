@@ -178,6 +178,15 @@ module GarnetRuby
         RString.from(str.string_value[idx])
       end
 
+      def str_to_i(str, *args)
+        base = 10
+        if args.count == 1
+          base = num2long(args.first)
+          rb_raise(eArgError, "invalid radix #{base}") if base < 0
+        end
+        RPrimitive.from(str.string_value.to_i(base))
+      end
+
       def str_to_f(str)
         RPrimitive.from(str.string_value.to_f)
       end
@@ -429,6 +438,7 @@ module GarnetRuby
       rb_define_method(cString, :length, &method(:str_length))
       rb_define_method(cString, :size, &method(:str_length))
 
+      rb_define_method(cString, :to_i, &method(:str_to_i))
       rb_define_method(cString, :to_f, &method(:str_to_f))
       rb_define_method(cString, :to_s) { |x| x }
       rb_define_method(cString, :inspect) do |x|
