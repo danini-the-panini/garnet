@@ -872,6 +872,7 @@ module GarnetRuby
     end
 
     def do_raise(exception)
+      exception.ivar_set(:backtrace, backtrace_to_ary([], 0, true))
       raise GarnetThrow.new(:raise, exception, current_control_frame, exception)
     end
 
@@ -929,7 +930,13 @@ module GarnetRuby
     def handle_uncaught_throw(e)
       case e.throw_type
       when :raise
-        raise "Uncaught Exception: #{e.exc.inspect}"
+        puts "Uncaught Exception: #{e.exc} #{Core.exc_message(e.exc)}"
+        bt = e.exc.ivar_get(:backtrace)
+        if !bt.nil? && bt.type?(Array)
+          bt.array_value.each do |x|
+            puts x.string_value
+          end
+        end
       else
         raise "Uncaught throw of type #{e.throw_type}"
       end

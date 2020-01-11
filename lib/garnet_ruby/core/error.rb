@@ -69,6 +69,10 @@ module GarnetRuby
         rb_funcall(exc, :to_s)
       end
 
+      def exc_backtrace(exc)
+        exc.ivar_get(:backtrace) || Q_NIL
+      end
+
       def rb_raise(exc, mesg = nil)
         VM.instance.do_raise(make_exception(exc, RString.from(mesg || "")))
       end
@@ -81,6 +85,7 @@ module GarnetRuby
       rb_define_method(eException, :initialize, &method(:exc_initialize))
       rb_define_method(eException, :to_s, &method(:exc_to_s))
       rb_define_method(eException, :message, &method(:exc_message))
+      rb_define_method(eException, :backtrace, &method(:exc_backtrace))
 
       @eSystemExit = rb_define_class(:SystemExit, eException)
 
