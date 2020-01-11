@@ -11,8 +11,7 @@ module GarnetRuby
 
   Q_UNDEF = Object.new
 
-  def self.parse_options
-    options = {}
+  def self.parse_options(argv=ARGV, options={})
     OptionParser.new do |opts|
       opts.banner = "Usage: garnet [switches] [--] [progfile] [arguments]"
 
@@ -28,6 +27,10 @@ module GarnetRuby
       opts.on('-s', 'enable some switch parsing for switches after script name') do |v|
         options[:switch_parsing] = v
       end
+      
+      opts.on('-x', 'strip off text before #!ruby line') do |v|
+        options[:strip_before_crunchbang] = v
+      end
 
       opts.on("-v", "--version", "print the version number, then exit") do
         puts "garnet #{VERSION}"
@@ -38,7 +41,7 @@ module GarnetRuby
         puts opts
         exit
       end
-    end.order! do |v|
+    end.order!(argv) do |v|
       ARGV.unshift(v)
       break
     end
@@ -72,6 +75,16 @@ module GarnetRuby
 
   def self.run
     options = parse_options
+
+    crunchbang_line = options[:source].each_line.find_index { |l| l.match?(/\A\#\!.*ruby/) }
+
+    if options[:strip_before_crunchbang]
+      if !crunchbang_line
+        raise LoadError, "no Ruby script found in input"
+      end
+
+      options[:source] = options[:source].each_line.drop(crunchbang_line).join($/)
+    end
 
     Core.init
 
