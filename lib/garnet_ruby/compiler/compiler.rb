@@ -772,6 +772,11 @@ module GarnetRuby
     end
 
     def compile_call(node)
+      if @iseq.type == :eval && !node[1] && node.length == 3 && @iseq.can_find_local?(node[2])
+        add_get_local(node[2])
+        return
+      end
+
       if node[1]
         compile(node[1])
       else

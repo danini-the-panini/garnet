@@ -85,6 +85,16 @@ module GarnetRuby
       lv
     end
 
+    def can_find_local?(label)
+      i = self
+      l = local_iseq
+      while i != l && !i.local_table.key?(label)
+        return false if i.parent_iseq.nil?
+        i = i.parent_iseq
+      end
+      true
+    end
+
     private
 
     def set_relation(piseq)

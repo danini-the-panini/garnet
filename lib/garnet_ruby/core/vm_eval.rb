@@ -8,6 +8,11 @@ module GarnetRuby
 
         parser = Parser.new(src, "eval")
         node = parser.parse
+        if __grb_debug__?
+          puts '-eval-'
+          pp node
+          puts '------'
+        end
 
         iseq = Iseq.new('eval', :eval, vm.previous_control_frame.iseq)
         Compiler.new(iseq).compile_node(node)

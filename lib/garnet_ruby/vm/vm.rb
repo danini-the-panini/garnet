@@ -143,8 +143,8 @@ module GarnetRuby
     end
 
     def execute_eval_iseq(iseq)
-      prev_control_frame = current_control_frame
-      env = Environment.new(previous_control_frame.klass, prev_control_frame.environment)
+      prev_control_frame = previous_control_frame
+      env = Environment.new(prev_control_frame.klass, prev_control_frame.environment, {}, prev_control_frame.environment)
       control_frame = ControlFrame.new(prev_control_frame.klass, iseq, env)
       push_control_frame(control_frame)
 
