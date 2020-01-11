@@ -342,6 +342,10 @@ module GarnetRuby
       i = locals.index { |l| l[0] == :splat}
       if i.nil?
         add_instruction(:expand_array, locals.count, false, false)
+        locals.each do |l|
+          add_set_local(l[1])
+          add_instruction(:pop)
+        end
       else
         pre = locals[0...i]
         splat = locals[i]
@@ -350,14 +354,18 @@ module GarnetRuby
         add_instruction(:expand_array, pre.count, true, false)
         pre.each do |l|
           add_set_local(l[1])
+          add_instruction(:pop)
         end
         if post.empty?
           add_set_local(splat[1][1])
+          add_instruction(:pop)
         else
           add_instruction(:expand_array, post.count, true, true)
           add_set_local(splat[1][1])
+          add_instruction(:pop)
           post.each do |l|
             add_set_local(l[1])
+            add_instruction(:pop)
           end
         end
       end
