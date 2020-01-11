@@ -179,6 +179,7 @@ module GarnetRuby
       rb_define_method(cNilClass, :to_s) do |obj|
         RString.from('')
       end
+      rb_define_global_const(:NIL, Q_NIL)
 
       rb_define_method(cModule, :===) do |mod, arg|
         obj_is_kind_of(arg, mod)
@@ -191,9 +192,11 @@ module GarnetRuby
 
       @cTrueClass = rb_define_class(:TrueClass)
       ::GarnetRuby.const_set(:Q_TRUE, RPrimitive.new(@cTrueClass, [], true))
+      rb_define_global_const(:TRUE, Q_TRUE)
 
       @cFalseClass = rb_define_class(:FalseClass)
       ::GarnetRuby.const_set(:Q_FALSE, RPrimitive.new(@cFalseClass, [], false))
+      rb_define_global_const(:FALSE, Q_FALSE)
 
       rb_define_global_function(:caller, &method(:rb_caller))
 
