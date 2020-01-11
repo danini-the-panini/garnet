@@ -66,7 +66,7 @@ module GarnetRuby
 
       # TODO: call missing const
 
-      raise NameError, "uninitialized constant #{name}" if check && result.nil?
+      Core.rb_raise(Core.eNameError, "uninitialized constant #{name}") if check && result.nil?
 
       result
     end

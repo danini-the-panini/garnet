@@ -14,10 +14,16 @@ module GarnetRuby
           puts '------'
         end
 
-        iseq = Iseq.new('eval', :eval, vm.previous_control_frame.iseq)
+        if args.length > 1
+          cfp = args[1].cfp
+        else
+          cfp = vm.previous_control_frame
+        end
+
+        iseq = Iseq.new('eval', :eval, cfp.iseq)
         Compiler.new(iseq).compile_node(node)
 
-        vm.execute_eval_iseq(iseq)
+        vm.execute_eval_iseq(iseq, cfp)
       end
 
       def rb_catch(_, tag = RObject.new(Core.cObject, []))

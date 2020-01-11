@@ -142,8 +142,7 @@ module GarnetRuby
       control_frame.stack.pop || Q_NIL
     end
 
-    def execute_eval_iseq(iseq)
-      prev_control_frame = previous_control_frame
+    def execute_eval_iseq(iseq, prev_control_frame = previous_control_frame)
       env = Environment.new(prev_control_frame.klass, prev_control_frame.environment, {}, prev_control_frame.environment)
       control_frame = ControlFrame.new(prev_control_frame.klass, iseq, env)
       push_control_frame(control_frame)
@@ -980,6 +979,16 @@ module GarnetRuby
       else
         # TODO: backtrace_to_location_ary
       end
+    end
+
+    def make_binding(src_cfp)
+      i = @control_frames.find_index(src_cfp)
+      cfp = i.downto(0).each do |n|
+        c = @control_frames[n]
+        break c if c.iseq
+      end
+
+      RBinding.new(Core.cBinding, [], cfp)
     end
 
     def push_control_frame(cfp)

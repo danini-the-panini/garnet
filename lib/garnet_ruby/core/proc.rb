@@ -44,6 +44,15 @@ module GarnetRuby
     end
   end
 
+  class RBinding < RObject
+    attr_reader :cfp
+
+    def initialize(klass, flags, cfp)
+      super(klass, flags)
+      @cfp = cfp
+    end
+  end
+
   module Core
     class << self
       def proc_s_new(_, *args)
@@ -162,6 +171,15 @@ module GarnetRuby
 
         RSymbol.from(id)
       end
+
+      def rb_binding_new
+        vm = VM.instance
+        vm.make_binding(vm.current_control_frame)
+      end
+
+      def rb_f_binding(_)
+        rb_binding_new
+      end
     end
 
     def self.init_proc
@@ -197,6 +215,11 @@ module GarnetRuby
 
       # Module#*_method
       rb_define_method(cModule, :define_method, &method(:mod_define_method))
+
+      # Init_Binding
+      @cBinding = rb_define_class(:Binding, cObject)
+      rb_undef_alloc_func(cBinding)
+      rb_define_global_function(:binding, &method(:rb_f_binding))
     end
   end
 end
