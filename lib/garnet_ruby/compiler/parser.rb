@@ -9,7 +9,7 @@ module GarnetRuby
     end
 
     def parse
-      @ruby_parser.parse(@source, @filename)
+      @ruby_parser.parse(@source, @filename) || s(:nil)
     end
   end
 end
