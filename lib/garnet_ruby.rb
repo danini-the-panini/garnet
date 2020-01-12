@@ -144,6 +144,7 @@ require 'garnet_ruby/core/file'
 require 'garnet_ruby/core/dir'
 require 'garnet_ruby/core/signal'
 require 'garnet_ruby/core/process'
+require 'garnet_ruby/core/marshal'
 require 'garnet_ruby/core/core'
 
 require 'garnet_ruby/compiler/parser'
