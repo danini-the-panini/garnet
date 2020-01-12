@@ -1,7 +1,7 @@
 module GarnetRuby
   class RClass < RObject
     attr_reader :method_table, :super_class, :const_table, :allocator
-    attr_accessor :parent_subclasses, :subclasses
+    attr_accessor :parent_subclasses, :subclasses, :includer
 
     SubclassEntry = Struct.new(:klass, :next_entry)
 
@@ -180,6 +180,11 @@ module GarnetRuby
       klass.parent_subclasses = subclasses
     end
 
+    def origin
+      # TODO
+      self
+    end
+
     def make_metaclass
       metaclass = RClass.new_class(Q_UNDEF)
 
@@ -226,22 +231,95 @@ module GarnetRuby
     end
 
     def include_module(mdl)
-      # TODO: modules with included modules
-      # TODO: support "prepend" (with origin)
+      changed = 0
 
-      iclass = mdl.make_copy
-      iclass.flags |= [:ICLASS]
-      iclass.super_class = super_class
-      self.super_class = iclass
+      # TODO: ensure includable
+
+      changed = include_modules_at(origin, mdl, true)
+      if changed.nil?
+        Core.rb_raise(Core.eArgError, 'cyclic include detected')
+      end
     end
 
-    def make_copy
-      copy = RClass.new(klass, flags)
+    def include_modules_at(c, mdl, search_super)
+      method_changed = false
+      constant_changed = false
+      klass_m_tbl = origin.method_table
 
-      copy.method_table = method_table
-      copy.const_table = const_table
+      # TODO: refinements?
 
-      copy
+      while mdl
+        superclass_seen = false
+        tbl = nil
+
+        if klass_m_tbl && klass_m_tbl.equal?(mdl.method_table)
+          return nil
+        end
+
+        p = super_class
+        skip = false
+        while p
+          if p.flags.include?(:ICLASS)
+            if p.method_table.equal?(mdl.method_table)
+              if !superclass_seen
+                c = p # move insertion point
+              end
+              skip = true
+              break
+            end
+          elsif p.flags.include?(:CLASS)
+            break unless search_super
+            superclass_seen = true
+          end
+
+          p = p.super_class
+        end
+
+        if !skip
+          iclass = mdl.make_include_class(c.super_class)
+          c.super_class = iclass
+          iclass.includer = self
+
+          m = mdl
+          m = m.klass if m.flags.include?(:ICLASS)
+          m.add_subclass(iclass)
+
+          # TODO: refinements?
+
+          tbl = mdl.method_table
+          method_changed = true if tbl && !tbl.empty?
+
+          tbl = mdl.const_table
+          constant_changed = true if tbl && !tbl.empty?
+        end
+
+        mdl = mdl.super_class
+      end
+
+      # TODO: would clear method and const caches here
+
+      method_changed
+    end
+
+    def make_include_class(zuper = super_class)
+      mod = self
+      klass = RClass.new(klass, [:ICLASS])
+
+      if mod.flags.include?(:ICLASS)
+        mod = mod.klass
+      end
+      klass.method_table = method_table
+      klass.const_table = const_table
+
+      klass.super_class = zuper
+
+      if mod.flags.include?(:ICLASS)
+        klass.klass = mod.klass
+      else
+        klass.klass = mod
+      end
+
+      klass
     end
 
     def real

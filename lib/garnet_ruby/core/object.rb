@@ -176,6 +176,30 @@ module GarnetRuby
           RPrimitive.from(1)
         end
       end
+
+      def mod_name(mod)
+        RString.from(mod.name)
+      end
+
+      def mod_ancestors(mod)
+        ary = RArray.from([])
+
+        p = mod
+        while p
+          # TODO: something to do with origin
+          next if p != p.origin
+
+          if p.flags.include?(:ICLASS)
+            ary_push(ary, p.klass)
+          else
+            ary_push(ary, p)
+          end
+
+          p = p.super_class
+        end
+
+        ary
+      end
     end
 
     def self.init_object
@@ -221,6 +245,8 @@ module GarnetRuby
         obj_is_kind_of(arg, mod)
       end
       rb_define_method(cModule, :<=>, &method(:mod_cmp))
+      rb_define_method(cModule, :name, &method(:mod_name))
+      rb_define_method(cModule, :ancestors, &method(:mod_ancestors))
 
       rb_define_alloc_func(cModule, &method(:rb_module_s_alloc))
 
