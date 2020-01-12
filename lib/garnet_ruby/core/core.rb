@@ -314,7 +314,11 @@ module GarnetRuby
       end
 
       def rb_define_global_const(name, value)
-        cObject.rb_const_set(name, value)
+        rb_define_const(cObject, name, value)
+      end
+
+      def rb_define_const(klass, name, value)
+        klass.rb_const_set(name, value)
       end
 
       def rb_define_global_variable(name, value)

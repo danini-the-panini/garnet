@@ -630,6 +630,8 @@ module GarnetRuby
       rb_define_method(cInteger, :<<, &method(:int_lshift))
       rb_define_method(cInteger, :>>, &method(:int_rshift))
 
+      rb_define_const(cObject, :Fixnum, cInteger)
+
       @cFloat = rb_define_class(:Float, cNumeric)
 
       rb_define_method(cFloat, :to_s, &method(:float_to_s))
