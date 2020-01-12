@@ -109,6 +109,7 @@ module GarnetRuby
         init_object
         init_top_self
         init_vm_eval
+        init_vm_method
         init_eval
         init_exception
         init_symbol
@@ -247,7 +248,7 @@ module GarnetRuby
       end
 
       def rb_alias_method(klass, alias_name, orig_name)
-        orig_me = search_method(klass, orig_name)
+        orig_me, _ = search_method(klass, orig_name)
         if !orig_me || orig_me.definition.is_a?(UndefinedMethodDef)
           Core.rb_raise(Core.eNoMethodError, "undefined method #{orig_name} for #{klass}")
         end
@@ -259,10 +260,10 @@ module GarnetRuby
       def search_method(klass, name)
         loop do
           m = klass.method_table[name]
-          return m if m
+          return m, klass if m
 
           klass = klass.super_class
-          return nil if klass.nil?
+          return nil, nil if klass.nil?
         end
       end
 

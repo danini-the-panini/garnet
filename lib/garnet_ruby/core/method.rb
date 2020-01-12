@@ -76,4 +76,7 @@ module GarnetRuby
       proc_value.arity
     end
   end
+
+  class ZSuperMethodDef < MethodDef
+  end
 end

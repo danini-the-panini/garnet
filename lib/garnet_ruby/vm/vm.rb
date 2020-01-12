@@ -455,7 +455,7 @@ module GarnetRuby
       block = get_block_for_super(control_frame, callinfo)
       args = collect_args(callinfo)
       target = control_frame.self_value
-      method = find_super_method(target, control_frame.method_entry.method_name)
+      method = find_super_method(target, control_frame.method_entry.method_object)
       ret = dispatch_method(target, method, args, block)
       push_stack(ret) unless ret.nil? || ret == Q_UNDEF
     end
@@ -711,8 +711,8 @@ module GarnetRuby
       method
     end
 
-    def find_super_method(target, mid)
-      find_method(target, mid, target.klass.super_class)
+    def find_super_method(target, me)
+      find_method(target, me.called_id, me.defined_class.super_class)
     end
 
     def dispatch_method(target, method, args, block=nil)
@@ -836,6 +836,12 @@ module GarnetRuby
       klass.name = id
       cbase.rb_const_set(id, klass)
       klass
+    end
+
+    def set_visibility(visi)
+      scope_visi = previous_control_frame.environment.scope_visi
+      scope_visi.method_visi = visi
+      # TODO: module_func?
     end
 
     def get_local_env(level)

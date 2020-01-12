@@ -1,8 +1,9 @@
 module GarnetRuby
   class Environment
     LexicalScope = Struct.new(:klass, :next_scope)
+    ScopeVisi = Struct.new(:method_visi, :module_func)
 
-    attr_accessor :block, :method_entry, :method_object, :errinfo
+    attr_accessor :block, :method_entry, :method_object, :errinfo, :scope_visi
     attr_reader :lexical_scope, :locals, :previous
 
     def initialize(klass, next_scope, locals = {}, previous = nil, method_entry = nil)
@@ -10,6 +11,7 @@ module GarnetRuby
       @locals = locals
       @previous = previous
       @method_entry = method_entry
+      @scope_visi = ScopeVisi.new(:PUBLIC, false)
     end
 
     def next_scope
