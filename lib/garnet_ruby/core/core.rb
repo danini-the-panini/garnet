@@ -343,7 +343,7 @@ module GarnetRuby
         if setter
           setter.call(value)
         else
-          raise NameError, "#{name} is a read-only variable"
+          rb_raise(eNameError, "#{name} is a read-only variable")
         end
         value
       end

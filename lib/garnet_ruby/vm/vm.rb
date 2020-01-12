@@ -555,8 +555,16 @@ module GarnetRuby
     end
 
     def exec_set_global(control_frame, insn)
+      name = insn.arguments[0]
       value = pop_stack
-      set_global(insn.arguments[0], value)
+
+      if Core.virtual_variable?(name)
+        Core.virtual_variable_set(name, value)
+      else
+        set_global(name, value)
+      end
+
+      push_stack(value)
     end
 
     def exec_get_global(control_frame, insn)
