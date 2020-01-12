@@ -108,6 +108,12 @@ module GarnetRuby
         end
       end
 
+      def obj_is_instance_of(obj, c)
+        # TODO: check c is class/module
+        return Q_TRUE if obj_class(obj) == c
+        Q_FALSE
+      end
+
       def obj_is_kind_of(obj, c)
         cl = obj.klass
 
@@ -323,6 +329,7 @@ module GarnetRuby
       end
       rb_alias_method(cObject, :inspect, :to_s)
 
+      rb_define_method(mKernel, :instance_of?, &method(:obj_is_instance_of))
       rb_define_method(mKernel, :kind_of?, &method(:obj_is_kind_of))
 
       rb_define_global_function(:sprintf, &method(:f_sprintf))
