@@ -36,9 +36,54 @@ module GarnetRuby
         obj
       end
 
+      def singleton_class_clone(obj)
+        singleton_class_clone_and_attach(obj, Q_UNDEF)
+      end
+
+      def singleton_class_clone_and_attach(obj, attach)
+        klass = obj.klass
+
+        if !klass.flags.include?(:SINGLETON)
+          return klass
+        end
+
+        clone = RClass.new(nil, klass.flags)
+        if obj.flags.include?(:CLASS)
+          clone.klass = clone
+        else
+          clone.klass = singleton_class_clone(klass)
+        end
+
+        clone.super_class = klass.super_class
+        clone.allocator = klass.allocator
+        # TODO: copy iv table?
+        if klass.const_table
+          klass.const_table.each do |k,v|
+            clone.const_table[k] = v
+          end
+        end
+        # if attach != Q_UNDEF
+        #   rb_singleton_class_attached(clone, attach)
+        # end
+
+        klass.method_table.each do |k,v|
+          clone.method_table[k] = clone_method(klass, clone, k, v)
+        end
+        # rb_singleton_class_attached(clone.klass, clone)
+        clone.flags |= [:SINGLETON]
+      
+        clone
+      end
+
       def rb_obj_clone(obj)
-        clone = obj.klass.alloc
-        # TODO: clone singleton class and attach
+        clone = obj_class(obj).alloc
+
+        singleton = singleton_class_clone_and_attach(obj, clone)
+        clone.klass = singleton
+        # TODO
+        # if singleton.flags.include?(:SINGLETON)
+        #   rb_singleton_class_attached(singleton, clone)
+        # end
 
         init_copy(clone, obj)
         rb_funcall(clone, :initialize_clone, obj)
@@ -115,7 +160,7 @@ module GarnetRuby
       end
 
       def obj_class(obj)
-        obj.klass
+        obj.klass.real
       end
 
       def obj_clone(obj)
@@ -126,7 +171,7 @@ module GarnetRuby
       def obj_init_copy(obj, orig)
         return obj if obj == orig
         # TODO: check frozen
-        if obj.type != orig.type || obj.klass != orig.klass
+        if obj.type != orig.type || obj_class(obj) != obj_class(orig)
           rb_raise(eTypeError, 'initialize_copy should take same class object')
         end
         obj

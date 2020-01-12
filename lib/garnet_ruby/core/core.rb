@@ -303,6 +303,10 @@ module GarnetRuby
         rb_add_method(klass, name, visibility, definition)
       end
 
+      def clone_method(old_klass, new_klass, mid, me)
+        method_entry_create(mid, new_klass, me.visibility, me.definition)
+      end
+
       def rb_define_global_function(name, &block)
         rb_define_module_function(mKernel, name, &block)
       end
