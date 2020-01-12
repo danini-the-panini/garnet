@@ -1,4 +1,4 @@
-module GarnetRuby
+  module GarnetRuby
   module Core
     class << self
       def errinfo_getter
@@ -27,6 +27,9 @@ module GarnetRuby
 
       rb_define_private_method(singleton_class_of(rb_vm_top_self),
                                :include, &method(:top_include))
+
+      rb_define_global_function(:trace_var) { |*| Q_NIL } # TODO
+      rb_define_global_function(:untrace_var) { |*| Q_NIL } # TODO
     end
   end
 end
