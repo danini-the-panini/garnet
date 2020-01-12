@@ -118,6 +118,25 @@ module GarnetRuby
         obj.klass
       end
 
+      def obj_clone(obj)
+        # TODO: freeze kwarg
+        rb_obj_clone(obj)
+      end
+
+      def obj_init_copy(obj, orig)
+        return obj if obj == orig
+        # TODO: check frozen
+        if obj.type != orig.type || obj.klass != orig.klass
+          rb_raise(eTypeError, 'initialize_copy should take same class object')
+        end
+        obj
+      end
+
+      def obj_init_dup_clone(obj, orig)
+        rb_funcall(obj, :initialize_copy, orig)
+        obj
+      end
+
       def rb_caller(_, *args)
         VM.instance.backtrace_to_ary(args, 1, true)
       end
@@ -177,6 +196,10 @@ module GarnetRuby
       rb_define_method(mKernel, :method, &method(:obj_method))
 
       rb_define_method(mKernel, :class, &method(:obj_class))
+      rb_define_method(mKernel, :clone, &method(:obj_clone))
+      rb_define_method(mKernel, :initialize_copy, &method(:obj_init_copy))
+      rb_define_method(mKernel, :initialize_dup, &method(:obj_init_dup_clone))
+      rb_define_method(mKernel, :initialize_clone, &method(:obj_init_dup_clone))
 
       rb_define_method(mKernel, :to_s) do |obj|
         RString.from("#<#{obj.klass.name},#{obj.__id__}>")
