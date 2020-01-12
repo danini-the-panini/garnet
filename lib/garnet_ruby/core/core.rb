@@ -393,6 +393,10 @@ module GarnetRuby
         VM.instance.rb_check_funcall(recv, mid, *args)
       end
 
+      def rb_check_funcall_default(recv, mid, df, *args)
+        VM.instance.rb_check_funcall_default(recv, mid, df, *args)
+      end
+
       def rb_respond_to?(value, mid)
         method = find_method(value.klass, mid)
         return false if method.nil? || method.definition.is_a?(UndefinedMethodDef)

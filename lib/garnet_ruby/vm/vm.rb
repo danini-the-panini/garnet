@@ -648,7 +648,11 @@ module GarnetRuby
     end
 
     def rb_check_funcall(recv, mid, *args)
-      return Q_UNDEF unless rb_respond_to(recv, mid)
+      rb_check_funcall_default(recv, mid, Q_UNDEF, *args)
+    end
+
+    def rb_check_funcall_default(recv, mid, df, *args)
+      return df unless rb_respond_to(recv, mid)
       rb_call(recv, mid, *args)
     end
 

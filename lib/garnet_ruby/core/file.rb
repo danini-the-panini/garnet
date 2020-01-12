@@ -24,12 +24,34 @@ module GarnetRuby
 
   module Core
     class << self
+      def rb_get_path(obj)
+        return obj if obj.type?(String)
+        tmp = rb_check_funcall_default(obj, :to_path, obj)
+        tmp.str_to_str
+      end
+
       def file_s_unlink(_, *args)
         args.each { |f| File.unlink(f.string_value) }
       end
 
+      def file_s_expand_path(_, *args)
+        if args.length == 1
+          RString.from(File.expand_path(rb_get_path(args[0]).string_value))
+        else
+          RString.from(File.expand_path(rb_get_path(args[0]).string_value, rb_get_path(args[1]).string_value))
+        end
+      end
+
+      def file_s_basename(_, *args)
+        if args.length == 1
+          RString.from(File.basename(rb_get_path(args[0]).string_value))
+        else
+          RString.from(File.basename(rb_get_path(args[0]).string_value, args[1].obj_as_string.string_value))
+        end
+      end
+
       def file_s_dirname(_, fname)
-        RString.from(File.dirname(fname.obj_as_string.string_value))
+        RString.from(File.dirname(rb_get_path(fname).string_value))
       end
 
       def define_filetest_function(name)
@@ -76,6 +98,8 @@ module GarnetRuby
       define_filetest_function(:identical?)
 
       rb_define_singleton_method(cFile, :unlink, &method(:file_s_unlink))
+      rb_define_singleton_method(cFile, :expand_path, &method(:file_s_expand_path))
+      rb_define_singleton_method(cFile, :basename, &method(:file_s_basename))
       rb_define_singleton_method(cFile, :dirname, &method(:file_s_dirname))
     end
   end
