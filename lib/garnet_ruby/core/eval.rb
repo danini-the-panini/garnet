@@ -14,12 +14,19 @@ module GarnetRuby
         end
         mod
       end
+
+      def top_include(self_value, *args)
+        rb_mod_include(cObject, *args)
+      end
     end
 
     def self.init_eval
       rb_define_virtual_variable(:'$!', method(:errinfo_getter), nil)
 
       rb_define_method(cModule, :include, &method(:rb_mod_include))
+
+      rb_define_private_method(singleton_class_of(rb_vm_top_self),
+                               :include, &method(:top_include))
     end
   end
 end

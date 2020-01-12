@@ -16,7 +16,7 @@ module GarnetRuby
     class << self
       attr_reader :instance
 
-      def new
+      def new(*args)
         @instance ||= super
       end
     end
@@ -30,8 +30,9 @@ module GarnetRuby
     attr_reader :special_variables
     attr_accessor :running
 
-    def initialize
+    def initialize(top_self)
       $indent = '' if __grb_debug__?
+      @top_self = top_self
       @running = false
       @control_frames = []
       @global_variables = {}
@@ -55,8 +56,7 @@ module GarnetRuby
     end
 
     def execute_main(iseq)
-      main = RObject.new(Core.cObject, [])
-      control_frame = ControlFrame.new(main, iseq, Environment.new(Core.cObject, nil))
+      control_frame = ControlFrame.new(@top_self, iseq, Environment.new(Core.cObject, nil))
       push_control_frame(control_frame)
 
       begin

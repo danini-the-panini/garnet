@@ -111,7 +111,7 @@ module GarnetRuby
     iseq = Iseq.new('<main>', :main)
     Compiler.new(iseq).compile_node(node)
 
-    vm = VM.new
+    vm = VM.new(Core.rb_vm_top_self)
     Core.inject_env(vm)
     Core.inject_global_variables(vm, options[:global_variables])
     vm.running = true

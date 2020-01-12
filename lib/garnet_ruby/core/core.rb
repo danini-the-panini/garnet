@@ -106,6 +106,7 @@ module GarnetRuby
         cBasicObject.klass = cClass
 
         init_object
+        init_top_self
         init_vm_eval
         init_eval
         init_exception
@@ -126,6 +127,12 @@ module GarnetRuby
 
         @env_table = RHash.new(cHash, [])
         cObject.rb_const_set(:ENV, env_table)
+      end
+
+      def init_top_self
+        @top_self = RObject.new(cObject, [])
+        rb_define_singleton_method(@top_self, :to_s) { |_| RString.from("main") }
+        rb_alias_method(singleton_class_of(@top_self), :inspect, :to_s)
       end
 
       def boot_defclass(name, super_class)
@@ -205,6 +212,10 @@ module GarnetRuby
         end
 
         klass
+      end
+
+      def rb_vm_top_self
+        @top_self
       end
 
       def method_entry_create(name, klass, visibility, definition)
