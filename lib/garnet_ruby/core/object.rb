@@ -97,7 +97,14 @@ module GarnetRuby
 
       def rb_copy_generic_ivar(clone, obj)
         obj.ivars.each do |k, v|
-          clone.ivar_set(clone, obj)
+          clone.ivar_set(k, obj)
+        end
+      end
+
+      def rb_iv_tbl_copy(dst, src)
+        dst.ivars.clear
+        src.ivars.each do |k, v|
+          dst.ivars[k] = v
         end
       end
 
@@ -222,6 +229,47 @@ module GarnetRuby
         end
       end
 
+      def mod_init_copy(clone, orig)
+        # TODO: cloned flag for const inline cache
+
+        if clone.flags.include?(:CLASS)
+          # class_init_copy_check(clone, orig) # TODO
+        end
+        return clonse if clone == orig
+        obj_init_copy(clone, orig)
+        if !clone.klass.flags.include?(:SINGLETON)
+          clone.klass = singleton_class_clone(orig)
+          # rb_singleton_class_attached(clone.klass, clone)
+        end
+        clone.super_class = orig.super_class
+        clone.allocator = orig.allocator
+        if clone.ivars
+          clone.ivars.clear
+        end
+        if clone.const_table
+          clone.const_table.clear
+        end
+        clone.method_table.clear
+        if orig.ivars
+          rb_iv_tbl_copy(clone, orig)
+          clone.ivars.delete(:__tmp_classpath__)
+          clone.ivars.delete(:__classpath__)
+          clone.ivars.delete(:__classid__)
+        end
+        if orig.const_table
+          orig.const_table.each do |k,v|
+            clone.const_table[k] = v
+          end
+        end
+        if orig.method_table
+          orig.method_table.each do |k,v|
+            clone.method_table[k] = clone_method(orig, clone, k, v)
+          end
+        end
+        
+        clone
+      end
+
       def mod_name(mod)
         RString.from(mod.name)
       end
@@ -290,6 +338,7 @@ module GarnetRuby
         obj_is_kind_of(arg, mod)
       end
       rb_define_method(cModule, :<=>, &method(:mod_cmp))
+      rb_define_method(cModule, :initialize_copy, &method(:mod_init_copy))
       rb_define_method(cModule, :name, &method(:mod_name))
       rb_define_method(cModule, :ancestors, &method(:mod_ancestors))
 

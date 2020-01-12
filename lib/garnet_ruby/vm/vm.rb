@@ -688,7 +688,7 @@ module GarnetRuby
 
     def undefined_method(mid, target)
       # method_missing
-      raise "undefined method #{mid} for #{target}"
+      Core.rb_raise(Core.eNoMethodError, "undefined method #{mid} for #{target}")
     end
 
     def find_method_unchecked(target, mid, klass = target.klass)
