@@ -99,6 +99,14 @@ module GarnetRuby
         RString.from(num.value.chr)
       end
 
+      def int_to_f(num)
+        if fixnum?(num)
+          RPrimitive.from(num.value.to_f)
+        else
+          rb_raise(eNotImpError, "Unknown subclass for to_f: #{num.klass}")
+        end
+      end
+
       def int_cmp(x, y)
         if fixnum?(x)
           fix_cmp(x, y)
@@ -448,11 +456,27 @@ module GarnetRuby
         RPrimitive.from(v ^ (v >> 32))
       end
 
+      def float_plus(x, y)
+        if y.numeric?
+          RPrimitive.from(x.value + y.value)
+        else
+          rb_num_coerce_bin(x, y, :+)
+        end
+      end
+
       def float_minus(x, y)
         if y.numeric?
           RPrimitive.from(x.value - y.value)
         else
           rb_num_coerce_bin(x, y, :-)
+        end
+      end
+
+      def float_mul(x, y)
+        if y.numeric?
+          RPrimitive.from(x.value * y.value)
+        else
+          rb_num_coerce_bin(x, y, :*)
         end
       end
 
@@ -570,6 +594,7 @@ module GarnetRuby
       rb_define_method(cInteger, :downto, &method(:int_downto))
       rb_define_method(cInteger, :times, &method(:int_dotimes))
       rb_define_method(cInteger, :chr, &method(:int_chr))
+      rb_define_method(cInteger, :to_f, &method(:int_to_f))
       rb_define_method(cInteger, :<=>, &method(:int_cmp))
 
       rb_define_method(cInteger, :===, &method(:int_equal))
@@ -595,7 +620,9 @@ module GarnetRuby
 
       @cFloat = rb_define_class(:Float, cNumeric)
 
+      rb_define_method(cFloat, :+, &method(:float_plus))
       rb_define_method(cFloat, :-, &method(:float_minus))
+      rb_define_method(cFloat, :*, &method(:float_mul))
       rb_define_method(cFloat, :/, &method(:float_div))
       rb_define_method(cFloat, :%, &method(:float_mod))
       rb_define_method(cFloat, :>, &method(:float_gt))
