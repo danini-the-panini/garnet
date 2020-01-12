@@ -514,6 +514,14 @@ module GarnetRuby
         end
       end
 
+      def float_eq(x, y)
+        if fixnum?(y) || y.type?(Float)
+          x.value == y.value ? Q_TRUE : Q_FALSE
+        else
+          num_equal(x, y)
+        end
+      end
+
       def float_gt(x, y)
         if y.numeric?
           x.value > y.value ? Q_TRUE : Q_FALSE
@@ -631,6 +639,7 @@ module GarnetRuby
       rb_define_method(cFloat, :*, &method(:float_mul))
       rb_define_method(cFloat, :/, &method(:float_div))
       rb_define_method(cFloat, :%, &method(:float_mod))
+      rb_define_method(cFloat, :==, &method(:float_eq))
       rb_define_method(cFloat, :>, &method(:float_gt))
       rb_define_method(cFloat, :>=, &method(:float_ge))
       rb_define_method(cFloat, :<, &method(:float_lt))
