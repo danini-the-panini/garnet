@@ -136,6 +136,24 @@ module GarnetRuby
       false
     end
 
+    def inherited?(arg)
+        return Q_TRUE if self == arg
+        if !arg.is_a?(RClass) && !arg.flags.include?(:ICLASS)
+          rb_raise(eTypeError, "compared with non class/module")
+        end
+
+        # TODO: some origin thing?
+        if arg.search_ancestor(self)
+          return Q_TRUE
+        end
+
+        if self.search_ancestor(arg)
+          return Q_FALSE
+        end
+
+        Q_NIL
+    end
+
     def self.new_class(super_class)
       klass = new(Core.cClass, [:CLASS])
       klass.super_class = super_class

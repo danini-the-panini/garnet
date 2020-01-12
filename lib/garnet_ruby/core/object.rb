@@ -144,6 +144,19 @@ module GarnetRuby
         result = rb_funcall(obj1, :eql?, obj2)
         rtest(result) ? Q_TRUE : Q_FALSE
       end
+
+      def mod_cmp(mod, arg)
+        return RPrimitive.from(0) if mod == arg
+        return Q_NIL unless arg.is_a?(RClass)
+
+        cmp = mod.inherited?(arg)
+        return Q_NIL if cmp == Q_NIL
+        if rtest(cmp)
+          RPrimitive.from(-1)
+        else
+          RPrimitive.from(1)
+        end
+      end
     end
 
     def self.init_object
@@ -184,6 +197,7 @@ module GarnetRuby
       rb_define_method(cModule, :===) do |mod, arg|
         obj_is_kind_of(arg, mod)
       end
+      rb_define_method(cModule, :<=>, &method(:mod_cmp))
 
       rb_define_alloc_func(cModule, &method(:rb_module_s_alloc))
 
