@@ -456,6 +456,10 @@ module GarnetRuby
         RPrimitive.from(v ^ (v >> 32))
       end
 
+      def float_to_s(flt)
+        RString.from(flt.value.to_s)
+      end
+
       def float_plus(x, y)
         if y.numeric?
           RPrimitive.from(x.value + y.value)
@@ -620,6 +624,8 @@ module GarnetRuby
 
       @cFloat = rb_define_class(:Float, cNumeric)
 
+      rb_define_method(cFloat, :to_s, &method(:float_to_s))
+      rb_alias_method(cFloat, :inspect, :to_s)
       rb_define_method(cFloat, :+, &method(:float_plus))
       rb_define_method(cFloat, :-, &method(:float_minus))
       rb_define_method(cFloat, :*, &method(:float_mul))

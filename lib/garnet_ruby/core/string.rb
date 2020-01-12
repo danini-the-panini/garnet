@@ -425,6 +425,10 @@ module GarnetRuby
         # TODO: actually implement encoding logic
         str
       end
+
+      def str_unpack(str, format)
+        RArray.from(str.string_value.unpack(format.obj_as_string.string_value))
+      end
     end
 
     def self.init_string
@@ -483,6 +487,8 @@ module GarnetRuby
       rb_define_method(cString, :each_byte, &method(:str_each_byte))
 
       rb_define_method(cString, :force_encoding, &method(:str_force_encoding))
+
+      rb_define_method(cString, :unpack, &method(:str_unpack))
     end
   end
 end

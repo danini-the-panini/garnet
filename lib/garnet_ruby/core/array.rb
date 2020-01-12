@@ -38,7 +38,7 @@ module GarnetRuby
 
       def ary_inspect(ary)
         strings = ary.array_value.map do |item|
-          rb_funcall(item, :to_s).string_value
+          rb_funcall(item, :inspect).string_value
         end
         RString.from("[#{strings.join(', ')}]")
       end
