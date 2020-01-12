@@ -113,6 +113,7 @@ module GarnetRuby
         init_exception
         init_symbol
         init_numeric
+        init_math
         init_enum
         init_range
         init_string

@@ -41,6 +41,24 @@ module GarnetRuby
     def try_to_int(mid, should_raise)
       convert_type_with_id("Integer", mid, should_raise, -1)
     end
+    
+    def numeric_to_float
+      if !Core.obj_is_kind_of(self, Core.cNumeric)
+        rb_raise(eTypeError, "can't convert #{val.klass} into Float")
+      end
+      convert_type_with_id(Float, "Float", :to_f)
+    end
+
+    def num_to_dbl
+      if Core.fixnum?(self)
+        value.to_f
+      elsif type?(Float)
+        value
+      else
+        # TODO: Rational
+        numeric_to_float.value
+      end
+    end
 
     def obj_as_string
       return self if type?(String)
