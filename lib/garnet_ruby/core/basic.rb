@@ -60,6 +60,23 @@ module GarnetRuby
       end
     end
 
+    def to_symbol
+      return self if type?(Symbol)
+      name = string_for_symbol
+      RSymbol.from(name.string_value.to_sym)
+    end
+
+    def string_for_symbol
+      if !type?(String)
+        tmp = check_string_type
+        if tmp == Q_NIL
+          Core.rb_raise(Core.eTypeError, "#{self} is not a symbol")
+        end
+        return tmp
+      end
+      self
+    end
+
     def obj_as_string
       return self if type?(String)
 
