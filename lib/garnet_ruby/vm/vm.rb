@@ -41,6 +41,10 @@ module GarnetRuby
       }
     end
 
+    def __vm_debug__?
+      __grb_debug__? && @running
+    end
+
     def current_control_frame
       @control_frames.last
     end
@@ -156,7 +160,7 @@ module GarnetRuby
       control_frame = current_control_frame
       insn = iseq.instructions[control_frame.pc]
 
-      puts "#{$indent}begin : #{insn} for #{control_frame}" if __grb_debug__?
+      puts "#{$indent}begin : #{insn} for #{control_frame}" if __vm_debug__?
 
       method_name = :"exec_#{insn.type}"
       raise ExecutionError.new("EXEC_ERROR: Unknown Instruction Type #{insn.type}", insn) unless respond_to?(method_name)
@@ -171,7 +175,7 @@ module GarnetRuby
       end
       control_frame.pc += 1 if control_frame.pc == prev_pc
 
-      puts "#{$indent}end   : #{insn} for #{control_frame}" if __grb_debug__?
+      puts "#{$indent}end   : #{insn} for #{control_frame}" if __vm_debug__?
     end
 
     def exec_leave(control_frame, insn)
@@ -191,7 +195,7 @@ module GarnetRuby
         end
         current_control_frame.pc = cr.cont if cr
       end
-      puts "#{$indent}  --- leave: now executing: #{current_control_frame}" if __grb_debug__?
+      puts "#{$indent}  --- leave: now executing: #{current_control_frame}" if __vm_debug__?
     end
 
     def exec_nop(control_frame, insn)
@@ -1017,7 +1021,7 @@ module GarnetRuby
     end
 
     def push_control_frame(cfp)
-      if __grb_debug__?
+      if __vm_debug__?
         puts "#{$indent}BEGIN CONTROL FRAME: #{cfp} (#{caller.first})"
         $indent += "  "
       end
@@ -1025,9 +1029,9 @@ module GarnetRuby
     end
 
     def pop_control_frame
-      $indent.slice!(0, 2) if __grb_debug__?
+      $indent.slice!(0, 2) if __vm_debug__?
       @control_frames.pop.tap { |cfp|
-        puts "#{$indent}END CONTROL FRAME: #{cfp} (#{caller(3, 1).first})" if __grb_debug__?
+        puts "#{$indent}END CONTROL FRAME: #{cfp} (#{caller(3, 1).first})" if __vm_debug__?
       }
     end
 
