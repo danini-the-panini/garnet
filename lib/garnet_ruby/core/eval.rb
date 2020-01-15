@@ -18,6 +18,10 @@
       def top_include(self_value, *args)
         rb_mod_include(cObject, *args)
       end
+
+      def obj_extend(obj, *args)
+        rb_mod_include(singleton_class_of(obj), *args)
+      end
     end
 
     def self.init_eval
@@ -27,6 +31,8 @@
 
       rb_define_private_method(singleton_class_of(rb_vm_top_self),
                                :include, &method(:top_include))
+
+      rb_define_method(mKernel, :extend, &method(:obj_extend))
 
       rb_define_global_function(:trace_var) { |*| Q_NIL } # TODO
       rb_define_global_function(:untrace_var) { |*| Q_NIL } # TODO
