@@ -105,6 +105,10 @@ module GarnetRuby
     def arity
       proc_value.arity
     end
+
+    def dispatch(vm, target, method, args, block=nil)
+      vm.execute_block(proc_value.block, args, args.length, block, target, method)
+    end
   end
 
   class ZSuperMethodDef < MethodDef

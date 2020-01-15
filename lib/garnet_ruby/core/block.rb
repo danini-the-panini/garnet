@@ -16,6 +16,10 @@ module GarnetRuby
     def proc
       @proc ||= RProc.new(Core.cProc, [], self)
     end
+
+    def dispatch(*)
+      raise "NOT IMPLEMENTED: #{self.class}#dispatch"
+    end
   end
 
   class IseqBlock < Block
@@ -33,6 +37,11 @@ module GarnetRuby
     def to_s
       "<#IseqBlock iseq=#{iseq} env=#{environment} self=#{self_value}>"
     end
+
+    def dispatch(vm, args, block_block = nil, override_self_value = nil, method = nil)
+      sv = override_self_value || self_value
+      vm.execute_block_iseq(self, args, block_block, sv, method)
+    end
   end
 
   class BuiltInBlock < Block
@@ -49,6 +58,17 @@ module GarnetRuby
 
     def to_s
       "<#BuiltInBlock env=#{environment} self=#{self_value}>"
+    end
+
+    def dispatch(vm, args, block_block = nil, override_self_value = nil, method = nil)
+      if block_block
+        sv = override_self_value || self_value
+        block.call(*args) do |*blargs|
+          vm.execute_block(block_block, blargs, blargs.length, nil, sv)
+        end
+      else
+        block.call(*args)
+      end
     end
   end
 end

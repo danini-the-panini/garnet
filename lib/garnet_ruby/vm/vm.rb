@@ -92,7 +92,7 @@ module GarnetRuby
       offset
     end
 
-    def execute_method_iseq(target, method, args, block=nil)
+    def execute_method_iseq(target, method, args, block = nil)
       iseq = method.definition.iseq
       env = Environment.new(target.klass, method.definition.environment, {})
       env.method_entry = env
@@ -106,12 +106,18 @@ module GarnetRuby
       control_frame.stack.pop
     end
 
-    def execute_block_iseq(block, args, block_block=nil)
+    def execute_block_iseq(block, args, block_block = nil, self_value = nil, method = nil)
       prev_control_frame = current_control_frame
 
+      self_value ||= block.self_value
+
       iseq = block.iseq
-      env = Environment.new(block.self_value.klass, block.environment, {}, block.environment, prev_control_frame.environment.method_entry)
-      control_frame = ControlFrame.new(block.self_value, iseq, env, block_block)
+      env = Environment.new(self_value.klass, block.environment, {}, block.environment, prev_control_frame.environment.method_entry)
+      if method
+        env.method_entry = env
+        env.method_object = method
+      end
+      control_frame = ControlFrame.new(self_value, iseq, env, block_block)
       control_frame.pc = populate_locals(env, iseq, args)
       push_control_frame(control_frame)
 
@@ -741,12 +747,15 @@ module GarnetRuby
     def find_method_unchecked(target, mid, klass = target.klass)
       raise "TRYING TO CALL #{mid} on NIL" if target.nil?
       raise "TRYING TO CALL #{mid} on NIL KLASS (#{target})" if klass.nil?
+
       Core.find_method(klass, mid)
     end
 
     def find_method(target, mid, klass = target.klass)
       method = find_method_unchecked(target, mid, klass)
-      undefined_method(mid, target) if method.nil? || method.definition.is_a?(UndefinedMethodDef)
+      if method.nil? || method.definition.is_a?(UndefinedMethodDef)
+        undefined_method(mid, target)
+      end
       method
     end
 
@@ -758,25 +767,18 @@ module GarnetRuby
       method.definition.dispatch(self, target, method, args, block)
     end
 
-    def execute_block(block, args, argc, block_block = nil)
-      if !block.proc.is_lambda && args.length == 1 && argc == 1 && args.first.type?(Array) && block.arity > 1
+    def execute_block(block, args, argc, block_block = nil, self_value = nil, method_entry = nil)
+      if !block.proc.is_lambda &&
+         args.length == 1 &&
+         argc == 1 &&
+         args.first.type?(Array) &&
+         block.arity > 1
         args = args[0].array_value
       end
 
-      case block
-      when BuiltInBlock
-        if block_block
-          block.block.call(*args) do |*blargs|
-            execute_block(block_block, blargs, blargs.length)
-          end
-        else
-          block.block.call(*args)
-        end
-      when IseqBlock
-        execute_block_iseq(block, args, block_block)
-      else
-        raise "Unknown Block Type: #{block.class}"
-      end
+      self_value ||= block.self_value
+
+      block.dispatch(self, args, block_block, self_value, method_entry)
     end
 
     def find_or_create_class_by_id(id, type, flags, cbase, super_class)
