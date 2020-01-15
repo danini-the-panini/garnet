@@ -64,7 +64,8 @@ module GarnetRuby
           limit = -1
         end
       else
-        # TODO: raise argument error
+        sep = VM.instance.get_global(:'$/')
+        limit = -1
       end
 
       sep = sep.is_a?(RString) ? sep.string_value : nil
