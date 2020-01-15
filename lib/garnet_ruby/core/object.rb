@@ -334,6 +334,12 @@ module GarnetRuby
 
         Q_NIL
       end
+
+      def mod_const_set(mod, name, value)
+        id = check_id(name)
+        mod.rb_const_set(id, value)
+        value
+      end
     end
 
     def self.init_object
@@ -391,6 +397,8 @@ module GarnetRuby
       rb_define_method(cModule, :attr_accessor, &method(:mod_attr_accessor))
 
       rb_define_alloc_func(cModule, &method(:rb_module_s_alloc))
+
+      rb_define_method(cModule, :const_set, &method(:mod_const_set))
 
       rb_define_method(cClass, :new, &method(:rb_class_new_instance))
       rb_define_alloc_func(cClass, &method(:rb_class_s_alloc))
