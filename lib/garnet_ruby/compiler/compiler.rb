@@ -277,6 +277,11 @@ module GarnetRuby
       add_instruction(:to_regexp, options, node.length - 1)
     end
 
+    def compile_dregx_once(node)
+      # TODO: actually do something fancy here
+      compile_dregx(node)
+    end
+
     def compile_evstr(node)
       compile(node[1])
       add_instruction(:send_without_block, CallInfo.new(:to_s, 0, [:simple]))
