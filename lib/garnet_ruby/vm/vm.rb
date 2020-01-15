@@ -755,29 +755,7 @@ module GarnetRuby
     end
 
     def dispatch_method(target, method, args, block=nil)
-      case method.definition
-      when BuiltInMethodDef
-        env = Environment.new(target.klass, nil)
-        env.method_entry = env
-        env.method_object = method
-        control_frame = ControlFrame.new(target, nil, env, block)
-        push_control_frame(control_frame)
-        begin
-          ret = method.definition.block.call(target, *args)
-        rescue GarnetThrow => e
-          handle_rescue_throw(e)
-        end
-        pop_control_frame if current_control_frame == control_frame
-        ret
-      when ISeqMethodDef
-        execute_method_iseq(target, method, args, block)
-      when AliasMethodDef
-        dispatch_method(target, method.definition.original_method, args, block)
-      when UndefinedMethodDef
-        raise "CANNOT CALL UNDEFINED METHOD"
-      else
-        raise "NOT IMPLEMENTED: #{method.class} dispatch"
-      end
+      method.definition.dispatch(self, target, method, args, block)
     end
 
     def execute_block(block, args, argc, block_block = nil)

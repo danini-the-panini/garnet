@@ -23,6 +23,10 @@ module GarnetRuby
     def arity
       nil
     end
+
+    def dispatch(*)
+      raise "NOT IMPLEMENTED: #{self.class}#dispatch"
+    end
   end
 
   class BuiltInMethodDef < MethodDef
@@ -34,6 +38,21 @@ module GarnetRuby
 
     def arity
       block.arity
+    end
+
+    def dispatch(vm, target, method, args, block=nil)
+      env = Environment.new(target.klass, nil)
+      env.method_entry = env
+      env.method_object = method
+      control_frame = ControlFrame.new(target, nil, env, block)
+      vm.push_control_frame(control_frame)
+      begin
+        ret = method.definition.block.call(target, *args)
+      rescue VM::GarnetThrow => e
+        vm.handle_rescue_throw(e)
+      end
+      vm.pop_control_frame if vm.current_control_frame == control_frame
+      ret
     end
   end
 
@@ -48,6 +67,10 @@ module GarnetRuby
     def arity
       iseq.local_table.count { |_, x| x.first == :arg }
     end
+
+    def dispatch(vm, target, method, args, block=nil)
+      vm.execute_method_iseq(target, method, args, block)
+    end
   end
 
   class AliasMethodDef < MethodDef
@@ -60,9 +83,16 @@ module GarnetRuby
     def arity
       original_method.arity
     end
+
+    def dispatch(vm, target, method, args, block=nil)
+      vm.dispatch_method(target, method.definition.original_method, args, block)
+    end
   end
 
   class UndefinedMethodDef < MethodDef
+    def dispatch(*)
+      raise "CANNOT DISPATCH UNDEFINED METHOD"
+    end
   end
 
   class ProcMethodDef < MethodDef
@@ -78,5 +108,31 @@ module GarnetRuby
   end
 
   class ZSuperMethodDef < MethodDef
+  end
+
+  class IvarMethodDef < MethodDef
+    attr_reader :ivar
+
+    def initialize(ivar)
+      @ivar = ivar
+    end
+
+    def dispatch(vm, target, method, args, block=nil)
+      target.ivar_get(ivar) || Q_NIL
+    end
+  end
+
+  class AttrsetMethodDef < MethodDef
+    attr_reader :ivar
+
+    def initialize(ivar)
+      @ivar = ivar
+    end
+
+    def dispatch(vm, target, method, args, block=nil)
+      value = args[0]
+      target.ivar_set(ivar, value)
+      value
+    end
   end
 end

@@ -188,6 +188,7 @@ module GarnetRuby
 
       def obj_init_copy(obj, orig)
         return obj if obj == orig
+
         # TODO: check frozen
         if obj.type != orig.type || obj_class(obj) != obj_class(orig)
           rb_raise(eTypeError, 'initialize_copy should take same class object')
@@ -215,6 +216,7 @@ module GarnetRuby
         end
       rescue VM::GarnetThrow => e
         raise unless e.throw_type == :break
+
         e.value
       end
 
@@ -309,6 +311,29 @@ module GarnetRuby
 
         ary
       end
+
+      def mod_attr_reader(mod, *args)
+        args.each do |arg|
+          id = check_id(arg)
+          definition = IvarMethodDef.new(:"@#{id}")
+          rb_add_method(mod, id, :public, definition)
+        end
+      end
+
+      def mod_attr_writer(mod, *args)
+        args.each do |arg|
+          id = check_id(arg)
+          definition = AttrsetMethodDef.new(:"@#{id}")
+          rb_add_method(mod, :"#{id}=", :public, definition)
+        end
+      end
+
+      def mod_attr_accessor(mod, *args)
+        mod_attr_reader(mod, *args)
+        mod_attr_writer(mod, *args)
+
+        Q_NIL
+      end
     end
 
     def self.init_object
@@ -360,6 +385,10 @@ module GarnetRuby
       rb_define_method(cModule, :initialize_copy, &method(:mod_init_copy))
       rb_define_method(cModule, :name, &method(:mod_name))
       rb_define_method(cModule, :ancestors, &method(:mod_ancestors))
+
+      rb_define_method(cModule, :attr_reader, &method(:mod_attr_reader))
+      rb_define_method(cModule, :attr_writer, &method(:mod_attr_writer))
+      rb_define_method(cModule, :attr_accessor, &method(:mod_attr_accessor))
 
       rb_define_alloc_func(cModule, &method(:rb_module_s_alloc))
 
