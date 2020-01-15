@@ -167,11 +167,11 @@ module GarnetRuby
       end
 
       def ary_includes(ary, item)
-        ary.array_value.any? { |e| rb_equal(item, e) } ? Q_TRUE : Q_FALSE
+        ary.array_value.any? { |e| rtest(rb_equal(item, e)) } ? Q_TRUE : Q_FALSE
       end
 
       def ary_includes_by_eql(ary, item)
-        ary.array_value.any? { |e| rb_eql(item, e) } ? Q_TRUE : Q_FALSE
+        ary.array_value.any? { |e| rtest(rb_eql(item, e)) } ? Q_TRUE : Q_FALSE
       end
 
       def ary_join(ary, sep = nil)
@@ -376,11 +376,11 @@ module GarnetRuby
         ary3 = RArray.from([])
 
         ary1.array_value.each do |elt|
-          next if ary_includes_by_eql(ary2, elt)
+          next if rtest(ary_includes_by_eql(ary2, elt))
 
           ary3.array_value.push(elt)
         end
-        
+
         # TODO: use a hash for big arrays
 
         ary3
@@ -392,11 +392,12 @@ module GarnetRuby
         return ary3 if ary1.array_value.empty? || ary2.array_value.empty?
 
         ary1.array_value.each do |v|
-          next if !ary_includes_by_eql(ary2, v)
-          next if ary_includes_by_eql(ary3, v)
+          next unless rtest(ary_includes_by_eql(ary2, v))
+          next if rtest(ary_includes_by_eql(ary3, v))
+
           ary3.array_value.push(v)
         end
-        
+
         # TODO: use a hash for big arrays
 
         ary3
@@ -416,7 +417,8 @@ module GarnetRuby
 
       def ary_union(ary_union, ary)
         ary.array_value.each do |elt|
-          next if ary_includes_by_eql(ary_union, elt)
+          next if rtest(ary_includes_by_eql(ary_union, elt))
+
           ary_union.array_value.push(elt)
         end
       end
