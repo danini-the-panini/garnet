@@ -172,7 +172,7 @@ module GarnetRuby
     end
 
     def compile(node)
-      raise raise NodelessCompilationError.new("NOT A NODE: #{node}") unless node.is_a?(Array)
+      raise raise NodelessCompilationError.new("NOT A NODE: #{node.inspect}") unless node.is_a?(Array)
       node = s(*node) unless node.is_a?(Sexp)
       @node = node
 
@@ -313,7 +313,11 @@ module GarnetRuby
 
     def compile_new_range(node, excl)
       compile(node[1])
-      compile(node[2])
+      if node[2]
+        compile(node[2])
+      else
+        add_instruction(:put_nil)
+      end
       add_instruction(:new_range, excl)
     end
 
