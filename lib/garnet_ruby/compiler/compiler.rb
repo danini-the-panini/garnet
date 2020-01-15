@@ -565,6 +565,11 @@ module GarnetRuby
       add_instruction(:get_constant, node[2])
     end
 
+    def compile_colon3(node)
+      add_instruction(:put_object, Core.cObject)
+      add_instruction(:get_constant, node[1])
+    end
+
     def compile_const(node)
       id = compile_const_base(node[1])
       add_instruction(:get_constant, id)
