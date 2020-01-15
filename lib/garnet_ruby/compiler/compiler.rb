@@ -799,7 +799,9 @@ module GarnetRuby
       add_instruction(:put_object, RString.from('expression'))
     end
 
-    def compile_call(node)
+    def compile_call(node, safe = false)
+      end_label = new_label if safe
+
       if @iseq.type == :eval && !node[1] && node.length == 3 && @iseq.can_find_local?(node[2])
         add_get_local(node[2])
         return
@@ -810,8 +812,20 @@ module GarnetRuby
       else
         add_instruction(:put_self)
       end
+
+      if safe
+        add_instruction(:dup)
+        add_instruction_with_label(:branch_nil, end_label)
+      end
+
       argc, flags = compile_call_args(node)
       add_instruction(:send_without_block, CallInfo.new(node[2], argc, flags))
+
+      add_label(end_label) if safe
+    end
+
+    def compile_safe_call(node)
+      compile_call(node, true)
     end
 
     def compile_yield(node)
@@ -831,6 +845,7 @@ module GarnetRuby
 
     def compile_iter(node)
       st = @iseq.instructions.length
+      end_label = new_label
 
       block_args = node[2] == 0 ? [] : node[2][1..-1]
       block_iseq = Iseq.new("block in #{@iseq.name}", :block, @iseq, {})
@@ -851,13 +866,20 @@ module GarnetRuby
         else
           add_instruction(:put_self)
         end
+
+        if call_node[0] == :safe_call
+          add_instruction(:dup)
+          add_instruction_with_label(:branch_nil, end_label)
+        end
+
         argc, flags = compile_call_args(call_node)
       end
 
       add_instruction(:send, CallInfo.new(mid, argc, flags, block_iseq))
+      add_label(end_label)
       add_instruction(:nop)
 
-      ed = @iseq.instructions.length - 1
+      ed = end_label.line
       @iseq.add_catch_type(:break, st, ed, ed, block_iseq)
     end
 
@@ -918,13 +940,27 @@ module GarnetRuby
       end
     end
 
-    def compile_attrasgn(node)
+    def compile_attrasgn(node, safe = false)
+      end_label = new_label if safe
+
       add_instruction(:put_nil)
       compile(node[1])
+
+      if safe
+        add_instruction(:dup)
+        add_instruction_with_label(:branch_nil, end_label)
+      end
+
       argc, flags = compile_call_args(node)
       add_instruction(:setn, argc + 1)
       add_instruction(:send_without_block, CallInfo.new(node[2], argc, flags))
       add_instruction(:pop)
+      
+      add_label(end_label) if safe
+    end
+
+    def compile_safe_attrasgn(node)
+      compile_attrasgn(node, true)
     end
 
     def compile_op_asgn_or(node)

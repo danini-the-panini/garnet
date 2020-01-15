@@ -418,6 +418,11 @@ module GarnetRuby
       control_frame.pc = insn.arguments[0] unless rtest(cond)
     end
 
+    def exec_branch_nil(control_frame, insn)
+      cond = pop_stack
+      control_frame.pc = insn.arguments[0] if cond == Q_NIL
+    end
+
     def exec_check_match(control_frame, insn)
       target, pattern = pop_stack_multi(2)
       type, flags = insn.arguments
