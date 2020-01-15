@@ -50,6 +50,21 @@ module GarnetRuby
       @proc_default = true
     end
 
+    def lookup(hash, key)
+      entry = table[hash]&.find { |e| e.key_eql?(key) }
+      entry&.value
+    end
+
+    def aset(hash, key, value)
+      entries = table[hash] ||= []
+      entry = entries.find { |e| e.key_eql?(key) }
+      if entry
+        entry.value = value
+      else
+        entries << RHash::Entry.new(k, value)
+      end
+    end
+
     class Entry
       attr_reader :key
       attr_accessor :value
@@ -103,10 +118,13 @@ module GarnetRuby
         end
       end
 
-      def hash_aref(hash, k)
+      def hash_lookup(hash, k)
         kh = rb_funcall(k, :hash).value
-        entry = hash.table[kh]&.find { |e| e.key_eql?(k) }
-        entry&.value || hash_default_value(hash, k)
+        hash.lookup(kh, k)
+      end
+
+      def hash_aref(hash, k)
+        hash_lookup(hash, k) || hash_default_value(hash, k)
       end
 
       def hash_default_value(hash, key = Q_UNDEF)
@@ -114,6 +132,7 @@ module GarnetRuby
           ifnone = hash.ifnone
           return ifnone unless hash.proc_default
           return Q_NIL if key == Q_UNDEF
+
           rb_funcall(ifnone, :yield, hash, key)
         else
           rb_funcall(hash, :default, key)
@@ -205,6 +224,25 @@ module GarnetRuby
         Q_TRUE
       end
 
+      def hash_fetch(hash, *args)
+        key = args[0]
+
+        block_given = rb_block_given?
+        if block_given && args.length == 2
+          puts 'WARNING: block supersedes default value argument'
+        end
+
+        if val = hash_lookup(hash, key)
+          val
+        elsif block_given
+          rb_yield(key)
+        elsif args.length == 1
+          rb_raise(eKeyError, "key not found: #{key}")
+        else
+          args[1]
+        end
+      end
+
       def hash_hash(hash)
         RPrimitive.from(hash.entries.reduce(0) { |h, e| h + e.hash_code })
       end
@@ -272,6 +310,7 @@ module GarnetRuby
       rb_define_method(cHash, :[], &method(:hash_aref))
       rb_define_method(cHash, :hash, &method(:hash_hash))
       rb_define_method(cHash, :eql?, &method(:hash_eql))
+      rb_define_method(cHash, :fetch, &method(:hash_fetch))
       rb_define_method(cHash, :[]=, &method(:hash_aset))
       rb_define_method(cHash, :default, &method(:hash_default_value))
       rb_define_method(cHash, :default=, &method(:hash_set_default))
