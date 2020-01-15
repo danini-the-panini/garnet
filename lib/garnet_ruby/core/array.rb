@@ -265,11 +265,16 @@ module GarnetRuby
 
       def ary_each(ary)
         # TODO: return enumerator unless block_given?
-        i = 0
-        loop do
-          break if i >= ary.len
-          rb_yield(ary.array_value[i])
-          i += 1
+        ary.array_value.each do |elt|
+          rb_yield(elt)
+        end
+        ary
+      end
+
+      def ary_reverse_each(ary)
+        # TODO: return enumerator unless block_given?
+        ary.array_value.reverse_each do |elt|
+          rb_yield(elt)
         end
         ary
       end
@@ -281,7 +286,7 @@ module GarnetRuby
       def ary_empty_p(ary)
         ary.array_value.empty? ? Q_TRUE : Q_FALSE
       end
-      
+
       def ary_sort_bang(ary)
         if ary.len > 1
           if rb_block_given?
@@ -532,6 +537,7 @@ module GarnetRuby
       rb_define_method(cArray, :pop, &method(:ary_pop))
       rb_define_method(cArray, :shift, &method(:ary_shift))
       rb_define_method(cArray, :each, &method(:ary_each))
+      rb_define_method(cArray, :reverse_each, &method(:ary_reverse_each))
       rb_define_method(cArray, :length, &method(:ary_length))
       rb_alias_method(cArray, :size, :length)
       rb_define_method(cArray, :empty?, &method(:ary_empty_p))
