@@ -200,6 +200,11 @@ module GarnetRuby
         obj
       end
 
+      def obj_freeze(obj)
+        obj.flags |= [:freeze]
+        obj
+      end
+
       def rb_caller(_, *args)
         VM.instance.backtrace_to_ary(args, 1, true)
       end
@@ -328,6 +333,8 @@ module GarnetRuby
       rb_define_method(mKernel, :initialize_copy, &method(:obj_init_copy))
       rb_define_method(mKernel, :initialize_dup, &method(:obj_init_dup_clone))
       rb_define_method(mKernel, :initialize_clone, &method(:obj_init_dup_clone))
+
+      rb_define_method(mKernel, :freeze, &method(:obj_freeze))
 
       rb_define_method(mKernel, :to_s) do |obj|
         RString.from("#<#{obj.klass.name},#{obj.__id__}>")
