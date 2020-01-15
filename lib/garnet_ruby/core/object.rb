@@ -353,6 +353,8 @@ module GarnetRuby
       @mKernel = rb_define_module(:Kernel)
       cObject.include_module(mKernel)
 
+      rb_define_method(mKernel, :nil?) { |_| Q_FALSE }
+      rb_define_method(mKernel, :===, &method(:rb_equal))
       rb_define_method(mKernel, :=~) { Q_NIL }
       rb_define_method(mKernel, :'!~', &method(:obj_not_match))
       rb_define_method(mKernel, :eql?, &method(:obj_equal))
