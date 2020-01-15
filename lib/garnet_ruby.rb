@@ -114,6 +114,8 @@ module GarnetRuby
     vm = VM.new(Core.rb_vm_top_self)
     Core.inject_env(vm)
     Core.inject_global_variables(vm, options[:global_variables])
+    Core.rb_define_global_const(:ARGV, RArray.from(options[:argv]))
+
     vm.running = true
     vm.execute_main(iseq)
   end
