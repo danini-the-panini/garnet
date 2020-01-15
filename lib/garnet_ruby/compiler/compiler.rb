@@ -272,9 +272,13 @@ module GarnetRuby
     end
 
     def compile_dregx(node)
-      options = node[-1] if node[-1].is_a?(Integer)
+      len = node.length - 1
+      if node[-1].is_a?(Integer)
+        options = node[-1]
+        len -= 1
+      end
       compile_dstr_nodes(node[1..(options ? -2 : -1)])
-      add_instruction(:to_regexp, options, node.length - 1)
+      add_instruction(:to_regexp, options, len)
     end
 
     def compile_dregx_once(node)
