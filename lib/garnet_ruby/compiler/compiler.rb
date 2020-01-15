@@ -347,7 +347,7 @@ module GarnetRuby
       if i.nil?
         add_instruction(:expand_array, locals.count, false, false)
         locals.each do |l|
-          add_set_local(l[1])
+          compile_assignment(l)
           add_instruction(:pop)
         end
       else
@@ -357,21 +357,41 @@ module GarnetRuby
 
         add_instruction(:expand_array, pre.count, true, false)
         pre.each do |l|
-          add_set_local(l[1])
+          compile_assignment(l)
           add_instruction(:pop)
         end
         if post.empty?
-          add_set_local(splat[1][1])
+          compile_assignment(splat[1])
           add_instruction(:pop)
         else
           add_instruction(:expand_array, post.count, true, true)
-          add_set_local(splat[1][1])
+          compile_assignment(splat[1])
           add_instruction(:pop)
           post.each do |l|
-            add_set_local(l[1])
+            compile_assignment(l)
             add_instruction(:pop)
           end
         end
+      end
+    end
+
+    def compile_assignment(node)
+      case node[0]
+      when :lasgn
+        add_set_local(node[1])
+      when :iasgn
+        add_instruction(:set_instance_variable, node[1])
+      when :attrasgn
+        compile(node[1])
+        argc, flags = compile_call_args(node)
+        add_instruction(:putn, argc + 1)
+        argc += 1
+        add_instruction(:send_without_block, CallInfo.new(node[2], argc, flags))
+        add_instruction(:pop)
+      when :gasgn
+        add_instruction(:set_global, node[1])
+      when :cvdecl
+        add_instruction(:set_class_variable, node[1])
       end
     end
 

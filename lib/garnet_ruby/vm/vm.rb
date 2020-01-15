@@ -209,6 +209,11 @@ module GarnetRuby
       push_stack(peek_stack)
     end
 
+    def exec_swap(control_frame, insn)
+      s = control_frame.stack
+      s[-1], s[-2] = s[-2], s[-1]
+    end
+
     def exec_put_object(control_frame, insn)
       push_stack insn.arguments[0]
     end
@@ -613,6 +618,11 @@ module GarnetRuby
     def exec_setn(control_frame, insn)
       n = insn.arguments[0]
       control_frame.stack[-n - 1] = control_frame.stack.last
+    end
+
+    def exec_putn(control_frame, insn)
+      n = insn.arguments[0]
+      control_frame.stack << control_frame.stack[-n - 1]
     end
 
     def exec_dupn(control_frame, insn)
