@@ -55,16 +55,28 @@ module GarnetRuby
         end
         Q_TRUE
       end
+
+      def rb_f_send(obj, name, *args)
+        id = check_id(name)
+
+        if rb_block_given?
+          rb_funcall_with_block(obj, id, rb_block, *args)
+        else
+          rb_funcall(obj, id, *args)
+        end
+      end
     end
 
     def self.init_vm_eval
       rb_define_global_function(:eval, &method(:rb_f_eval))
-
       rb_define_global_function(:iterator?, &method(:rb_f_block_given))
       rb_define_global_function(:block_given?, &method(:rb_f_block_given))
 
       rb_define_global_function(:catch, &method(:rb_catch))
       rb_define_global_function(:throw, &method(:rb_throw))
+
+      rb_define_method(cBasicObject, :__send__, &method(:rb_f_send))
+      rb_define_method(mKernel, :send, &method(:rb_f_send))
     end
   end
 end
