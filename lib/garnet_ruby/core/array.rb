@@ -333,6 +333,21 @@ module GarnetRuby
         ary
       end
 
+      def ary_delete_if(ary)
+        # TODO: return enumerator
+        ary_reject_bang(ary)
+      end
+
+      def ary_reject_bang(ary)
+        # TODO: return enumerator
+        ret = ary.array_value.reject! do |v|
+          rtest(rb_yield(v))
+        end
+        return Q_NIL if ret.nil?
+
+        ary
+      end
+
       def ary_cmp(ary1, ary2)
         ary2 = ary2.check_array_type
         return Q_NIL if ary2 == Q_NIL
@@ -550,6 +565,8 @@ module GarnetRuby
       rb_define_method(cArray, :collect!, &method(:ary_collect_bang))
       rb_define_method(cArray, :map, &method(:ary_collect))
       rb_define_method(cArray, :map!, &method(:ary_collect_bang))
+      rb_define_method(cArray, :delete_if, &method(:ary_delete_if))
+      rb_define_method(cArray, :reject!, &method(:ary_reject_bang))
       rb_define_method(cArray, :<=>, &method(:ary_cmp))
 
       rb_define_method(cArray, :+, &method(:ary_plus))
