@@ -69,7 +69,7 @@ module GarnetRuby
       def proc_call(proc, *args)
         vm = VM.instance
         begin
-          vm.execute_block(proc.block, args, vm.current_control_frame.block)
+          vm.execute_block(proc.block, args, args.length, vm.current_control_frame.block)
         rescue VM::GarnetThrow => e
           if e.throw_type == :break
             if proc.lambda?

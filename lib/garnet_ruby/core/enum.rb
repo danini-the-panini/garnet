@@ -19,7 +19,7 @@ module GarnetRuby
 
         ary = RArray.from([])
         rb_block_call(obj, :each) do |x|
-          ary.array_value.push(vm.execute_block(block, [x]))
+          ary.array_value.push(vm.execute_block(block, [x], 1))
         end
 
         ary

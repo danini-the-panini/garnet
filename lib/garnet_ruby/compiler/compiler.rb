@@ -47,6 +47,10 @@ module GarnetRuby
         "<callinfo!#{things}>"
       end
       alias to_s inspect
+
+      def splat?
+        flags.include?(:splat)
+      end
     end
 
     class Label
@@ -864,9 +868,8 @@ module GarnetRuby
     end
 
     def populate_local_table(args, compiler, iseq)
-      splatted = false;
+      splatted = false
       args.each do |a|
-        next if a.nil?
         if a.is_a?(Symbol)
           s = a.to_s
           case s
@@ -881,6 +884,8 @@ module GarnetRuby
           else
             iseq.local_table[a] = splatted ? [:post] : [:arg]
           end
+        elsif a.nil?
+          iseq.local_table[:_] = splatted ? [:post] : [:arg]
         elsif a[0] == :lasgn
           iseq.local_table[a[1]] = [:opt]
           compiler.compile(a)

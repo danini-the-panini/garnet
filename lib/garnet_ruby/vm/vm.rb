@@ -86,7 +86,7 @@ module GarnetRuby
             offset = v[1]
           end
         when :splat
-          env.locals[k] = RArray.from(args[i, args.length - num_post - i])
+          env.locals[k] = RArray.from(args[i, args.length - num_post - i] || [])
         end
       end
       offset
@@ -450,7 +450,7 @@ module GarnetRuby
       callinfo = insn.arguments[0]
       args = collect_args(callinfo)
       block = caller_environment.block
-      ret = execute_block(block, args)
+      ret = execute_block(block, args, callinfo.argc)
       push_stack(ret) unless ret.nil? || ret == Q_UNDEF
     end
 
@@ -688,7 +688,7 @@ module GarnetRuby
 
     def rb_yield(*args)
       block = caller_environment.block
-      execute_block(block, args)
+      execute_block(block, args, args.length)
     end
 
     def is_block_orphan?(block)
@@ -749,8 +749,8 @@ module GarnetRuby
       end
     end
 
-    def execute_block(block, args, block_block = nil)
-      if args.length == 1 && args.first.type?(Array) && block.arity > 1
+    def execute_block(block, args, argc, block_block = nil)
+      if !block.proc.is_lambda && args.length == 1 && argc == 1 && args.first.type?(Array) && block.arity > 1
         args = args[0].array_value
       end
 
@@ -758,7 +758,7 @@ module GarnetRuby
       when BuiltInBlock
         if block_block
           block.block.call(*args) do |*blargs|
-            execute_block(block_block, *blargs)
+            execute_block(block_block, blargs, blargs.length)
           end
         else
           block.block.call(*args)
