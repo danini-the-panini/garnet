@@ -33,12 +33,12 @@ module GarnetRuby
 
       pos = regexp_value =~ operand(str, true).string_value
       Core.backref_set(RMatch.from($~))
-      pos
+      pos || -1
     end
 
     def match(str)
       pos = match_pos(str)
-      return Q_NIL if pos.nil?
+      return Q_NIL if pos.negative?
 
       RPrimitive.from(pos)
     end
