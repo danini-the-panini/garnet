@@ -661,6 +661,11 @@ module GarnetRuby
       dispatch_method(recv, method, args)
     end
 
+    def rb_call_with_block(recv, mid, block, *args)
+      method = find_method(recv, mid)
+      dispatch_method(recv, method, args, block)
+    end
+
     def rb_check_funcall(recv, mid, *args)
       rb_check_funcall_default(recv, mid, Q_UNDEF, *args)
     end

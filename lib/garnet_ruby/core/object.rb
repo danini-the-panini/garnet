@@ -32,7 +32,12 @@ module GarnetRuby
 
       def rb_class_new_instance(klass, *args)
         obj = klass.alloc
-        rb_funcall(obj, :initialize, *args)
+
+        if rb_block_given?
+          rb_funcall_with_block(obj, :initialize, rb_block, *args)
+        else
+          rb_funcall(obj, :initialize, *args)
+        end
         obj
       end
 

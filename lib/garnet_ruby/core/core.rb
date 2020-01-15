@@ -389,6 +389,10 @@ module GarnetRuby
         VM.instance.rb_call(recv, mid, *args)
       end
 
+      def rb_funcall_with_block(recv, mid, block, *args)
+        VM.instance.rb_call_with_block(recv, mid, block, *args)
+      end
+
       def rb_check_funcall(recv, mid, *args)
         VM.instance.rb_check_funcall(recv, mid, *args)
       end
@@ -403,12 +407,16 @@ module GarnetRuby
         true
       end
 
+      def rb_block
+        VM.instance.current_control_frame.block
+      end
+
       def rb_block_given?
-        !VM.instance.current_control_frame.block.nil?
+        !rb_block.nil?
       end
 
       def rb_block_arity
-        VM.instance.current_control_frame.block.arity
+        rb_block.arity
       end
 
       def rb_yield(*args)
@@ -420,7 +428,7 @@ module GarnetRuby
       end
 
       def rb_block_proc
-        VM.instance.current_control_frame.block.proc
+        rb_block.proc
       end
 
       def proc_ptr(proc)
