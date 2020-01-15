@@ -129,9 +129,12 @@ module GarnetRuby
         init_process
         init_marshal
         init_struct
+        init_load
 
         @env_table = RHash.new(cHash, [])
         cObject.rb_const_set(:ENV, env_table)
+
+        @required_files = {}
       end
 
       def init_top_self

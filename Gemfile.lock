@@ -11,6 +11,7 @@ GEM
     rake (10.5.0)
     ruby_parser (3.14.0)
       sexp_processor (~> 4.9)
+    sample (0.1.1)
     sexp_processor (4.12.0)
 
 PLATFORMS
@@ -21,6 +22,7 @@ DEPENDENCIES
   garnet_ruby!
   minitest (~> 5.0)
   rake (~> 10.0)
+  sample
 
 BUNDLED WITH
-   2.0.2
+   2.1.2
