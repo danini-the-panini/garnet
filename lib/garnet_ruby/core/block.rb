@@ -20,6 +20,10 @@ module GarnetRuby
     def dispatch(*)
       raise "NOT IMPLEMENTED: #{self.class}#dispatch"
     end
+
+    def description
+      "(block)"
+    end
   end
 
   class IseqBlock < Block
@@ -41,6 +45,10 @@ module GarnetRuby
     def dispatch(vm, args, block_block = nil, override_self_value = nil, method = nil)
       sv = override_self_value || self_value
       vm.execute_block_iseq(self, args, block_block, sv, method)
+    end
+
+    def description
+      iseq.location
     end
   end
 

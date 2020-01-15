@@ -195,23 +195,30 @@ module GarnetRuby
     end
 
     def exec_leave(control_frame, insn)
-      pop_control_frame
-      if control_frame.iseq.type == :rescue
-        cfp = current_control_frame
-        cr = cfp.iseq.catch_table.find do |x|
-          x.type == :rescue && x.iseq == control_frame.iseq
+      if insn.arguments.empty?
+        pop_control_frame
+          if control_frame.iseq.type == :rescue
+          cfp = current_control_frame
+          cr = cfp.iseq.catch_table.find do |x|
+            x.type == :rescue && x.iseq == control_frame.iseq
+          end
+          current_control_frame.stack << control_frame.stack.last
+          current_control_frame.pc = cr.cont if cr
         end
-        current_control_frame.stack << control_frame.stack.last
-        current_control_frame.pc = cr.cont if cr
-      end
-      if control_frame.iseq.type == :ensure
-        cfp = current_control_frame
-        cr = cfp.iseq.catch_table.find do |x|
-          x.type == :ensure && x.iseq == control_frame.iseq
+        if control_frame.iseq.type == :ensure
+          cfp = current_control_frame
+          cr = cfp.iseq.catch_table.find do |x|
+            x.type == :ensure && x.iseq == control_frame.iseq
+          end
+          current_control_frame.pc = cr.cont if cr
         end
-        current_control_frame.pc = cr.cont if cr
+        return
       end
-      puts "#{$indent}  --- leave: now executing: #{current_control_frame}" if __vm_debug__?
+
+      raise GarnetThrow.new(insn.arguments[0], pop_stack, current_control_frame)
+      # pop_control_frame
+      
+      # puts "#{$indent}  --- leave: now executing: #{current_control_frame}" if __vm_debug__?
     end
 
     def exec_nop(control_frame, insn)
@@ -954,6 +961,53 @@ module GarnetRuby
         when :continue
           pop_control_frame
           raise e.cfp.throw_data
+        when :next
+          unless cfp.iseq.nil?
+            case cfp.iseq.type
+            when :main, :top, :class
+              Core.rb_raise(Core.eLocalJumpError, "Invalid next")
+            when :block
+              cr = cfp.iseq.catch_table.find do |x|
+                x.type == :ensure && (x.st..x.ed).include?(cfp.pc)
+              end
+              if cr
+                cfp.pc = cr.cont
+                execute_rescue_iseq(cr.iseq, e)
+                return
+              end
+
+              push_stack(e.value)
+              pop_control_frame
+              return
+            end
+          end
+        when :return
+          unless cfp.iseq.nil?
+            if cfp.iseq.type == :class
+              Core.rb_raise(Core.eLocalJumpError, "Invalid return in class/module body")
+            end
+
+            cr = cfp.iseq.catch_table.find do |x|
+              x.type == :ensure && (x.st..x.ed).include?(cfp.pc)
+            end
+            if cr
+              cfp.pc = cr.cont
+              execute_rescue_iseq(cr.iseq, e)
+              return
+            end
+
+            case cfp.iseq.type
+            when :main, :top
+              pop_control_frame
+              return
+            when :method
+              if cfp == e.cfp || cfp.environment == e.cfp.environment.previous
+                push_stack(e.value)
+                pop_control_frame
+                return
+              end
+            end
+          end
         end
       end
       pop_control_frame

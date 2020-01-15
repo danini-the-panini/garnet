@@ -10,7 +10,11 @@ module GarnetRuby
     end
 
     def to_s
-      "#{type} #{arguments.map(&:to_s).join(', ')} (#{file}:#{line})"
+      "#{type} #{arguments.map(&:to_s).join(', ')} (#{location})"
+    end
+
+    def location
+      "#{file}:#{line}"
     end
   end
 end

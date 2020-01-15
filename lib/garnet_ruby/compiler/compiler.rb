@@ -101,7 +101,16 @@ module GarnetRuby
         compile(node)
       end
 
-      add_instruction(:leave) unless @iseq.instructions.last&.type == :leave
+      unless @iseq.instructions.last&.type == :leave
+        case @iseq.type
+        when :main, :top, :method
+          add_instruction(:leave, :return)
+        when :class, :rescue, :eval
+          add_instruction(:leave)
+        else
+          add_instruction(:leave, :next)
+        end
+      end
 
       return unless debug
 
@@ -727,21 +736,27 @@ module GarnetRuby
       else
         add_instruction(:put_nil)
       end
-      add_instruction(:leave)
-      # TODO: handle blocks
+      case @iseq.type
+      when :method, :main, :top
+        add_instruction(:leave, :return)
+      when :class
+        raise CompilationError, 'Invalid return in class/module body'
+      else
+        add_instruction(:throw, :return)
+      end
     end
 
     def compile_next(node)
       if node.length > 1
         compile(node[1])
       else
-        add_instruction(:put_nil);
+        add_instruction(:put_nil)
       end
       if @iseq.redo_label
         add_instruction(:pop)
         add_instruction_with_label(:jump, @iseq.start_label)
       else
-        add_instruction(:leave)
+        add_instruction(:leave, :next)
       end
     end
 

@@ -28,6 +28,10 @@ module GarnetRuby
       "<#Proc block=#{block}>"
     end
     alias inspect to_s
+
+    def description
+      block.description
+    end
   end
   
   class RMethod < RObject
@@ -71,14 +75,18 @@ module GarnetRuby
         begin
           vm.execute_block(proc.block, args, args.length, vm.current_control_frame.block)
         rescue VM::GarnetThrow => e
-          if e.throw_type == :break
-            if proc.lambda?
-              return e.value
-            elsif vm.is_block_orphan?(proc.block)
-              vm.do_raise(make_localjump_error('break from proc-closure', e.value, :break))
-            else
-              raise
-            end
+          case e.throw_type
+          when :break
+            return e.value if proc.lambda?
+            raise unless vm.is_block_orphan?(proc.block)
+
+            vm.do_raise(make_localjump_error('break from proc-closure', e.value, :break))
+          when :return
+            raise unless proc.lambda?
+
+            e.value
+          else
+            raise
           end
         end
       end
@@ -98,6 +106,10 @@ module GarnetRuby
       def proc_clone(prc)
         # TODO: clone setup (I think it copies singleton classes)
         proc_dup(prc)
+      end
+
+      def proc_to_s(prc)
+        RString.from("#<Proc #{prc.description}>")
       end
 
       def proc_dup(prc)
@@ -196,6 +208,7 @@ module GarnetRuby
       rb_define_method(cProc, :arity, &method(:proc_arity))
       rb_define_method(cProc, :clone, &method(:proc_clone))
       rb_define_method(cProc, :dup, &method(:proc_dup))
+      rb_define_method(cProc, :to_s, &method(:proc_to_s))
 
       # Exceptions
       @eLocalJumpError = rb_define_class(:LocalJumpError, eStandardError)

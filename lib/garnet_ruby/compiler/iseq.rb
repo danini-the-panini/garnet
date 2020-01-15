@@ -56,6 +56,13 @@ module GarnetRuby
       "#<Iseq:#{name}>"
     end
 
+    def location
+      return '???' if @instructions.empty?
+
+      i = @instructions.first
+      i.location
+    end
+
     def debug_dump_instructions
       return unless __grb_debug__?
       @instructions.each_with_index do |insn, i|

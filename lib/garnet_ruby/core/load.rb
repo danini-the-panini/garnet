@@ -29,7 +29,7 @@ module GarnetRuby
           puts '------'
         end
 
-        iseq = Iseq.new('<top (required)>', :main)
+        iseq = Iseq.new('<top (required)>', :top)
         Compiler.new(iseq).compile_node(node)
 
         VM.instance.execute_load_iseq(iseq)
