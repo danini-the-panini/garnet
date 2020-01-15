@@ -568,6 +568,7 @@ module GarnetRuby
       const_base, value = pop_stack_multi(2)
       name = insn.arguments[0]
       const_base.rb_const_set(name, value)
+      push_stack(value)
     end
 
     def exec_get_constant(control_frame, insn)
