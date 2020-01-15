@@ -116,7 +116,7 @@ module GarnetRuby
           st.values[i] = arg
         end
         if n > args.length
-          [args.length...n].each do |i|
+          (args.length...n).each do |i|
             st.values[i] = Q_NIL
           end
         end
