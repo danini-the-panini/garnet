@@ -47,13 +47,23 @@ module GarnetRuby
         mdl
       end
 
+      def mod_public(mdl, *args)
+        set_visibility(mdl, :public, *args)
+      end
+
       def mod_protected(mdl, *args)
-        set_visibility(mdl, :PROTECTED, *args)
+        set_visibility(mdl, :protected, *args)
+      end
+
+      def mod_private(mdl, *args)
+        set_visibility(mdl, :private, *args)
       end
     end
 
     def self.init_vm_method
+      rb_define_private_method(cModule, :public, &method(:mod_public))
       rb_define_private_method(cModule, :protected, &method(:mod_protected))
+      rb_define_private_method(cModule, :private, &method(:mod_private))
     end
   end
 end

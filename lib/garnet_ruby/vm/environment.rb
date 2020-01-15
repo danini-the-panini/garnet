@@ -11,7 +11,7 @@ module GarnetRuby
       @locals = locals
       @previous = previous
       @method_entry = method_entry
-      @scope_visi = ScopeVisi.new(:PUBLIC, false)
+      @scope_visi = ScopeVisi.new(:public, false)
     end
 
     def next_scope

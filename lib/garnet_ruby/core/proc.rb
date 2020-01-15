@@ -166,7 +166,7 @@ module GarnetRuby
           # TODO
         else
           definition = ProcMethodDef.new(body.proc)
-          rb_add_method(singleton_class_of(mod), id, :PUBLIC, definition)
+          rb_add_method(singleton_class_of(mod), id, :public, definition)
         end
 
         RSymbol.from(id)

@@ -232,12 +232,12 @@ module GarnetRuby
       end
 
       def rb_define_method(klass, name, &block)
-        rb_add_method_cfunc(klass, name, :PUBLIC, &block)
+        rb_add_method_cfunc(klass, name, :public, &block)
       end
 
       def rb_undef_method(klass, name)
         definition = UndefinedMethodDef.new(&block)
-        me = method_entry_create(name, klass, :PUBLIC, definition)
+        me = method_entry_create(name, klass, :public, definition)
         klass.method_table[name] = me
         me
       end
@@ -257,7 +257,7 @@ module GarnetRuby
         end
 
         definition = AliasMethodDef.new(orig_me)
-        klass.method_table[alias_name] = method_entry_create(alias_name, klass, :PUBLIC, definition)
+        klass.method_table[alias_name] = method_entry_create(alias_name, klass, :public, definition)
       end
 
       def search_method(klass, name)
@@ -275,11 +275,11 @@ module GarnetRuby
       end
 
       def rb_define_protected_method(klass, name, &block)
-        rb_add_method_cfunc(klass, name, :PROTECTED, &block)
+        rb_add_method_cfunc(klass, name, :protected, &block)
       end
 
       def rb_define_private_method(klass, name, &block)
-        rb_add_method_cfunc(klass, name, :PRIVATE, &block)
+        rb_add_method_cfunc(klass, name, :private, &block)
       end
 
       def rb_define_singleton_method(obj, name, &block)
