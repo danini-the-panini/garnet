@@ -14,6 +14,10 @@ module GarnetRuby
       flags.include?(:basic)
     end
 
+    def undefined?
+      definition.is_a?(UndefinedMethodDef)
+    end
+
     def arity
       definition.arity
     end

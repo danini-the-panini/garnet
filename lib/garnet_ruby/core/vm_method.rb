@@ -1,6 +1,14 @@
 module GarnetRuby
   module Core
     class << self
+      def obj_respond_to(obj, symbol, include_all = Q_FALSE)
+        # TODO: respond_to_missing
+        mid = check_id(symbol)
+        me = find_method(obj.klass, mid)
+        return Q_FALSE if me.nil? || me.undefined?
+        Q_TRUE
+      end
+
       def scope_visibility_set(visi)
         VM.instance.set_visibility(visi)
       end
@@ -61,6 +69,8 @@ module GarnetRuby
     end
 
     def self.init_vm_method
+      rb_define_method(mKernel, :respond_to?, &method(:obj_respond_to))
+
       rb_define_private_method(cModule, :public, &method(:mod_public))
       rb_define_private_method(cModule, :protected, &method(:mod_protected))
       rb_define_private_method(cModule, :private, &method(:mod_private))
