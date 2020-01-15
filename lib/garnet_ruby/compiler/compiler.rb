@@ -172,7 +172,8 @@ module GarnetRuby
     end
 
     def compile(node)
-      raise raise NodelessCompilationError.new("NOT A NODE: #{node.inspect}") unless node.is_a?(Array)
+      raise NodelessCompilationError.new("NOT A NODE: #{node.inspect}") unless node.is_a?(Array)
+
       node = s(*node) unless node.is_a?(Sexp)
       @node = node
 
@@ -181,8 +182,10 @@ module GarnetRuby
 
       begin
         __send__(method_name, node)
-      rescue NodelessCompilationError => e
+      rescue CompilationError => e
         raise CompilationError.from(e, node)
+      rescue => e
+        raise CompilationError.new("Error compiling #{node[0]}: #{e.class}", node)
       end
 
       @node = node
@@ -380,6 +383,8 @@ module GarnetRuby
     end
 
     def compile_assignment(node)
+      return if node.nil?
+
       case node[0]
       when :lasgn
         add_set_local(node[1])
