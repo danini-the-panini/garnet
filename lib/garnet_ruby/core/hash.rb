@@ -287,6 +287,16 @@ module GarnetRuby
         RArray.from([entry.key, entry.value])
       end
 
+      def hash_invert(hash)
+        h = RHash.from({})
+
+        hash.entries.each do |e|
+          hash_aset(h, e.value, e.key)
+        end
+
+        h
+      end
+
       def hash_has_value(hash, value)
         hash.entries.each do |entry|
           return Q_TRUE if rb_equal(entry.value, value) == Q_TRUE
@@ -327,6 +337,7 @@ module GarnetRuby
       rb_define_method(cHash, :values_at, &method(:hash_values_at))
 
       rb_define_method(cHash, :shift, &method(:hash_shift))
+      rb_define_method(cHash, :invert, &method(:hash_invert))
 
       rb_define_method(cHash, :include?, &method(:hash_has_key))
       rb_define_method(cHash, :member?, &method(:hash_has_key))
