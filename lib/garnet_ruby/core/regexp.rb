@@ -171,6 +171,10 @@ module GarnetRuby
         end
         m
       end
+
+      def reg_inspect(re)
+        RString.from(re.regexp_value.inspect)
+      end
     end
 
     def self.init_regexp
@@ -181,6 +185,7 @@ module GarnetRuby
       rb_define_method(cRegexp, :=~) { |re, str| re.match(str) }
       rb_define_method(cRegexp, :===) { |re, str| rtest(re.match(str)) ? Q_TRUE : Q_FALSE }
       rb_define_method(cRegexp, :match, &method(:reg_match))
+      rb_define_method(cRegexp, :inspect, &method(:reg_inspect))
 
       @cMatch = rb_define_class(:MatchData, cObject)
       rb_define_alloc_func(cMatch, &method(:match_alloc))
