@@ -8,7 +8,7 @@ $ntest=0
 $failed = 0
 
 def test_check(what)
-  STDERR.print "\nsample/test.rb:#{what} "
+  STDERR.print "\nsample/test.rb:#{what}\n"
   $what = what
   $testnum = 0
 end
