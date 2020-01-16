@@ -182,6 +182,10 @@ module GarnetRuby
 
         me = find_method(klass, id)
 
+        if me.nil? || me.undefined?
+          rb_raise(eNameError, "undefined method `#{id}' for class `#{klass}'")
+        end
+
         RMethod.new(mclass, [], me, obj)
       end
 
