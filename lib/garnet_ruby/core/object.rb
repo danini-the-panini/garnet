@@ -96,6 +96,14 @@ module GarnetRuby
         clone
       end
 
+      def obj_dup(obj)
+        dup = obj_class(obj).alloc
+        init_copy(dup, obj)
+        rb_funcall(dup, :initialize_dup, obj)
+
+        dup
+      end
+
       def init_copy(clone, obj)
         rb_copy_generic_ivar(clone, obj)
       end
@@ -363,6 +371,7 @@ module GarnetRuby
 
       rb_define_method(mKernel, :class, &method(:obj_class))
       rb_define_method(mKernel, :clone, &method(:obj_clone))
+      rb_define_method(mKernel, :dup, &method(:obj_dup))
       rb_define_method(mKernel, :initialize_copy, &method(:obj_init_copy))
       rb_define_method(mKernel, :initialize_dup, &method(:obj_init_dup_clone))
       rb_define_method(mKernel, :initialize_clone, &method(:obj_init_dup_clone))

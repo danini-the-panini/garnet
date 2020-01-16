@@ -36,6 +36,36 @@ module GarnetRuby
         RArray.new(klass, [], [])
       end
 
+      def ary_initialize(ary, *args)
+        if args.empty?
+          puts "WARNING: given block not used" if rb_block_given?
+          return ary
+        end
+        size, val = *args
+        if args.length == 1 && !fixnum?(args[0])
+          val = args[0].check_array_type
+          if val != Q_NIL
+            ary_replace(ary, val)
+            return ary
+          end
+        end
+
+        len = num2long(size)
+        rb_raise(eArgError, 'negative array size') if len.negative?
+
+        if rb_block_given?
+          if args.length == 2
+            puts "WARNING: block supersedes default value argument"
+          end
+          len.times do |i|
+            ary.array_value[i] = rb_yield(RPrimitive.from(i))
+          end
+        else
+          ary_mem_fill(ary, 0, len, val)
+        end
+        ary
+      end
+
       def ary_inspect(ary)
         strings = ary.array_value.map do |item|
           rb_funcall(item, :inspect).string_value
@@ -122,6 +152,12 @@ module GarnetRuby
       def ary_mem_clear(ary, beg, size)
         size.times do |i|
           ary.array_value[beg + i] = Q_NIL
+        end
+      end
+
+      def ary_mem_fill(ary, beg, size, val)
+        size.times do |i|
+          ary.array_value[beg + i] = val
         end
       end
 
@@ -348,6 +384,11 @@ module GarnetRuby
         ary
       end
 
+      def ary_replace(copy, orig)
+        copy.array_value.replace(orig.array_value.dup)
+        copy
+      end
+
       def ary_cmp(ary1, ary2)
         ary2 = ary2.check_array_type
         return Q_NIL if ary2 == Q_NIL
@@ -535,6 +576,8 @@ module GarnetRuby
       cArray.include_module(mEnumerable)
 
       rb_define_alloc_func(cArray, &method(:empty_ary_alloc))
+      rb_define_method(cArray, :initialize, &method(:ary_initialize))
+      rb_define_method(cArray, :initialize_copy, &method(:ary_replace))
 
       rb_define_method(cArray, :inspect, &method(:ary_inspect))
       rb_alias_method(cArray, :to_s, :inspect)
@@ -567,6 +610,7 @@ module GarnetRuby
       rb_define_method(cArray, :map!, &method(:ary_collect_bang))
       rb_define_method(cArray, :delete_if, &method(:ary_delete_if))
       rb_define_method(cArray, :reject!, &method(:ary_reject_bang))
+      rb_define_method(cArray, :replace, &method(:ary_replace))
       rb_define_method(cArray, :<=>, &method(:ary_cmp))
 
       rb_define_method(cArray, :+, &method(:ary_plus))
