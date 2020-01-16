@@ -272,6 +272,24 @@ module GarnetRuby
         str
       end
 
+      def str_buf_append(str, str2)
+        str.string_value << str2.string_value
+        str
+      end
+
+      def str_append(str, str2)
+        str_buf_append(str, str2.str_to_str)
+      end
+
+      def str_concat(str1, str2)
+        if fixnum?(str2)
+          str1.string_value << str2.value
+          str1
+        else
+          str_append(str1, str2)
+        end
+      end
+
       def str_reverse(str)
         RString.from(str.string_value.reverse)
       end
@@ -473,6 +491,7 @@ module GarnetRuby
       rb_define_method(cString, :split, &method(:str_split))
       rb_define_method(cString, :reverse, &method(:str_reverse))
       rb_define_method(cString, :reverse!, &method(:str_reverse_bang))
+      rb_define_method(cString, :<<, &method(:str_concat))
 
       rb_define_method(cString, :scan, &method(:str_scan))
 
