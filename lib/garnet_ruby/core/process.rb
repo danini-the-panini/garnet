@@ -1,6 +1,9 @@
 module GarnetRuby
   module Core
     class << self
+      EXIT_SUCCESS = 0
+      EXIT_FAILURE = 1
+
       def get_process_id
         RPrimitive.from($$)
       end
@@ -21,6 +24,33 @@ module GarnetRuby
               end
 
         RPrimitive.from(ret)
+      end
+
+      def exit_status_code(status)
+        case status
+        when Q_TRUE then EXIT_SUCCESS
+        when Q_FALSE then EXIT_FAILURE
+        else num2long(status)
+        end
+      end
+
+      def rb_exit(status)
+        # TODO: raise SystemExit
+        exit(status)
+      end
+
+      def rb_f_exit(*args)
+        istatus = if args.length == 1
+                    exit_status_code(args.first)
+                  else
+                    EXIT_SUCCESS
+                  end
+
+        rb_exit(istatus)
+      end
+
+      def f_exit(_, *args)
+        rb_f_exit(*args)
       end
 
       def proc_rb_f_kill(_, *args)
@@ -47,6 +77,7 @@ module GarnetRuby
     def self.init_process
       rb_define_virtual_variable(:'$$', method(:get_process_id), nil)
       rb_define_global_function(:sleep, &method(:rb_f_sleep))
+      rb_define_global_function(:exit, &method(:f_exit))
 
       @mProcess = rb_define_module(:Process)
 
