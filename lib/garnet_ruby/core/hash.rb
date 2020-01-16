@@ -27,7 +27,7 @@ module GarnetRuby
         key = Core.ruby2garnet(k)
         value = Core.ruby2garnet(v)
 
-        Core.hash_aset(hsh, key, value)
+        hsh.update(key, value)
       end
       hsh
     end
@@ -50,6 +50,15 @@ module GarnetRuby
       @proc_default = true
     end
 
+    def key?(key)
+      !get(key).nil?
+    end
+
+    def get(key)
+      hash = Core.hash_of(key)
+      lookup(hash, key)
+    end
+
     def lookup(hash, key)
       entry = table[hash]&.find { |e| e.key_eql?(key) }
       entry&.value
@@ -65,6 +74,17 @@ module GarnetRuby
       end
     end
 
+    def update(key, value)
+      hash = Core.hash_of(key)
+      entries = table[hash] ||= []
+      entry = entries.find { |e| e.key_eql?(key) }
+      if entry
+        entry.value = value
+      else
+        entries << RHash::Entry.new(key, value)
+      end
+    end
+
     class Entry
       attr_reader :key
       attr_accessor :value
@@ -75,7 +95,7 @@ module GarnetRuby
       end
 
       def hash_code
-        Core.rb_funcall(key, :hash).value ^ Core.rb_funcall(value, :hash).value
+        Core.hash_of(key) ^ Core.hash_of(value)
       end
 
       def key_eql?(k)
@@ -86,6 +106,10 @@ module GarnetRuby
 
   module Core
     class << self
+      def hash_of(obj)
+        rb_funcall(obj, :hash).value
+      end
+
       def empty_hash_alloc(klass)
         RHash.new(klass, [])
       end
@@ -108,18 +132,11 @@ module GarnetRuby
       end
 
       def hash_aset(hash, k, v)
-        kh = rb_funcall(k, :hash).value
-        entries = hash.table[kh] ||= []
-        entry = entries.find { |e| e.key_eql?(k) }
-        if entry
-          entry.value = v
-        else
-          entries << RHash::Entry.new(k, v)
-        end
+        hash.update(k, v)
       end
 
       def hash_lookup(hash, k)
-        kh = rb_funcall(k, :hash).value
+        kh = hash_of(k)
         hash.lookup(kh, k)
       end
 
@@ -164,7 +181,7 @@ module GarnetRuby
       end
 
       def hash_has_key(hash, k)
-        kh = rb_funcall(k, :hash).value
+        kh = hash_of(k)
         entries = hash.table[kh]
         return Q_FALSE unless entries
 
@@ -172,7 +189,7 @@ module GarnetRuby
       end
 
       def hash_delete_entry(hash, key)
-        kh = rb_funcall(key, :hash).value
+        kh = hash_of(key)
         entries = hash.table[kh]
         return Q_UNDEF if entries.nil?
 
@@ -291,10 +308,34 @@ module GarnetRuby
         h = RHash.from({})
 
         hash.entries.each do |e|
-          hash_aset(h, e.value, e.key)
+          h.update(e.value, e.key)
         end
 
         h
+      end
+      
+      def hash_update_block_i(hash, entry)
+        val = entry.value
+        if oldval = hash.get(entry.key)
+          val = rb_yield(entry.key, oldval, val)
+        end
+        hash.update(entry.key, val)
+      end
+
+      def hash_update(hash, *args)
+        block_given = rb_block_given?
+
+        args.each do |other_hash|
+          if block_given
+            other_hash.entries.each do |e|
+              hash_update_block_i(hash, e)
+            end
+          else
+            other_hash.entries.each do |e|
+              hash.update(e.key, e.value)
+            end
+          end
+        end
       end
 
       def hash_has_value(hash, value)
@@ -338,6 +379,7 @@ module GarnetRuby
 
       rb_define_method(cHash, :shift, &method(:hash_shift))
       rb_define_method(cHash, :invert, &method(:hash_invert))
+      rb_define_method(cHash, :update, &method(:hash_update))
 
       rb_define_method(cHash, :include?, &method(:hash_has_key))
       rb_define_method(cHash, :member?, &method(:hash_has_key))
