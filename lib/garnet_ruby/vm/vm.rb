@@ -308,41 +308,71 @@ module GarnetRuby
     end
 
     def exec_concat_array(control_frame, insn)
-      ary1, ary2 = pop_stack_multi(2).map { |x| make_array(x) }
-      ary = RArray.from(ary1.array_value + ary2.array_value)
+      ary1, ary2 = pop_stack_multi(2)
+
+      tmp1 = ary1.check_to_array
+      tmp2 = ary2.check_to_array
+
+      tmp1 = RArray.from([tmp1]) if tmp1 == Q_NIL
+      tmp2 = RArray.from([tmp2]) if tmp2 == Q_NIL
+
+      if tmp1 == ary1
+        tmp1 = dup_array(ary1)
+      end
+
+      ary = RArray.from(tmp1.array_value + tmp2.array_value)
       push_stack(ary)
     end
 
     def exec_splat_array(control_frame, insn)
       flag = insn.arguments[0]
-      ary = make_array(pop_stack)
-      ary = dup_array(ary) if flag
+      ary = pop_stack
+
+      tmp = ary.check_to_array
+      ary = if tmp == Q_NIL
+              RArray.from([ary])
+            elsif flag
+              dup_array(tmp)
+            else
+              tmp
+            end
+
       push_stack(ary)
     end
 
     def exec_expand_array(control_frame, insn)
       num, is_splat, post = insn.arguments
-      ary = make_array(pop_stack).array_value
-      len = ary.length
+      ary = pop_stack
+      obj = ary
+
+      if !ary.type?(Array) && (ary = ary.check_array_type) == Q_NIL
+        ary = obj
+        ptr = [ary]
+        len = 1
+      else
+        ptr = ary.array_value
+        len = ary.len
+      end
+
       if post
         (num - len).times { push_stack(Q_NIL) } if len < num
-        [num, len].min.times { |j| push_stack(ary[len - j - 1]) }
+        [num, len].min.times { |j| push_stack(ptr[len - j - 1]) }
         if is_splat
-          push_stack(RArray.from(ary[0,(len - [num, len].min)]))
+          push_stack(RArray.from(ptr[0,(len - [num, len].min)]))
         end
       else
         if is_splat
           if num > len
             push_stack(RArray.from([]))
           else
-            push_stack(RArray.from(ary[num..-1]))
+            push_stack(RArray.from(ptr[num..-1]))
           end
         end
         (num - 1).downto(0) do |i|
           if len <= i
             push_stack(Q_NIL)
           else
-            push_stack(ary[i])
+            push_stack(ptr[i])
           end
         end
       end
