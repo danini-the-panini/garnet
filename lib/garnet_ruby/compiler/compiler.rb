@@ -1199,7 +1199,14 @@ module GarnetRuby
     end
 
     def add_set_local(name, node: @node)
-      add_instruction(:set_local, name, @iseq.local_level(name), node: node)
+      level = @iseq.local_level(name)
+      pi = @iseq
+      level.times { pi = pi.parent_iseq }
+      if pi.local_table.dig(name, 0) == :block
+        add_instruction(:set_block_param_proxy, name, level, node: node)
+      else
+        add_instruction(:set_local, name, level, node: node)
+      end
     end
 
     def add_get_local(name, node: @node)
@@ -1207,7 +1214,7 @@ module GarnetRuby
       pi = @iseq
       level.times { pi = pi.parent_iseq }
       if pi.local_table.dig(name, 0) == :block
-        add_instruction(:get_block_param_proxy, level, node: node)
+        add_instruction(:get_block_param_proxy, name, level, node: node)
       else
         add_instruction(:get_local, name, level, node: node)
       end
