@@ -154,6 +154,13 @@ module GarnetRuby
         RPrimitive.from(str.string_value.length)
       end
 
+      def str_empty(str)
+        if str.string_value.length.zero?
+          return Q_TRUE
+        end
+        Q_FALSE
+      end
+
       def str_subpat(str, re)
         if re.match_pos(str).positive?
           return RString.from(backref_get.match_value[0])
@@ -446,6 +453,7 @@ module GarnetRuby
       rb_define_method(cString, :[]=, &method(:str_aset_m))
       rb_define_method(cString, :length, &method(:str_length))
       rb_define_method(cString, :size, &method(:str_length))
+      rb_define_method(cString, :empty?, &method(:str_empty))
 
       rb_define_method(cString, :to_i, &method(:str_to_i))
       rb_define_method(cString, :to_f, &method(:str_to_f))
