@@ -969,9 +969,40 @@ module GarnetRuby
         elsif a[0] == :lasgn
           iseq.local_table[a[1]] = [:opt]
           compiler.compile(a)
+          compiler.add_instruction(:pop)
           iseq.local_table[a[1]][1] = iseq.instructions.length
+        elsif a[0] == :kwarg
+          iseq.local_table[:'?'] = [:kwargs]
+          iseq.local_table[a[1]] = [:kwarg]
+          compiler.compile_kwarg(a)
         end
       end
+    end
+    
+    def compile_kwarg(node)
+      end_label = new_label
+      
+      add_get_local(:'?')
+
+      if node.length == 3
+        kwarg_label = new_label
+        add_instruction(:put_object, RSymbol.from(node[1]))
+        add_instruction(:send_without_block, CallInfo.new(:key?, 1, [:simple]))
+        add_instruction_with_label(:branch_if, kwarg_label)
+
+        compile(node[2])
+        add_instruction_with_label(:jump, end_label)
+
+        add_label(kwarg_label)
+        add_get_local(:'?')
+      end
+
+      add_instruction(:put_object, RSymbol.from(node[1]))
+      add_instruction(:send_without_block, CallInfo.new(:[], 1, [:simple]))
+
+      add_label(end_label)
+      add_set_local(node[1])
+      add_instruction(:pop)
     end
 
     def compile_attrasgn(node, safe = false)

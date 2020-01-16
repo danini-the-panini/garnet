@@ -74,6 +74,16 @@ module GarnetRuby
       offset = 0
       num_locals = iseq.local_table.size
       num_post = iseq.local_table.count { |_, v| v[0] == :post }
+      has_kwargs = iseq.local_table.any? { |_, v| v[0] == :kwarg || v[0] == :opt_kwarg }
+
+      if has_kwargs
+        if args.last.is_a?(RHash) && args.last.entries.all? { |e| e.key.is_a?(RSymbol) }
+          env.locals[:'?'] = args.pop
+        else
+          env.locals[:'?'] = RHash.from({})
+        end
+      end
+
       iseq.local_table.each_with_index do |(k, v), i|
         case v[0]
         when :arg
