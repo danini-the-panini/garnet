@@ -161,6 +161,39 @@ module GarnetRuby
         Q_FALSE
       end
 
+      def str_index(str, *args)
+        sub, initpos = args
+        pos = if args.length == 2
+                num2long(initpos)
+              else
+                0
+              end
+        if pos.negative?
+          pos += str.string_value.length
+          if pos.negative?
+            if sub.type?(Regexp)
+              backref_set(Q_NIL)
+            end
+            return Q_NIL
+          end
+        end
+
+        pos = if sub.type?(Regexp)
+                str.string_value.index(sub.regexp_value, pos)
+              elsif sub.type?(String)
+                str.string_value.index(sub.string_value, pos)
+              else
+                tmp = sub.check_string_type
+                if tmp == Q_NIL
+                  rb_raise(eTypeError, "type mismatch: #{sub.klass.name} given")
+                end
+                str.string_value.index(tmp.string_value, pos)
+              end
+
+        return Q_NIL if pos.nil?
+        RPrimitive.from(pos)
+      end
+
       def str_subpat(str, re)
         if re.match_pos(str).positive?
           return RString.from(backref_get.match_value[0])
@@ -497,6 +530,7 @@ module GarnetRuby
       rb_define_method(cString, :length, &method(:str_length))
       rb_define_method(cString, :size, &method(:str_length))
       rb_define_method(cString, :empty?, &method(:str_empty))
+      rb_define_method(cString, :index, &method(:str_index))
 
       rb_define_method(cString, :to_i, &method(:str_to_i))
       rb_define_method(cString, :to_f, &method(:str_to_f))
