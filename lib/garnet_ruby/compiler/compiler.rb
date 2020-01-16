@@ -1051,21 +1051,30 @@ module GarnetRuby
     end
 
     def compile_op_asgn1(node)
-      match_label = new_label
-      end_label = new_label
-
       add_instruction(:put_nil)
       compile(node[1])
       argc, flags = compile_argslist(node[2])
+      compile_op_asgn_generic(node, :[], :[]=, argc, flags)
+    end
+
+    def compile_op_asgn2(node)
+      add_instruction(:put_nil)
+      compile(node[1])
+      compile_op_asgn_generic(node, node[2].to_s[0..-2].to_sym, node[2], 0, [:simple])
+    end
+
+    def compile_op_asgn_generic(node, getter, setter, argc, flags)
       add_instruction(:dupn, argc + 1)
-      add_instruction(:send_without_block, CallInfo.new(:[], argc, [:simple]))
+      add_instruction(:send_without_block, CallInfo.new(getter, argc, [:simple]))
       case node[3]
       when :'||', :'&&'
+        match_label = new_label
+        end_label = new_label
         add_instruction(:dup)
         add_instruction_with_label(node[3] == :'&&' ? :branch_unless : :branch_if, match_label)
         add_instruction(:pop)
         compile(node[4])
-        add_instruction(:send_without_block, CallInfo.new(:[]=, argc + 1, flags))
+        add_instruction(:send_without_block, CallInfo.new(setter, argc + 1, flags))
         add_instruction(:pop)
         add_instruction_with_label(:jump, end_label)
         add_label(match_label)
@@ -1076,7 +1085,7 @@ module GarnetRuby
         compile(node[4])
         add_instruction(:send_without_block, CallInfo.new(node[3], 1, [:simple]))
         add_instruction(:setn, argc + 2)
-        add_instruction(:send_without_block, CallInfo.new(:[]=, argc + 1, flags))
+        add_instruction(:send_without_block, CallInfo.new(setter, argc + 1, flags))
         add_instruction(:pop)
       end
     end
