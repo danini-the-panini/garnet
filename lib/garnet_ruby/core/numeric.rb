@@ -606,6 +606,7 @@ module GarnetRuby
       rb_define_method(cInteger, :downto, &method(:int_downto))
       rb_define_method(cInteger, :times, &method(:int_dotimes))
       rb_define_method(cInteger, :chr, &method(:int_chr))
+      rb_define_method(cInteger, :to_i) { |num| num }
       rb_define_method(cInteger, :to_f, &method(:int_to_f))
       rb_define_method(cInteger, :<=>, &method(:int_cmp))
 
