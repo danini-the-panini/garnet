@@ -476,6 +476,30 @@ module GarnetRuby
         ary3
       end
 
+      def ary_max(ary, *args)
+        result = Q_UNDEF
+
+        # TODO: max(N)
+
+        if rb_block_given?
+          ary.array_value.each do |v|
+            if result == Q_UNDEF || rb_cmpint(rb_yield(v, result), v, result) > 0
+              result = v
+            end
+          end
+        else
+          ary.array_value.each do |v|
+            if result == Q_UNDEF || rb_cmpint(rb_funcall(v, :<=>, result), v, result) > 0
+              result = v
+            end
+          end
+        end
+
+        return Q_NIL if result == Q_UNDEF
+
+        result
+      end
+
       def ary_union(ary_union, ary)
         ary.array_value.each do |elt|
           next if rtest(ary_includes_by_eql(ary_union, elt))
@@ -619,6 +643,8 @@ module GarnetRuby
       rb_define_method(cArray, :-, &method(:ary_diff))
       rb_define_method(cArray, :&, &method(:ary_and))
       rb_define_method(cArray, :|, &method(:ary_or))
+
+      rb_define_method(cArray, :max, &method(:ary_max))
 
       rb_define_method(cArray, :uniq, &method(:ary_uniq))
       rb_define_method(cArray, :uniq!, &method(:ary_uniq_bang))
