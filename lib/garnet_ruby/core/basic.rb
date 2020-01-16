@@ -60,6 +60,12 @@ module GarnetRuby
       end
     end
 
+    def to_id
+      return symbol_value if type?(Symbol)
+      name = string_for_symbol
+      name.string_value.to_sym
+    end
+
     def to_symbol
       return self if type?(Symbol)
       name = string_for_symbol

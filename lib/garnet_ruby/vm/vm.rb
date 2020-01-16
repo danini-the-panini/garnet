@@ -744,6 +744,10 @@ module GarnetRuby
       rb_call(recv, mid, *args)
     end
 
+    def frame_this_func
+      current_control_frame.environment.method_entry.method_name
+    end
+
     def call_super(*args)
       cfp = current_control_frame
       recv = cfp.self_value

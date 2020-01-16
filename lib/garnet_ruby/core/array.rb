@@ -299,8 +299,12 @@ module GarnetRuby
         ary.array_value.shift || Q_NIL
       end
 
+      ARRAY_ENUM_LENGTH = -> (ary, args, eobj) { ary_length(ary) }
+
       def ary_each(ary)
-        # TODO: return enumerator unless block_given?
+        unless rb_block_given?
+          return sized_enumerator(ary, [], ARRAY_ENUM_LENGTH)
+        end
         ary.array_value.each do |elt|
           rb_yield(elt)
         end
@@ -308,7 +312,9 @@ module GarnetRuby
       end
 
       def ary_reverse_each(ary)
-        # TODO: return enumerator unless block_given?
+        unless rb_block_given?
+          return sized_enumerator(ary, [], ARRAY_ENUM_LENGTH)
+        end
         ary.array_value.reverse_each do |elt|
           rb_yield(elt)
         end
@@ -345,7 +351,9 @@ module GarnetRuby
       end
 
       def ary_collect(ary)
-        # TODO: return enumerator
+        unless rb_block_given?
+          return sized_enumerator(ary, [], ARRAY_ENUM_LENGTH)
+        end
         collect = RArray.from([])
         i = 0
         loop do
@@ -358,7 +366,9 @@ module GarnetRuby
       end
 
       def ary_collect_bang(ary)
-        # TODO: return enumerator
+        unless rb_block_given?
+          return sized_enumerator(ary, [], ARRAY_ENUM_LENGTH)
+        end
         i = 0
         loop do
           break if i >= ary.len
@@ -370,12 +380,16 @@ module GarnetRuby
       end
 
       def ary_delete_if(ary)
-        # TODO: return enumerator
+        unless rb_block_given?
+          return sized_enumerator(ary, [], ARRAY_ENUM_LENGTH)
+        end
         ary_reject_bang(ary)
       end
 
       def ary_reject_bang(ary)
-        # TODO: return enumerator
+        unless rb_block_given?
+          return sized_enumerator(ary, [], ARRAY_ENUM_LENGTH)
+        end
         ret = ary.array_value.reject! do |v|
           rtest(rb_yield(v))
         end
