@@ -318,6 +318,31 @@ module GarnetRuby
         end
       end
 
+      def str_justify(str, jflag, *args)
+        w, pad = args
+        width = num2long(w)
+        f = ' '
+
+        if args.length == 2
+          f = pad.str_to_str.string_value
+          rb_raise(eArgError, 'zero width padding') if f.length.zero?
+        end
+
+        RString.from(str.string_value.__send__(jflag, width, f))
+      end
+
+      def str_ljust(str, *args)
+        str_justify(str, :ljust, *args)
+      end
+
+      def str_rjust(str, *args)
+        str_justify(str, :rjust, *args)
+      end
+
+      def str_center(str, *args)
+        str_justify(str, :center, *args)
+      end
+
       def rb_sprintf(str, *args)
         str.format(*args)
       end
@@ -494,6 +519,10 @@ module GarnetRuby
       rb_define_method(cString, :<<, &method(:str_concat))
 
       rb_define_method(cString, :scan, &method(:str_scan))
+
+      rb_define_method(cString, :ljust, &method(:str_ljust))
+      rb_define_method(cString, :rjust, &method(:str_rjust))
+      rb_define_method(cString, :center, &method(:str_center))
 
       rb_define_method(cString, :sub, &method(:str_sub))
       rb_define_method(cString, :gsub, &method(:str_gsub))
