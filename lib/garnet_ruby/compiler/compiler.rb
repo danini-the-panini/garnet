@@ -268,6 +268,11 @@ module GarnetRuby
       add_instruction(:concat_strings, node.length - 1)
     end
 
+    def compile_dsym(node)
+      compile_dstr(node)
+      add_instruction(:intern)
+    end
+
     def compile_xstr(node)
       add_instruction(:put_self)
       add_instruction(:put_string, node[1])

@@ -280,6 +280,12 @@ module GarnetRuby
       push_stack(string)
     end
 
+    def exec_intern(control_frame, insn)
+      string = pop_stack
+      sym = RSymbol.from(string.string_value)
+      push_stack(sym)
+    end
+
     def exec_to_regexp(control_frame, insn)
       options, count = insn.arguments
       strings = pop_stack_multi(count)
