@@ -39,7 +39,8 @@ module GarnetRuby
 
       def resolve_file_for_require(path)
         path = add_rb_extension(path)
-        $LOAD_PATH.each do |load_path|
+        $GARNET_LOAD_PATH.array_value.each do |load_path|
+          load_path = load_path.str_to_str.string_value
           full_path = File.join(load_path, path)
           return full_path if File.exists?(full_path)
         end
