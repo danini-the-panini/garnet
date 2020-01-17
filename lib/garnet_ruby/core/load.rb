@@ -54,6 +54,16 @@ module GarnetRuby
     end
 
     def self.init_load
+      $GARNET_LOAD_PATH = RArray.new(cArray, [], $LOAD_PATH.map { |s| RString.from(s) })
+
+      lp_getter = -> { $GARNET_LOAD_PATH }
+      lp_setter = -> (v) { $GARNET_LOAD_PATH = v }
+      rb_define_virtual_variable(:'$:', lp_getter, lp_setter)
+      rb_define_virtual_variable(:$-I, lp_getter, lp_setter)
+      rb_define_virtual_variable(:$LOAD_PATH, lp_getter, lp_setter)
+
+      rb_define_global_variable(:'$:', $LOAD_PATH)
+
       rb_define_global_function(:require, &method(:rb_f_require))
     end
   end
