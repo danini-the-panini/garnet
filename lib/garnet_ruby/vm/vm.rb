@@ -287,7 +287,7 @@ module GarnetRuby
 
     def exec_intern(control_frame, insn)
       string = pop_stack
-      sym = RSymbol.from(string.string_value)
+      sym = RSymbol.from(string.string_value.to_sym)
       push_stack(sym)
     end
 
