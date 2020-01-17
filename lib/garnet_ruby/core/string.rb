@@ -112,6 +112,14 @@ module GarnetRuby
         RString.from(str.string_value * len)
       end
 
+      def str_format(str, arg)
+        tmp = arg.check_array_type
+
+        return str.format(*tmp.array_value) unless tmp == Q_NIL
+
+        str.format(arg)
+      end
+
       def str_aref_m(str, *args)
         if args.length == 2
           # TODO
@@ -535,6 +543,7 @@ module GarnetRuby
       rb_define_method(cString, :hash, &method(:str_hash))
       rb_define_method(cString, :+, &method(:str_plus))
       rb_define_method(cString, :*, &method(:str_times))
+      rb_define_method(cString, :%, &method(:str_format))
       rb_define_method(cString, :[], &method(:str_aref_m))
       rb_define_method(cString, :[]=, &method(:str_aset_m))
       rb_define_method(cString, :length, &method(:str_length))
@@ -584,7 +593,7 @@ module GarnetRuby
       rb_define_method(cString, :tr_s!, &method(:str_tr_s_bang))
       rb_define_method(cString, :delete!, &method(:str_delete_bang))
       rb_define_method(cString, :squeeze!, &method(:str_squeeze_bang))
-      
+
       rb_define_method(cString, :each_byte, &method(:str_each_byte))
 
       rb_define_method(cString, :force_encoding, &method(:str_force_encoding))

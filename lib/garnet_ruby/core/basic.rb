@@ -34,7 +34,7 @@ module GarnetRuby
       return self if Core.fixnum?(self)
 
       v = try_to_int(mid, true)
-      conversion_mismatch('Integer', mid.to_s, v) unless fixnum?(v)
+      conversion_mismatch('Integer', mid.to_s, v) unless Core.fixnum?(v)
       v
     end
 
