@@ -112,9 +112,7 @@ module GarnetRuby
     Compiler.new(iseq).compile_node(node)
 
     vm = VM.new(Core.rb_vm_top_self)
-    Core.inject_env(vm)
-    Core.inject_global_variables(vm, options[:global_variables])
-    Core.rb_define_global_const(:ARGV, RArray.from(options[:argv]))
+    Core.prog_init(vm, options)
 
     vm.running = true
     vm.execute_main(iseq)
@@ -123,6 +121,7 @@ end
 
 require 'garnet_ruby/version'
 
+require 'garnet_ruby/core/ruby'
 require 'garnet_ruby/core/basic'
 require 'garnet_ruby/core/object'
 require 'garnet_ruby/core/class'
