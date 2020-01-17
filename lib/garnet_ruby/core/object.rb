@@ -14,6 +14,14 @@ module GarnetRuby
     def ivar_get(k)
       @ivars[k]
     end
+
+    def ivar_defined?(k)
+      @ivars.key?(k)
+    end
+
+    def ivar_remove(k)
+      @ivars.delete(k)
+    end
   end
 
   module Core
@@ -124,6 +132,7 @@ module GarnetRuby
       def obj_is_instance_of(obj, c)
         # TODO: check c is class/module
         return Q_TRUE if obj_class(obj) == c
+
         Q_FALSE
       end
 
@@ -216,6 +225,54 @@ module GarnetRuby
       def obj_freeze(obj)
         obj.flags |= [:freeze]
         obj
+      end
+
+      def rb_any_to_s(obj)
+        RString.from(obj.any_to_s)
+      end
+
+      def rb_obj_inspect(obj)
+        # TODO: put ivars in
+        RString.from(obj.any_to_s)
+      end
+
+      def rb_obj_instance_variables(obj)
+        ary = RArray.from([])
+        obj.ivars.each do |k, _|
+          ary.array_value << RSymbol.from(k)
+        end
+        ary
+      end
+
+      def rb_obj_ivar_get(obj, iv)
+        id = check_id(iv)
+
+        return Q_NIL unless id
+
+        obj.ivar_get(id) || Q_NIL
+      end
+
+      def rb_obj_ivar_set(obj, iv, val)
+        id = check_id(obj)
+        # if (!id) id = rb_intern_str(iv)
+        obj.ivar_set(id, val)
+        val
+      end
+
+      def rb_obj_ivar_defined(obj)
+        id = check_id(obj)
+
+        return Q_FALSE unless id
+
+        obj.ivar_defined?(id) ? Q_TRUE : Q_FALSE
+      end
+
+      def rb_obj_remove_instance_variable(obj)
+        id = check_id(obj)
+
+        return Q_NIL unless id
+
+        obj.ivar_remove(id) || Q_NIL
       end
 
       def rb_caller(_, *args)
@@ -382,10 +439,13 @@ module GarnetRuby
 
       rb_define_method(mKernel, :freeze, &method(:obj_freeze))
 
-      rb_define_method(mKernel, :to_s) do |obj|
-        RString.from("#<#{obj.klass.name},#{obj.__id__}>")
-      end
-      rb_alias_method(cObject, :inspect, :to_s)
+      rb_define_method(mKernel, :to_s, &method(:rb_any_to_s))
+      rb_define_method(mKernel, :inspect, &method(:rb_obj_inspect))
+      rb_define_method(mKernel, :instance_variables, &method(:rb_obj_instance_variables))
+      rb_define_method(mKernel, :instance_variable_get, &method(:rb_obj_ivar_get))
+      rb_define_method(mKernel, :instance_variable_set, &method(:rb_obj_ivar_set))
+      rb_define_method(mKernel, :instance_variable_defined?, &method(:rb_obj_ivar_defined))
+      rb_define_method(mKernel, :remove_instance_variable?, &method(:rb_obj_remove_instance_variable))
 
       rb_define_method(mKernel, :instance_of?, &method(:obj_is_instance_of))
       rb_define_method(mKernel, :kind_of?, &method(:obj_is_kind_of))
