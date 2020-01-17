@@ -117,6 +117,7 @@ module GarnetRuby
         init_math
         init_enum
         init_enumerator
+        init_comparable
         init_range
         init_string
         init_array
