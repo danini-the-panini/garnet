@@ -216,7 +216,7 @@ module GarnetRuby
         len = ed - beg
         len = 0 if len.negative?
 
-        return Q_TRUE, beg, len
+        [Q_TRUE, beg, len]
       end
 
       def out_of_range(beg, ed, excl, err=1)

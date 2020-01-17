@@ -122,7 +122,11 @@ module GarnetRuby
 
       def str_aref_m(str, *args)
         if args.length == 2
-          # TODO
+          return str_subpat(str, args[0], args[1]) if args[0].type?(Regexp)
+
+          beg = num2long(args[0])
+          len = num2long(args[1])
+          return rb_str_substr(str, beg, len)
         end
         str_aref(str, args.first)
       end
@@ -189,9 +193,8 @@ module GarnetRuby
         if pos.negative?
           pos += str.string_value.length
           if pos.negative?
-            if sub.type?(Regexp)
-              backref_set(Q_NIL)
-            end
+            backref_set(Q_NIL) if sub.type?(Regexp)
+
             return Q_NIL
           end
         end
@@ -209,12 +212,14 @@ module GarnetRuby
               end
 
         return Q_NIL if pos.nil?
+
         RPrimitive.from(pos)
       end
 
-      def str_subpat(str, re)
+      def str_subpat(str, re, backref)
         if re.match_pos(str).positive?
-          return RString.from(backref_get.match_value[0])
+          br = backref.type?(Symbol) ? backref.symbol_value : num2long(backref)
+          return RString.from(backref_get.match_value[br])
         end
         Q_NIL
       end
@@ -223,17 +228,27 @@ module GarnetRuby
         if fixnum?(indx)
           idx = indx.value
         elsif indx.type?(Regexp)
-          return RString.from(str_subpat(str, indx))
+          return RString.from(str_subpat(str, indx, RPrimitive.from(0)))
         elsif indx.type?(String)
           if str.string_value.include?(indx.string_value)
             return rb_str_dup(indx)
           end
           return Q_NIL
         else
-          # TODO: check if indx is a range
+          r, beg, len = range_beg_len(indx, str.length, 0)
+          case r
+          when Q_FALSE
+            # do nothing
+          when Q_NIL then return Q_NIL
+          else return rb_str_substr(str, beg, len)
+          end
         end
 
         RString.from(str.string_value[idx])
+      end
+
+      def rb_str_substr(str, beg, len)
+        RString.from(str.string_value[beg, len])
       end
 
       def str_to_i(str, *args)
