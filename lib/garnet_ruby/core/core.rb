@@ -111,7 +111,6 @@ module GarnetRuby
         init_vm_eval
         init_vm_method
         init_eval
-        init_exception
         init_symbol
         init_numeric
         init_math
@@ -120,6 +119,8 @@ module GarnetRuby
         init_comparable
         init_range
         init_string
+        init_encoding
+        init_exception
         init_array
         init_hash
         init_regexp
@@ -170,6 +171,10 @@ module GarnetRuby
         # super_class.rb_class_inherited(klass)
 
         klass
+      end
+
+      def rb_define_class_under(outer, name, super_class)
+        define_class_id_under(outer, name, super_class)
       end
 
       def rb_define_module(name)

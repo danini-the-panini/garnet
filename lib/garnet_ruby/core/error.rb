@@ -113,6 +113,22 @@ module GarnetRuby
       @eNoMethodError = rb_define_class(:NoMethodError, eNameError)
 
       @eRuntimeError = rb_define_class(:RuntimeError, eStandardError)
+      @eFrozenError = rb_define_class(:FrozenError, eRuntimeError)
+      @eSecurityError = rb_define_class(:SecurityError, eException)
+      @eNoMemError = rb_define_class(:NoMemoryError, eException)
+      @eEncodingError = rb_define_class(:EncodingError, eStandardError)
+      @eEncCompatError = rb_define_class_under(cEncoding, :CompatibilityError, eEncodingError)
+      @eNoMatchingPatternError = rb_define_class(:NoMatchingPatternError, eRuntimeError)
+
+      @eSystemCallError = rb_define_class(:SystemCallError, eStandardError)
+
+      @mErrno = rb_define_module(:Errno)
+
+      Errno.constants.each do |name|
+        n = Errno.const_get(name)::Errno
+        error = rb_define_class_under(mErrno, name, eSystemCallError)
+        rb_define_const(error, :Errno, RPrimitive.from(n))
+      end
 
       # TODO: more errors
 
