@@ -168,6 +168,16 @@ module GarnetRuby
         range.excl ? Q_TRUE : Q_FALSE
       end
 
+      def range_include(range, val)
+        # TODO: some magic with strings
+        range.cover?(val)
+      end
+
+      def range_cover(range, val)
+        # TODO: some magic with other ranges
+        range.cover?(val)
+      end
+
       def range_values(range)
         if obj_is_kind_of(range, cRange)
           return range.st, range.ed, range.excl
@@ -228,6 +238,8 @@ module GarnetRuby
       rb_define_method(cRange, :to_s, &method(:range_to_s))
 
       rb_define_method(cRange, :exclude_end?, &method(:range_exclude_end_p))
+
+      rb_define_method(cRange, :include?, &method(:range_include))
     end
   end
 end
