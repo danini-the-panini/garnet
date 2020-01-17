@@ -23,7 +23,7 @@ module GarnetRuby
       end
 
       def rb_to_int(val)
-        val.to_integer("to_int", :to_int)
+        val.to_integer(:to_int)
       end
 
       def int_to_s(x, *args)

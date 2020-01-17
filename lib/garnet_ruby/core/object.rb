@@ -147,6 +147,56 @@ module GarnetRuby
         rb_sprintf(*args)
       end
 
+      def rb_f_integer(obj, *args)
+        # TODO: a lot of other things
+        args.first.to_integer(:to_i)
+      end
+
+      def rb_f_float(obj, arg)
+        # TODO: a lot of other things
+        arg.rb_convert_type_with_id(Float, 'Float', :to_f)
+      end
+
+      def rb_String(val)
+        tmp = val.check_string_type
+        if tmp == Q_NIL
+          tmp = val.rb_convert_type_with_id(String, 'String', :to_s)
+        end
+        tmp
+      end
+
+      def rb_f_string(obj, val)
+        rb_String(val)
+      end
+
+      def rb_Array(val)
+        tmp = val.check_array_type
+
+        if tmp == Q_NIL
+          tmp = val.check_to_array
+          return RArray.from([val]) if tmp == Q_NIL
+        end
+        tmp
+      end
+
+      def rb_f_array(obj, arg)
+        rb_Array(arg)
+      end
+
+      def rb_Hash(val)
+        return RHash.from({}) if val == Q_NIL
+        tmp = val.check_hash_type(val)
+        if tmp == Q_NIL
+          return RHash.new({}) if val.type?(Array) && val.len.zero?
+          rb_raise(eTypeError, "can't convert #{val.klass.name} into Hash")
+        end
+        tmp
+      end
+
+      def rb_f_hash(obj, arg)
+        rb_Hash(arg)
+      end
+
       def obj_not_match(obj1, obj2)
         result = rb_funcall(obj1, :=~, obj2)
         rtest(result) ? Q_FALSE : Q_TRUE
@@ -452,6 +502,13 @@ module GarnetRuby
 
       rb_define_global_function(:sprintf, &method(:f_sprintf))
 
+      rb_define_global_function(:Integer, &method(:rb_f_integer))
+      rb_define_global_function(:Float, &method(:rb_f_float))
+
+      rb_define_global_function(:String, &method(:rb_f_string))
+      rb_define_global_function(:Array, &method(:rb_f_array))
+      rb_define_global_function(:Hash, &method(:rb_f_hash))
+
       @cNilClass = rb_define_class(:NilClass)
       ::GarnetRuby.const_set(:Q_NIL, RPrimitive.new(@cNilClass, [], nil))
       rb_define_method(cNilClass, :to_i) { |_| RPrimitive.from(0) }
@@ -480,13 +537,13 @@ module GarnetRuby
 
       @cTrueClass = rb_define_class(:TrueClass)
       ::GarnetRuby.const_set(:Q_TRUE, RPrimitive.new(@cTrueClass, [], true))
-      rb_define_method(cTrueClass, :to_s) { |_| RString.from("true") }
+      rb_define_method(cTrueClass, :to_s) { |_| RString.from('true') }
       rb_alias_method(cTrueClass, :inspect, :to_s)
       rb_define_global_const(:TRUE, Q_TRUE)
 
       @cFalseClass = rb_define_class(:FalseClass)
       ::GarnetRuby.const_set(:Q_FALSE, RPrimitive.new(@cFalseClass, [], false))
-      rb_define_method(cFalseClass, :to_s) { |_| RString.from("false") }
+      rb_define_method(cFalseClass, :to_s) { |_| RString.from('false') }
       rb_alias_method(cFalseClass, :inspect, :to_s)
       rb_define_global_const(:FALSE, Q_FALSE)
 
