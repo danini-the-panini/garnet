@@ -26,6 +26,7 @@ module GarnetRuby
     class << self
       def rb_get_path(obj)
         return obj if obj.type?(String)
+
         tmp = rb_check_funcall_default(obj, :to_path, obj)
         tmp.str_to_str
       end
@@ -40,6 +41,24 @@ module GarnetRuby
         else
           RString.from(File.expand_path(rb_get_path(args[0]).string_value, rb_get_path(args[1]).string_value))
         end
+      end
+
+      def file_s_realpath(klass, *args)
+        basedir = args.length == 2 ? rb_get_path(args[1]).string_value : nil
+        path = rb_get_path(args[0]).string_value
+
+        RString.from(File.realpath(path, basedir))
+      rescue SystemCallError => e
+        rb_raise(@syserr_tbl[e.errno], e.message)
+      end
+
+      def file_s_realdirpath
+        basedir = args.length == 2 ? rb_get_path(args[1]).string_value : nil
+        path = rb_get_path(args[0]).string_value
+
+        RString.from(File.realdirpath(path, basedir))
+      rescue SystemCallError => e
+        rb_raise(@syserr_tbl[e.errno], e.message)
       end
 
       def file_s_basename(_, *args)
@@ -99,6 +118,8 @@ module GarnetRuby
 
       rb_define_singleton_method(cFile, :unlink, &method(:file_s_unlink))
       rb_define_singleton_method(cFile, :expand_path, &method(:file_s_expand_path))
+      rb_define_singleton_method(cFile, :realpath, &method(:file_s_realpath))
+      rb_define_singleton_method(cFile, :realdirpath, &method(:file_s_realdirpath))
       rb_define_singleton_method(cFile, :basename, &method(:file_s_basename))
       rb_define_singleton_method(cFile, :dirname, &method(:file_s_dirname))
     end

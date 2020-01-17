@@ -124,9 +124,10 @@ module GarnetRuby
 
       @mErrno = rb_define_module(:Errno)
 
+      @syserr_tbl = {}
       Errno.constants.each do |name|
         n = Errno.const_get(name)::Errno
-        error = rb_define_class_under(mErrno, name, eSystemCallError)
+        @syserr_tbl[n] = error = rb_define_class_under(mErrno, name, eSystemCallError)
         rb_define_const(error, :Errno, RPrimitive.from(n))
       end
 
