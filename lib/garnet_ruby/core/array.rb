@@ -444,7 +444,7 @@ module GarnetRuby
 
       def ary_times(ary, times)
         tmp = times.check_string_type
-        
+
         return ary_join(ary, tmp) if tmp != Q_NIL
 
         len = times.value
@@ -671,7 +671,7 @@ module GarnetRuby
 
       rb_define_method(cArray, :+, &method(:ary_plus))
       rb_define_method(cArray, :*, &method(:ary_times))
-      
+
       rb_define_method(cArray, :-, &method(:ary_diff))
       rb_define_method(cArray, :&, &method(:ary_and))
       rb_define_method(cArray, :|, &method(:ary_or))

@@ -987,7 +987,7 @@ module GarnetRuby
     
     def compile_kwarg(node)
       end_label = new_label
-      
+
       add_get_local(:'?')
 
       if node.length == 3
@@ -1026,7 +1026,7 @@ module GarnetRuby
       add_instruction(:setn, argc + 1)
       add_instruction(:send_without_block, CallInfo.new(node[2], argc, flags))
       add_instruction(:pop)
-      
+
       add_label(end_label) if safe
     end
 
@@ -1049,9 +1049,7 @@ module GarnetRuby
       add_instruction(:dup)
       add_instruction_with_label(branch_type, end_label)
       add_instruction(:pop)
-      compile(node[2][2])
-      add_instruction(:dup)
-      add_set_local(node[2][1])
+      compile(node[2])
 
       add_label(end_label)
     end
