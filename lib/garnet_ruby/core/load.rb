@@ -1,6 +1,23 @@
+require 'pathname'
+
 module GarnetRuby
   module Core
     class << self
+      def rb_f_load(_, *args)
+        fname, wrap = args
+
+        fname = rb_get_path(fname)
+        path = fname.string_value
+
+        full_path = resolve_file_for_require(path)
+
+        if full_path.nil?
+          rb_raise(eLoadError, "cannot load such file -- #{path}")
+        end
+
+        load_internal(full_path, rtest(wrap))
+      end
+
       def rb_f_require(_, fname)
         rb_require_string(fname)
       end
@@ -19,6 +36,12 @@ module GarnetRuby
 
         @required_files[full_path] = true
 
+        load_internal(full_path)
+
+        Q_TRUE
+      end
+
+      def load_internal(full_path, wrap=false)
         source = File.read(full_path)
 
         parser = Parser.new(source, full_path)
@@ -32,17 +55,20 @@ module GarnetRuby
         iseq = Iseq.new('<top (required)>', :top)
         Compiler.new(iseq).compile_node(node)
 
+        # TODO: wrap
         VM.instance.execute_load_iseq(iseq)
-
-        Q_TRUE
       end
 
       def resolve_file_for_require(path)
+        if Pathname.new(path).absolute?
+          return File.exist?(path) ? path : nil
+        end
+
         path = add_rb_extension(path)
         $GARNET_LOAD_PATH.array_value.each do |load_path|
           load_path = load_path.str_to_str.string_value
           full_path = File.join(load_path, path)
-          return full_path if File.exists?(full_path)
+          return full_path if File.exist?(full_path)
         end
         nil
       end
@@ -65,6 +91,7 @@ module GarnetRuby
 
       rb_define_global_variable(:'$:', $LOAD_PATH)
 
+      rb_define_global_function(:load, &method(:rb_f_load))
       rb_define_global_function(:require, &method(:rb_f_require))
     end
   end
