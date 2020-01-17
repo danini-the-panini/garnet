@@ -116,6 +116,11 @@ module GarnetRuby
   end
 
   class ZSuperMethodDef < MethodDef
+    attr_reader :original_id
+
+    def initialize(original_id)
+      @original_id = original_id
+    end
   end
 
   class IvarMethodDef < MethodDef

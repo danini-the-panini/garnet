@@ -27,7 +27,7 @@ module GarnetRuby
           if klass == defined_klass || klass.origin == defined_klass
             me.visibility = visi
           else
-            rb_add_method(klass, name, visi, ZSuperMethodDef.new)
+            rb_add_method(klass, name, visi, ZSuperMethodDef.new(name))
           end
         end
       end
@@ -55,6 +55,45 @@ module GarnetRuby
         mdl
       end
 
+      def mod_alias_method(mod, newname, oldname)
+        oldid = check_id(oldname)
+        unless oldid
+          rb_raise(eNameError, "undefined method #{oldname} for #{mod}")
+        end
+        rb_alias(mod, newname.to_id, oldid)
+        mod
+      end
+
+      def rb_alias(klass, alias_name, original_name)
+        target_klass = klass
+        visi = :undef
+
+        if klass == Q_NIL
+          rb_raise(eTypeError, 'no class to make alias')
+        end
+
+        1.times do
+          orig_me = find_method(klass, original_name)
+          if orig_me.nil? || orig_me.undefined?
+            rb_raise(eNameError, "undefined method #{original_name} for #{klass}")
+          end
+
+          if orig_me.definition.is_a?(ZSuperMethodDef)
+            klass = klass.super_class
+            original_name = me.definition.original_id
+            visi = orig_me.visibility
+            redo
+          end
+
+          visi = orig_me.visibility if visi == :undef
+
+          definition = AliasMethodDef.new(orig_me)
+          me = method_entry_create(alias_name, target_klass, visi, definition)
+          # method_added(target_klass, alias_name)
+          target_klass.method_table[alias_name] = me
+        end
+      end
+
       def mod_public(mdl, *args)
         set_visibility(mdl, :public, *args)
       end
@@ -71,6 +110,7 @@ module GarnetRuby
     def self.init_vm_method
       rb_define_method(mKernel, :respond_to?, &method(:obj_respond_to))
 
+      rb_define_method(cModule, :alias_method, &method(:mod_alias_method))
       rb_define_private_method(cModule, :public, &method(:mod_public))
       rb_define_private_method(cModule, :protected, &method(:mod_protected))
       rb_define_private_method(cModule, :private, &method(:mod_private))
