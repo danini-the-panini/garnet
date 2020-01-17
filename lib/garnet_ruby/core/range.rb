@@ -142,11 +142,30 @@ module GarnetRuby
         end
       end
 
+      def range_begin(range)
+        range.st
+      end
+
+      def range_end(range)
+        range.ed
+      end
+
       def range_to_a(range)
         if range.ed == Q_NIL
           raise RangeError, 'cannot convert endless range to an array'
         end
+
         rb_call_super
+      end
+
+      def range_to_s(r)
+        st_string = rb_funcall(r.st, :to_s).string_value
+        ed_string = rb_funcall(r.ed, :to_s).string_value
+        RString.from("#{st_string}#{r.excl ? '...' : '..'}#{ed_string}")
+      end
+
+      def range_exclude_end_p(range)
+        range.excl ? Q_TRUE : Q_FALSE
       end
 
       def range_values(range)
@@ -202,15 +221,13 @@ module GarnetRuby
 
       rb_define_method(cRange, :===, &method(:range_eqq))
       rb_define_method(cRange, :each, &method(:range_each))
-
-      rb_define_method(cRange, :to_s) do |r|
-        st_string = rb_funcall(r.st, :to_s)
-        ed_string = rb_funcall(r.ed, :to_s)
-        RString.from("#{st_string.string_value}#{r.excl ? '...' : '..'}#{ed_string.string_value}")
-      end
-
+      rb_define_method(cRange, :begin, &method(:range_begin))
+      rb_define_method(cRange, :end, &method(:range_end))
       rb_define_method(cRange, :to_a, &method(:range_to_a))
       rb_define_method(cRange, :entries, &method(:range_to_a))
+      rb_define_method(cRange, :to_s, &method(:range_to_s))
+
+      rb_define_method(cRange, :exclude_end?, &method(:range_exclude_end_p))
     end
   end
 end
