@@ -666,6 +666,7 @@ module GarnetRuby
       rb_define_method(cArray, :delete_if, &method(:ary_delete_if))
       rb_define_method(cArray, :reject!, &method(:ary_reject_bang))
       rb_define_method(cArray, :replace, &method(:ary_replace))
+      rb_define_method(cArray, :include?, &method(:ary_includes))
       rb_define_method(cArray, :<=>, &method(:ary_cmp))
 
       rb_define_method(cArray, :+, &method(:ary_plus))
