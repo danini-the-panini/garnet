@@ -483,6 +483,24 @@ module GarnetRuby
         mod.rb_const_set(id, value)
         value
       end
+
+      def mod_const_defined(mod, *args)
+        name = args[0]
+        recur = args.length == 1 ? Q_TRUE : args[1]
+
+        if name.type?(Symbol)
+          # const_sym --> wrong_name
+          id = check_id(name)
+
+          return Q_FALSE unless id
+
+          result = rtest(recur) ? mod.has_const?(id) : mod.has_const_direct?(id)
+          return result ? Q_TRUE : Q_FALSE
+        end
+
+        # TODO: string stuff
+        Q_FALSE
+      end
     end
 
     def self.init_object
@@ -558,6 +576,7 @@ module GarnetRuby
       rb_define_alloc_func(cModule, &method(:rb_module_s_alloc))
 
       rb_define_method(cModule, :const_set, &method(:mod_const_set))
+      rb_define_method(cModule, :const_defined?, &method(:mod_const_defined))
 
       rb_define_method(cClass, :new, &method(:rb_class_new_instance))
       rb_define_alloc_func(cClass, &method(:rb_class_s_alloc))
