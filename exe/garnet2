@@ -1,5 +1,0 @@
-#!/usr/bin/env ruby
-
-require "garnet_ruby"
-
-GarnetRuby.run
