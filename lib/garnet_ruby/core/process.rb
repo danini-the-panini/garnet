@@ -53,6 +53,18 @@ module GarnetRuby
         rb_f_exit(*args)
       end
 
+      def rb_f_abort(*args)
+        unless args.empty?
+          arg = args[0].str_to_str
+          STDERR.puts(arg.string_value)
+        end
+        rb_exit(EXIT_FAILURE)
+      end
+
+      def f_abort(_, *args)
+        rb_f_abort(*args)
+      end
+
       def proc_rb_f_kill(_, *args)
         rb_f_kill(*args)
       end
@@ -78,6 +90,7 @@ module GarnetRuby
       rb_define_virtual_variable(:'$$', method(:get_process_id), nil)
       rb_define_global_function(:sleep, &method(:rb_f_sleep))
       rb_define_global_function(:exit, &method(:f_exit))
+      rb_define_global_function(:abort, &method(:f_abort))
 
       @mProcess = rb_define_module(:Process)
 
