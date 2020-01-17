@@ -197,6 +197,30 @@ module GarnetRuby
         rb_Hash(arg)
       end
 
+      def true_and(obj, obj2)
+        rtest(obj2) ? Q_TRUE : Q_FALSE
+      end
+
+      def true_or(obj, obj2)
+        Q_TRUE
+      end
+
+      def true_xor(obj, obj2)
+        rtest(obj2) ? Q_FALSE : Q_TRUE
+      end
+
+      def false_and(obj, obj2)
+        Q_FALSE
+      end
+
+      def false_or(obj, obj2)
+        rtest(obj2) ? Q_TRUE : Q_FALSE
+      end
+
+      def false_xor(obj, obj2)
+        rtest(obj2) ? Q_TRUE : Q_FALSE
+      end
+
       def obj_not_match(obj1, obj2)
         result = rb_funcall(obj1, :=~, obj2)
         rtest(result) ? Q_FALSE : Q_TRUE
@@ -514,6 +538,9 @@ module GarnetRuby
       rb_define_method(cNilClass, :to_i) { |_| RPrimitive.from(0) }
       rb_define_method(cNilClass, :to_s) { |_| RString.from('') }
       rb_define_method(cNilClass, :inspect) { |_| RString.from('nil') }
+      rb_define_method(cNilClass, :&, &method(:false_and))
+      rb_define_method(cNilClass, :|, &method(:false_or))
+      rb_define_method(cNilClass, :'^', &method(:false_xor))
       rb_define_global_const(:NIL, Q_NIL)
 
       rb_define_method(cModule, :===) do |mod, arg|
@@ -539,12 +566,18 @@ module GarnetRuby
       ::GarnetRuby.const_set(:Q_TRUE, RPrimitive.new(@cTrueClass, [], true))
       rb_define_method(cTrueClass, :to_s) { |_| RString.from('true') }
       rb_alias_method(cTrueClass, :inspect, :to_s)
+      rb_define_method(cTrueClass, :&, &method(:true_and))
+      rb_define_method(cTrueClass, :|, &method(:true_or))
+      rb_define_method(cTrueClass, :'^', &method(:true_xor))
       rb_define_global_const(:TRUE, Q_TRUE)
 
       @cFalseClass = rb_define_class(:FalseClass)
       ::GarnetRuby.const_set(:Q_FALSE, RPrimitive.new(@cFalseClass, [], false))
       rb_define_method(cFalseClass, :to_s) { |_| RString.from('false') }
       rb_alias_method(cFalseClass, :inspect, :to_s)
+      rb_define_method(cFalseClass, :&, &method(:false_and))
+      rb_define_method(cFalseClass, :|, &method(:false_or))
+      rb_define_method(cFalseClass, :'^', &method(:false_xor))
       rb_define_global_const(:FALSE, Q_FALSE)
 
       rb_define_global_function(:caller, &method(:rb_caller))
