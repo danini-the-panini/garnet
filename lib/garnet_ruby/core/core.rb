@@ -132,6 +132,7 @@ module GarnetRuby
         init_marshal
         init_struct
         init_load
+        init_version
 
         @env_table = RHash.new(cHash, [])
         cObject.rb_const_set(:ENV, env_table)
