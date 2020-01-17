@@ -445,8 +445,9 @@ module GarnetRuby
     def compile_not(node)
       if (%i[match2 match3].include?(node[1][0]))
         compile_regex_match_not(node[1])
-      else
-        raise "UNKNOWN COMPILE NOT"
+      elsif node[1][0] == :call
+        compile(node[1])
+        add_instruction(:not)
       end
     end
 

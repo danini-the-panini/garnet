@@ -161,6 +161,16 @@ module GarnetRuby
         Q_FALSE
       end
 
+      def str_match(x, y)
+        if y.type?(String)
+          rb_raise(eTypeError, 'type mismatch: String given')
+        elsif y.type?(Regexp)
+          reg_match(y, x)
+        else
+          rb_funcall(y, :=~, x)
+        end
+      end
+
       def str_index(str, *args)
         sub, initpos = args
         pos = if args.length == 2
@@ -530,6 +540,7 @@ module GarnetRuby
       rb_define_method(cString, :length, &method(:str_length))
       rb_define_method(cString, :size, &method(:str_length))
       rb_define_method(cString, :empty?, &method(:str_empty))
+      rb_define_method(cString, :=~, &method(:str_match))
       rb_define_method(cString, :index, &method(:str_index))
 
       rb_define_method(cString, :to_i, &method(:str_to_i))

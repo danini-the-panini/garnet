@@ -247,6 +247,11 @@ module GarnetRuby
       s[-1], s[-2] = s[-2], s[-1]
     end
 
+    def exec_not(control_frame, insn)
+      v = rtest(pop_stack)
+      push_stack(v ? Q_FALSE : Q_TRUE)
+    end
+
     def exec_put_object(control_frame, insn)
       push_stack insn.arguments[0]
     end
