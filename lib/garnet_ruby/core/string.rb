@@ -360,6 +360,39 @@ module GarnetRuby
         RString.from(str.string_value.reverse)
       end
 
+      def str_include(str, arg)
+        arg = arg.str_to_str
+        i = str.string_value.index(arg.string_value)
+
+        return Q_FALSE if i.nil?
+
+        Q_TRUE
+      end
+
+      def str_start_with(str, *args)
+        args.each do |tmp|
+          if tmp.type?(Regexp)
+            return Q_TRUE if str.string_value.start_with?(tmp.regexp_value)
+          else
+            tmp = tmp.str_to_str
+            next if str.length < tmp.length
+            return Q_TRUE if str.string_value[0, tmp.length] == tmp.string_value
+          end
+        end
+        Q_FALSE
+      end
+
+      def str_end_with(str, *args)
+        args.each do |tmp|
+          tmp = tmp.str_to_str
+          next if str.length < tmp.length
+
+          len = tmp.length
+          return Q_TRUE if str.string_value[-len, len] == tmp.string_value
+        end
+        Q_FALSE
+      end
+
       def str_scan(str, pattern)
         if pattern.type?(String)
           pattern = pattern.string_value
@@ -586,6 +619,10 @@ module GarnetRuby
       rb_define_method(cString, :reverse, &method(:str_reverse))
       rb_define_method(cString, :reverse!, &method(:str_reverse_bang))
       rb_define_method(cString, :<<, &method(:str_concat))
+
+      rb_define_method(cString, :include?, &method(:str_include))
+      rb_define_method(cString, :start_with?, &method(:str_start_with))
+      rb_define_method(cString, :end_with?, &method(:str_end_with))
 
       rb_define_method(cString, :scan, &method(:str_scan))
 
