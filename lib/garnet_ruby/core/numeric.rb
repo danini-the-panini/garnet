@@ -370,6 +370,70 @@ module GarnetRuby
         RPrimitive.from(x.value ** y.value)
       end
 
+      def fix_abs(fix)
+        i = fix.value
+
+        i = -i if i.negative?
+
+        RPrimitive.from(i)
+      end
+
+      def int_abs(num)
+        return fix_abs(num) if fixnum?(num)
+        Q_NIL
+      end
+
+      def fix_comp(fix)
+        return RPrimitive.from(~fix.value)
+      end
+
+      def int_comp(num)
+        return fix_comp(num) if fixnum?(num)
+        Q_NIL
+      end
+
+      def fix_and(x, y)
+        if fixnum?(y)
+          val = x.value & y.value
+          return RPrimitive.from(val)
+        end
+
+        rb_num_coerce_bits(x, y, :&)
+      end
+
+      def int_and(x, y)
+        return fix_and(x, y) if fixnum?(x)
+        Q_NIL
+      end
+
+      def fix_or(x, y)
+        if fixnum?(y)
+          val = x.value | y.value
+          return RPrimitive.from(val)
+        end
+
+        rb_num_coerce_bits(x, y, :&)
+      end
+
+      def int_or(x, y)
+        return fix_or(x, y) if fixnum?(x)
+        Q_NIL
+      end
+
+      def fix_xor(x, y)
+        if fixnum?(y)
+          val = x.value ^ y.value
+          return RPrimitive.from(val)
+        end
+
+        rb_num_coerce_bits(x, y, :&)
+      end
+
+      def int_xor(x, y)
+        return fix_xor(x, y) if fixnum?(x)
+        Q_NIL
+      end
+
       def int_lshift(x, y)
         # TODO: type coersion
         RPrimitive.from(x.value << y.value)
@@ -620,14 +684,6 @@ module GarnetRuby
       rb_define_method(cInteger, :to_f, &method(:int_to_f))
       rb_define_method(cInteger, :<=>, &method(:int_cmp))
 
-      rb_define_method(cInteger, :===, &method(:int_equal))
-      rb_define_method(cInteger, :==, &method(:int_equal))
-      rb_define_method(cInteger, :>, &method(:int_gt))
-      rb_define_method(cInteger, :>=, &method(:int_ge))
-      rb_define_method(cInteger, :<, &method(:int_lt))
-      rb_define_method(cInteger, :<=, &method(:int_le))
-      rb_define_method(cInteger, :hash, &method(:int_hash))
-
       rb_define_method(cInteger, :'-@', &method(:int_uminus))
       rb_define_method(cInteger, :+, &method(:int_plus))
       rb_define_method(cInteger, :-, &method(:int_minus))
@@ -637,6 +693,24 @@ module GarnetRuby
       rb_define_method(cInteger, :modulo, &method(:int_modulo))
       rb_define_method(cInteger, :remainder, &method(:int_remainder))
       rb_define_method(cInteger, :**, &method(:int_pow))
+
+      rb_define_method(cInteger, :pow, &method(:int_pow))
+
+      rb_define_method(cInteger, :abs, &method(:int_abs))
+      rb_define_method(cInteger, :magnitude, &method(:int_abs))
+
+      rb_define_method(cInteger, :===, &method(:int_equal))
+      rb_define_method(cInteger, :==, &method(:int_equal))
+      rb_define_method(cInteger, :>, &method(:int_gt))
+      rb_define_method(cInteger, :>=, &method(:int_ge))
+      rb_define_method(cInteger, :<, &method(:int_lt))
+      rb_define_method(cInteger, :<=, &method(:int_le))
+      rb_define_method(cInteger, :hash, &method(:int_hash))
+
+      rb_define_method(cInteger, :~, &method(:int_comp))
+      rb_define_method(cInteger, :&, &method(:int_and))
+      rb_define_method(cInteger, :|, &method(:int_or))
+      rb_define_method(cInteger, :'^', &method(:int_xor))
 
       rb_define_method(cInteger, :<<, &method(:int_lshift))
       rb_define_method(cInteger, :>>, &method(:int_rshift))
