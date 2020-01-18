@@ -252,7 +252,7 @@ module GarnetRuby
         else
           tmp = name.check_string_type
           if tmp == Q_NIL
-            raise TypeError, "#{name} is not a symbol or a string"
+            rb_raise(eTypeError, "#{name} is not a symbol or a string")
           end
           tmp.string_value.to_sym
         end
@@ -327,7 +327,7 @@ module GarnetRuby
       end
 
       def rb_obj_ivar_set(obj, iv, val)
-        id = check_id(obj)
+        id = check_id(iv)
         # if (!id) id = rb_intern_str(iv)
         obj.ivar_set(id, val)
         val
