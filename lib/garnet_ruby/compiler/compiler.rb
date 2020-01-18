@@ -427,11 +427,39 @@ module GarnetRuby
       end
     end
 
-    def compile_hash(node)
-      node[1..-1].each do |n|
+    def compile_hash_elements(nodes)
+      nodes.each do |n|
         compile(n)
       end
-      add_instruction(:new_hash, node.length - 1)
+      nodes.length
+    end
+
+    def compile_kwsplat(node)
+      compile(node[1])
+      add_instruction(:hash_merge_kwd)
+    end
+
+    def compile_hash(node)
+      if node.length == 1
+        add_instruction(:new_hash, 0)
+        return
+      end
+
+      slices = node[1..-1].slice_when { |a, b| a[0] == :kwsplat || b[0] == :kwsplat }.to_a
+      if slices[0][0][0] != :kwsplat
+        n = compile_hash_elements(slices.shift)
+        add_instruction(:new_hash, n)
+      else
+        add_instruction(:new_hash, 0)
+      end
+      slices.each do |nodes|
+        if nodes[0][0] == :kwsplat
+          compile(nodes[0])
+        else
+          n = compile_hash_elements(nodes)
+          add_instruction(:hash_merge_ptr, n)
+        end
+      end
     end
 
     def compile_or(node)

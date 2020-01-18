@@ -396,6 +396,30 @@ module GarnetRuby
       push_stack(hash)
     end
 
+    def exec_hash_merge_ptr(control_frame, insn)
+      n = insn.arguments[0]
+      items = pop_stack_multi(n)
+      hash = pop_stack
+
+      items.each_slice(2).each do |(a, b)|
+        hash.update(a, b)
+      end
+
+      push_stack(hash)
+    end
+
+    def exec_hash_merge_kwd(control_frame, insn)
+      hash1, hash2 = pop_stack_multi(2)
+
+      hash2 = hash2.to_hash_type
+
+      hash2.entries.each do |e|
+        hash1.update(e.key, e.value)
+      end
+
+      push_stack(hash1)
+    end
+
     def exec_new_range(control_frame, insn)
       excl = insn.arguments[0]
       st, ed = pop_stack_multi(2)
