@@ -202,6 +202,24 @@ module GarnetRuby
         args[1]
       end
 
+      def ary_first(ary, *args)
+        if args.empty?
+          ary.array_value.first || Q_NIL
+        else
+          n = num2long(args.first)
+          RArray.from(ary.array_value.first(n))
+        end
+      end
+
+      def ary_last(ary, *args)
+        if args.empty?
+          ary.array_value.last || Q_NIL
+        else
+          n = num2long(args.first)
+          RArray.from(ary.array_value.last(n))
+        end
+      end
+
       def ary_includes(ary, item)
         ary.array_value.any? { |e| rtest(rb_equal(item, e)) } ? Q_TRUE : Q_FALSE
       end
@@ -642,6 +660,8 @@ module GarnetRuby
 
       rb_define_method(cArray, :[], &method(:ary_aref))
       rb_define_method(cArray, :[]=, &method(:ary_aset))
+      rb_define_method(cArray, :first, &method(:ary_first))
+      rb_define_method(cArray, :last, &method(:ary_last))
       rb_define_method(cArray, :concat, &method(:ary_concat_multi))
       rb_define_method(cArray, :<<, &method(:ary_push))
       rb_define_method(cArray, :push, &method(:ary_cat))
