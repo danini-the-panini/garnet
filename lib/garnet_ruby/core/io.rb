@@ -134,8 +134,9 @@ module GarnetRuby
       rb_define_global_function(:puts) { |_, *args| @stdout.io_puts(*args) }
       rb_define_global_function(:printf) { |_, *args| rb_printf(*args) }
 
-      rb_define_global_function(:`) do |_, str|
-        RString.from(`#{str.string_value}`)
+      rb_define_global_function(:'`') do |_, str|
+        result = `#{str.string_value}`
+        RString.from(result)
       end
 
       rb_define_global_function(:p) { |_, *args| rb_f_p(*args) }
