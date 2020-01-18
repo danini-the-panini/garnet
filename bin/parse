@@ -7,12 +7,12 @@ parser = Ruby26Parser.new
 
 if ARGV.empty?
   puts "----STDIN----"
-  p parser.parse(STDIN.read, '-')
+  pp parser.parse(STDIN.read, '-')
   puts "-------------"
 else
   ARGV.each do |a|
     puts "----#{a}----"
-    p parser.parse(File.read(a), a)
+    pp parser.parse(File.read(a), a)
   end
   puts "-------------"
 end
