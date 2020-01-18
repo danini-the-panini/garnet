@@ -672,7 +672,6 @@ module GarnetRuby
       const_base = pop_stack
       name = insn.arguments[0]
       ret = const_base.rb_const_get(name)
-      raise NameError, "Undefined Constant #{name}" if ret.nil?
       push_stack(ret)
     end
 
@@ -1105,7 +1104,7 @@ module GarnetRuby
     def handle_uncaught_throw(e)
       case e.throw_type
       when :raise
-        return if Core.obj_is_kind_of(e.exc, Core.eSystemExit)
+        return if Core.rtest(Core.obj_is_kind_of(e.exc, Core.eSystemExit))
 
         puts "Uncaught Exception: #{e.exc} #{Core.exc_message(e.exc)}"
         bt = e.exc.ivar_get(:backtrace)
