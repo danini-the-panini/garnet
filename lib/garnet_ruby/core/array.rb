@@ -625,6 +625,104 @@ module GarnetRuby
         ary
       end
 
+      def ary_any(ary, *args)
+        return Q_FALSE if ary.len.zero?
+
+        if args.length > 0
+          puts 'WARNING: given block not used' if rb_block_given?
+
+          ary.array_value.each do |elt|
+            return Q_TRUE if rtest(rb_funcall(args.first, :===, elt))
+          end
+        elsif !rb_block_given?
+          ary.array_value.each do |elt|
+            return Q_TRUE if rtest(elt)
+          end
+        else
+          ary.array_value.each do |elt|
+            return Q_TRUE if rtest(rb_yield(elt))
+          end
+        end
+
+        Q_FALSE
+      end
+
+      def ary_all(ary, *args)
+        return Q_TRUE if ary.len.zero?
+
+        if args.length > 0
+          puts 'WARNING: given block not used' if rb_block_given?
+
+          ary.array_value.each do |elt|
+            return Q_FALSE unless rtest(rb_funcall(args.first, :===, elt))
+          end
+        elsif !rb_block_given?
+          ary.array_value.each do |elt|
+            return Q_FALSE unless rtest(elt)
+          end
+        else
+          ary.array_value.each do |elt|
+            return Q_FALSE unless rtest(rb_yield(elt))
+          end
+        end
+
+        Q_TRUE
+      end
+
+      def ary_none(ary, *args)
+        return Q_TRUE if ary.len.zero?
+
+        if args.length > 0
+          puts 'WARNING: given block not used' if rb_block_given?
+
+          ary.array_value.each do |elt|
+            return Q_FALSE if rtest(rb_funcall(args.first, :===, elt))
+          end
+        elsif !rb_block_given?
+          ary.array_value.each do |elt|
+            return Q_FALSE if rtest(elt)
+          end
+        else
+          ary.array_value.each do |elt|
+            return Q_FALSE if rtest(rb_yield(elt))
+          end
+        end
+
+        Q_TRUE
+      end
+
+      def ary_one(ary, *args)
+        return Q_FALSE if args.length.zero?
+
+        result = false
+        if args.length > 0
+          puts 'WARNING: given block not used' if rb_block_given?
+
+          ary.array_value.each do |elt|
+            if rtest(rb_funcall(args.first, :===, elt))
+              return Q_FALSE if result
+              result = true
+            end
+          end
+        elsif !rb_block_given?
+          ary.array_value.each do |elt|
+            if rtest(elt)
+              return Q_FALSE if result
+              result = true
+            end
+          end
+        else
+          ary.array_value.each do |elt|
+            if rtest(rb_yield(elt))
+              return Q_FALSE if result
+              result = true
+            end
+          end
+        end
+
+        result ? Q_TRUE : Q_FALSE
+      end
+
       def ary_pack(ary, fmt)
         # TODO: build this properly
 
@@ -702,6 +800,11 @@ module GarnetRuby
       rb_define_method(cArray, :uniq!, &method(:ary_uniq_bang))
       rb_define_method(cArray, :compact, &method(:ary_compact))
       rb_define_method(cArray, :compact!, &method(:ary_compact_bang))
+
+      rb_define_method(cArray, :any?, &method(:ary_any))
+      rb_define_method(cArray, :all?, &method(:ary_all))
+      rb_define_method(cArray, :none?, &method(:ary_none))
+      rb_define_method(cArray, :one?, &method(:ary_one))
 
       rb_define_method(cArray, :pack, &method(:ary_pack))
     end
