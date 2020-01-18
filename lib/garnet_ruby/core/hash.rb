@@ -380,6 +380,7 @@ module GarnetRuby
       rb_define_method(cHash, :shift, &method(:hash_shift))
       rb_define_method(cHash, :invert, &method(:hash_invert))
       rb_define_method(cHash, :update, &method(:hash_update))
+      rb_define_method(cHash, :merge!, &method(:hash_update))
 
       rb_define_method(cHash, :include?, &method(:hash_has_key))
       rb_define_method(cHash, :member?, &method(:hash_has_key))
