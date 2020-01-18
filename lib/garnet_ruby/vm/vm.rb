@@ -1002,6 +1002,15 @@ module GarnetRuby
     end
 
     def do_raise(exception)
+      if ENV["GARNET_EXC"]
+        @control_frames.reverse_each do |cfp|
+          next if cfp.iseq.nil?
+          break if cfp.iseq.catch_table.any? do |x|
+            x.type == :rescue && (x.st..x.ed).include?(cfp.pc)
+          end
+          raise "UNCAUGHT EXCEPTION #{exception} (#{exception.ivar_get(:message)})"
+        end
+      end
       exception.ivar_set(:backtrace, backtrace_to_ary([], 0, true))
       raise GarnetThrow.new(:raise, exception, current_control_frame, exception)
     end
