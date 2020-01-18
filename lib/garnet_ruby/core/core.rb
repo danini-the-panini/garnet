@@ -467,6 +467,8 @@ module GarnetRuby
           # TODO: check that pattern is kind_of?(Module)
         end
         case type
+        when :when
+          pattern
         when :rescue, :case
           rb_funcall(pattern, :===, target)
         else

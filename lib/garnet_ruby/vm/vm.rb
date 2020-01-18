@@ -521,8 +521,11 @@ module GarnetRuby
     end
 
     def exec_check_match(control_frame, insn)
-      target, pattern = pop_stack_multi(2)
       type, flags = insn.arguments
+
+      pattern = pop_stack
+      target = pop_stack if type != :when
+
       if flags.include?(:array)
         result = pattern.array_value.any? do |v|
           rtest(Core.check_match(target, v, type))

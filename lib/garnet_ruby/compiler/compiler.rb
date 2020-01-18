@@ -511,11 +511,12 @@ module GarnetRuby
       when_labels = whens.map { new_label }
       end_label = new_label
 
-      compile(node[1])
+      type = node[1].nil? ? :when : :case
+      compile(node[1]) if type == :case
 
       whens.each_with_index do |w, i|
         w[1][1..-1].each do |c|
-          add_instruction(:dup)
+          add_instruction(:dup) if type == :case
           flags = []
 
           if c[0] == :splat
@@ -526,7 +527,7 @@ module GarnetRuby
             compile(c)
           end
 
-          add_instruction(:check_match, :case, flags)
+          add_instruction(:check_match, type, flags)
           add_instruction_with_label(:branch_if, when_labels[i])
         end
       end
