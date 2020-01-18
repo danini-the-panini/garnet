@@ -1,0 +1,18 @@
+#!/usr/bin/env ruby
+
+require "bundler/setup"
+require "garnet_ruby"
+
+parser = Ruby26Parser.new
+
+if ARGV.empty?
+  puts "----STDIN----"
+  p parser.parse(STDIN.read, '-')
+  puts "-------------"
+else
+  ARGV.each do |a|
+    puts "----#{a}----"
+    p parser.parse(File.read(a), a)
+  end
+  puts "-------------"
+end
