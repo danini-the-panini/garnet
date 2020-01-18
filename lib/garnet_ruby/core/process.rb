@@ -84,6 +84,14 @@ module GarnetRuby
 
         RPrimitive.from(ret)
       end
+
+      def get_pid
+        RPrimitive.from(Process.pid)
+      end
+
+      def proc_get_pid(_)
+        get_pid
+      end
     end
 
     def self.init_process
@@ -95,6 +103,8 @@ module GarnetRuby
       @mProcess = rb_define_module(:Process)
 
       rb_define_module_function(mProcess, :kill, &method(:proc_rb_f_kill))
+
+      rb_define_module_function(mProcess, :pid, &method(:proc_get_pid))
     end
   end
 end
