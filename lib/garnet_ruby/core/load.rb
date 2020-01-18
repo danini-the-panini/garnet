@@ -83,7 +83,6 @@ module GarnetRuby
     def self.init_load
       $GARNET_LOAD_PATH = RArray.new(cArray, [], $LOAD_PATH.map { |s| RString.from(s) })
       $GARNET_LOAD_PATH.array_value.unshift(RString.from(File.expand_path("../../../garnet_lib", __dir__)))
-      p $GARNET_LOAD_PATH.array_value.map(&:string_value)
 
       lp_getter = -> { $GARNET_LOAD_PATH }
       lp_setter = -> (v) { $GARNET_LOAD_PATH = v }
