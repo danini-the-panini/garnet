@@ -821,6 +821,8 @@ module GarnetRuby
     def compile_rescue(node)
       block, *resbodies = node[1..-1]
 
+      else_block = resbodies.pop if resbodies.last[0] != :resbody
+
       start_label = new_label
       end_label = new_label
       cont_label = new_label
@@ -833,6 +835,7 @@ module GarnetRuby
       add_label(start_label)
       compile(block)
       add_label(end_label)
+      compile(else_block) if else_block
       add_instruction(:nop)
       add_label(cont_label)
 
