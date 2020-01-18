@@ -46,6 +46,10 @@ module GarnetRuby
       __grb_debug__? && @running
     end
 
+    def __vm_raise_uncaught__?
+      ENV['GARNET_EXC'] || __grb_debug__?
+    end
+
     def current_control_frame
       @control_frames.last
     end
@@ -1002,7 +1006,7 @@ module GarnetRuby
     end
 
     def do_raise(exception)
-      if ENV["GARNET_EXC"]
+      if __vm_raise_uncaught__?
         @control_frames.reverse_each do |cfp|
           next if cfp.iseq.nil?
           break if cfp.iseq.catch_table.any? do |x|
