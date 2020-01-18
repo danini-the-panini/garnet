@@ -422,7 +422,7 @@ module GarnetRuby
         add_instruction(:pop)
       when :gasgn
         add_instruction(:set_global, node[1])
-      when :cvdecl
+      when :cvdecl, :cvasgn
         add_instruction(:set_class_variable, node[1])
       end
     end
@@ -646,6 +646,11 @@ module GarnetRuby
     end
 
     def compile_cvdecl(node)
+      compile(node[2])
+      add_instruction(:set_class_variable, node[1])
+    end
+
+    def compile_cvasgn(node)
       compile(node[2])
       add_instruction(:set_class_variable, node[1])
     end
