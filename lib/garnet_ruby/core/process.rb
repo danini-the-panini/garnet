@@ -35,8 +35,9 @@ module GarnetRuby
       end
 
       def rb_exit(status)
-        # TODO: raise SystemExit
-        exit(status)
+        rb_exc_raise(rb_class_new_instance(eSystemExit,
+                                           RPrimitive.from(status),
+                                           RString.from("exit")))
       end
 
       def rb_f_exit(*args)

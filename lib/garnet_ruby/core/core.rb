@@ -262,7 +262,7 @@ module GarnetRuby
       def rb_alias_method(klass, alias_name, orig_name)
         orig_me, _ = search_method(klass, orig_name)
         if !orig_me || orig_me.definition.is_a?(UndefinedMethodDef)
-          Core.rb_raise(Core.eNoMethodError, "undefined method #{orig_name} for #{klass}")
+          rb_raise(eNoMethodError, "undefined method #{orig_name} for #{klass}")
         end
 
         definition = AliasMethodDef.new(orig_me)

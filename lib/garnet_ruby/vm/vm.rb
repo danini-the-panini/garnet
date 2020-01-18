@@ -39,6 +39,7 @@ module GarnetRuby
       @special_variables = {
         backref: Q_NIL
       }
+      @end_procs = []
     end
 
     def __vm_debug__?
@@ -65,6 +66,14 @@ module GarnetRuby
 
       begin
         execute(iseq) until @control_frames.empty?
+      rescue GarnetThrow => e
+        handle_uncaught_throw(e)
+      end
+
+      push_control_frame(control_frame)
+
+      @end_procs.reverse_each do |prc|
+        Core.proc_call(prc)
       rescue GarnetThrow => e
         handle_uncaught_throw(e)
       end
@@ -1096,6 +1105,8 @@ module GarnetRuby
     def handle_uncaught_throw(e)
       case e.throw_type
       when :raise
+        return if Core.obj_is_kind_of(e.exc, Core.eSystemExit)
+
         puts "Uncaught Exception: #{e.exc} #{Core.exc_message(e.exc)}"
         bt = e.exc.ivar_get(:backtrace)
         if !bt.nil? && bt.type?(Array)
@@ -1179,13 +1190,8 @@ module GarnetRuby
       }
     end
 
-    def while_current_control_frame
-      cfp = current_control_frame
-      r = Q_NIL
-      while current_control_frame == cfp
-        r = yield
-      end
-      r
+    def add_end_proc(prc)
+      @end_procs << prc
     end
   end
 end

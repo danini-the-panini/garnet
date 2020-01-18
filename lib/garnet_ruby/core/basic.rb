@@ -30,6 +30,10 @@ module GarnetRuby
       VM.instance.rb_respond_to(self, :succ)
     end
 
+    def rb_to_int
+      to_integer(:to_int)
+    end
+
     def to_integer(mid)
       return self if Core.fixnum?(self)
 
@@ -40,6 +44,15 @@ module GarnetRuby
 
     def try_to_int(mid, should_raise)
       convert_type_with_id('Integer', mid, should_raise, -1)
+    end
+
+    def check_to_int
+      return self if type?(Integer)
+      
+      val = try_to_int(:to_int)
+      return val if val.type?(Integer)
+
+      Q_NIL
     end
 
     def numeric_to_float

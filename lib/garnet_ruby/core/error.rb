@@ -73,8 +73,54 @@ module GarnetRuby
         exc.ivar_get(:backtrace) || Q_NIL
       end
 
+      def exit_initialize(exc, *args)
+        unless args.empty?
+          status = args[0]
+
+          case status
+          when Q_TRUE
+            status = RPrimitive.from(EXIT_SUCCESS)
+            args.shift
+          when Q_FALSE
+            status = RPrimitive.from(EXIT_FAILURE)
+            args.shift
+          else
+            status = status.check_to_int
+            if status == Q_NIL
+              status = RPrimitive.from(EXIT_SUCCESS)
+            else
+              args.shift
+            end
+          end
+        else
+          status = RPrimitive.from(EXIT_SUCCESS)
+        end
+        rb_call_super(*args)
+        exc.ivar_set(:status, status)
+        exc
+      end
+
+      def exit_status(exc)
+        exc.ivar_get(:status) || Q_NIL
+      end
+
+      def exit_success_p(exc)
+        status_val = exit_status(exc)
+
+        return Q_TRUE if status_val == Q_NIL
+
+        status = num2long(status_val)
+        return Q_TRUE if status == EXIT_SUCCESS
+
+        Q_FALSE
+      end
+
       def rb_raise(exc, mesg = nil)
-        VM.instance.do_raise(make_exception(exc, RString.from(mesg || "")))
+        rb_exc_raise(make_exception(exc, RString.from(mesg || '')))
+      end
+
+      def rb_exc_raise(exc)
+        VM.instance.do_raise(exc)
       end
     end
 
@@ -88,6 +134,9 @@ module GarnetRuby
       rb_define_method(eException, :backtrace, &method(:exc_backtrace))
 
       @eSystemExit = rb_define_class(:SystemExit, eException)
+      rb_define_method(eSystemExit, :initialize, &method(:exit_initialize))
+      rb_define_method(eSystemExit, :status, &method(:exit_status))
+      rb_define_method(eSystemExit, :success?, &method(:exit_success_p))
 
       @eFatal  	    = rb_define_class(:fatal, eException)
       @eSignal      = rb_define_class(:SignalException, eException)

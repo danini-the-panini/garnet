@@ -22,6 +22,16 @@
       def obj_extend(obj, *args)
         rb_mod_include(singleton_class_of(obj), *args)
       end
+
+      def rb_f_at_exit(_)
+        unless rb_block_given?
+          rb_raise(eArgError, 'called without block')
+        end
+
+        prc = rb_block_proc
+        VM.instance.add_end_proc(prc)
+        prc
+      end
     end
 
     def self.init_eval
@@ -36,6 +46,8 @@
 
       rb_define_global_function(:trace_var) { |*| Q_NIL } # TODO
       rb_define_global_function(:untrace_var) { |*| Q_NIL } # TODO
+
+      rb_define_global_function(:at_exit, &method(:rb_f_at_exit))
     end
   end
 end
