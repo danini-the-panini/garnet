@@ -42,16 +42,16 @@ module GarnetRuby
         exit
       end
     end.order!(argv) do |v|
-      ARGV.unshift(v)
+      argv.unshift(v)
       break
     end
 
     if !options[:script_name]
-      if ARGV.empty?
+      if argv.empty?
         options[:script_name] = '-'
         options[:source] = STDIN.read
       else
-        script_name = ARGV.shift
+        script_name = argv.shift
         options[:script_name] = script_name
         options[:progname] = script_name
         options[:source] = File.read(script_name)
@@ -61,19 +61,19 @@ module GarnetRuby
     if options[:progname]
       if options[:switch_parsing]
         options[:global_variables] = {}
-        while (arg = ARGV.first)&.start_with?('-')
+        while (arg = argv.first)&.start_with?('-')
           val = true
           if arg.include?('=')
             arg, val = arg.split('=')
           end
           arg = arg[1..].tr('-', '_')
           options[:global_variables][arg] = val
-          ARGV.shift
+          argv.shift
         end
       end
     end
 
-    options[:argv] = ARGV
+    options[:argv] ||= argv
     options
   end
 
