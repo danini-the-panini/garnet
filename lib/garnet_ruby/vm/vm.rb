@@ -122,7 +122,7 @@ module GarnetRuby
       self_value ||= block.self_value
 
       iseq = block.iseq
-      env = Environment.new(self_value.klass, block.environment, {}, block.environment, prev_control_frame.environment.method_entry)
+      env = Environment.new(self_value.klass, block.environment, {}, block.environment, block.environment.method_entry)
       if method
         env.method_entry = env
         env.method_object = method
@@ -987,7 +987,7 @@ module GarnetRuby
             end
           end
         when :break
-           unless cfp.iseq.nil?
+          unless cfp.iseq.nil?
             cr = cfp.iseq.catch_table.find do |x|
               next false unless (x.st..x.ed).include?(cfp.pc)
               (x.type == :ensure && x.iseq != e.cfp.iseq) || (x.type == :break && x.iseq == e.cfp.iseq)
@@ -1039,7 +1039,7 @@ module GarnetRuby
         when :return
           unless cfp.iseq.nil?
             if cfp.iseq.type == :class
-              Core.rb_raise(Core.eLocalJumpError, "Invalid return in class/module body")
+              Core.rb_raise(Core.eLocalJumpError, 'Invalid return in class/module body')
             end
 
             cr = cfp.iseq.catch_table.find do |x|
@@ -1056,7 +1056,7 @@ module GarnetRuby
               pop_control_frame
               return
             when :method
-              if cfp == e.cfp || cfp.environment == e.cfp.environment.previous
+              if cfp == e.cfp || cfp.environment == e.cfp.environment.method_entry
                 push_stack(e.value)
                 pop_control_frame
                 return

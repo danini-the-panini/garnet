@@ -22,7 +22,7 @@ module GarnetRuby
     end
 
     def description
-      "(block)"
+      '(block)'
     end
   end
 
