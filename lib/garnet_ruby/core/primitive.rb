@@ -41,6 +41,9 @@ module GarnetRuby
 
     def self.from(value)
       klass = case value
+              when NilClass then Q_NIL
+              when TrueClass then Q_TRUE
+              when FalseClass then Q_FALSE
               when Integer then Core.cInteger
               when Float then Core.cFloat
               else

@@ -1,2 +1,1 @@
-class Pathname
-end
+require 'garnet_ruby/ruby_native/pathname.rbo'

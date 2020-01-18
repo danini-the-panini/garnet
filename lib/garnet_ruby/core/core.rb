@@ -489,7 +489,23 @@ module GarnetRuby
         when Hash then RHash.from(value)
         when Range then RRange.from(value)
         when RBasic then value
-        else raise "CANNOT CONVERT TO GARNET OBJECT: #{value}"
+        else raise "CANNOT CONVERT TO GARNET OBJECT: #{value.inspect}"
+        end
+      end
+
+      def garnet2ruby(obj)
+        case obj
+        when Q_NIL then nil
+        when Q_TRUE then true
+        when Q_FALSE then false
+        when RSymbol then obj.symbol_value
+        when RString then obj.string_value
+        when RPrimitive then obj.value
+        when RRegexp then obj.regexp_value
+        when RArray then obj.array_value.map { |e| garnet2ruby(e) }
+        when RHash then obj.entries.map { |e| [garnet2ruby(e.key), garnet2ruby(e.value)] }.to_h
+        when RRange then Range.new(garnet2ruby(obj.st), garnet2ruby(obj.ed), obj.excl)
+        else raise "CANNOT CONVERT TO RUBY OBJECT: #{obj}"
         end
       end
     end

@@ -1,0 +1,1 @@
+require 'garnet_ruby/ruby_native/strscan.rbo'

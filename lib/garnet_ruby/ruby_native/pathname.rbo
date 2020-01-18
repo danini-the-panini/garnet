@@ -1,0 +1,3 @@
+require 'garnet_ruby/ruby_native/loader'
+
+GarnetRuby::Core.load_native_class(Pathname)

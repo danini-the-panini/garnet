@@ -42,6 +42,11 @@ module GarnetRuby
       end
 
       def load_internal(full_path, wrap=false)
+        if File.extname(full_path) == ".rbo"
+          ret = load(full_path)
+          return ret ? Q_TRUE : Q_FALSE
+        end
+
         source = File.read(full_path)
 
         parser = Parser.new(source, full_path)
@@ -74,9 +79,9 @@ module GarnetRuby
       end
 
       def add_rb_extension(path)
-        return path if File.extname(path) == '.rb'
+        return "#{path}.rb" if File.extname(path).empty?
 
-        "#{path}.rb"
+        path
       end
     end
 
