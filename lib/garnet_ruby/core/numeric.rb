@@ -380,6 +380,16 @@ module GarnetRuby
         RPrimitive.from(x.value >> y.value)
       end
 
+      def fix_size(fix)
+        RPrimitive.from(fix.value.size)
+      end
+
+      def int_size(num)
+        return fix_size(num) if fixnum?(num)
+
+        Q_NIL
+      end
+
       def int_upto(from, to)
         # TODO: return enumerator if no block given
         if fixnum?(from) && fixnum?(to)
@@ -630,6 +640,8 @@ module GarnetRuby
 
       rb_define_method(cInteger, :<<, &method(:int_lshift))
       rb_define_method(cInteger, :>>, &method(:int_rshift))
+
+      rb_define_method(cInteger, :size, &method(:int_size))
 
       rb_define_const(cObject, :Fixnum, cInteger)
 
