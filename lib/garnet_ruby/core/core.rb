@@ -83,7 +83,8 @@ module GarnetRuby
                   :eSyntaxError,
                   :eLoadError,
                   :eMathDomainError,
-                  :mMarshal
+                  :mMarshal,
+                  :mSignal
 
       attr_reader :env_table, :stdin, :stdout, :stderr
 

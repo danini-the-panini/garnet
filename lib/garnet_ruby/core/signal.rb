@@ -230,7 +230,10 @@ module GarnetRuby
     end
 
     def self.init_signal
+      @mSignal = rb_define_module(:Signal)
+
       rb_define_global_function(:trap, &method(:sig_trap))
+      rb_define_module_function(mSignal, :trap, &method(:sig_trap))
     end
   end
 end
