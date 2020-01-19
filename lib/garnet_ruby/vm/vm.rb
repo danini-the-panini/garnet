@@ -1,17 +1,5 @@
 module GarnetRuby
   class VM
-    class GarnetThrow < StandardError
-      attr_reader :throw_type, :value, :cfp, :exc, :tag
-
-      def initialize(throw_type, value, cfp, exc = nil, tag = nil)
-        super(throw_type.to_s)
-        @throw_type = throw_type
-        @value = value
-        @cfp = cfp
-        @exc = exc
-        @tag = tag
-      end
-    end
 
     class << self
       attr_reader :instance
@@ -238,10 +226,7 @@ module GarnetRuby
         return
       end
 
-      raise GarnetThrow.new(insn.arguments[0], pop_stack, current_control_frame)
-      # pop_control_frame
-      
-      # puts "#{$indent}  --- leave: now executing: #{current_control_frame}" if __vm_debug__?
+      raise GarnetThrow.of_type(insn.arguments[0]).new(pop_stack, current_control_frame)
     end
 
     def exec_nop(control_frame, insn)
@@ -546,7 +531,7 @@ module GarnetRuby
 
     def exec_throw(control_frame, insn)
       throw_type = insn.arguments[0]
-      raise GarnetThrow.new(throw_type, pop_stack, current_control_frame)
+      raise GarnetThrow.of_type(throw_type).new(pop_stack, current_control_frame)
     end
 
     def exec_send_without_block(control_frame, insn)
@@ -1027,110 +1012,19 @@ module GarnetRuby
         end
       end
       exception.ivar_set(:backtrace, backtrace_to_ary([], 0, true))
-      raise GarnetThrow.new(:raise, exception, current_control_frame, exception)
+      raise GarnetThrow::Raise.new(exception, current_control_frame, exception)
     end
 
     def handle_rescue_throw(e)
       cfp = current_control_frame
-      unless cfp.iseq.nil?
-        case e.throw_type
-        when :raise
-          unless cfp.iseq.nil?
-            cr = cfp.iseq.catch_table.find do |x|
-              (x.type == :rescue || x.type == :ensure) && (x.st..x.ed).include?(cfp.pc)
-            end
-            if cr
-              cfp.pc = cr.cont
-              execute_rescue_iseq(cr.iseq, e)
-              return
-            end
-          end
-        when :break
-          unless cfp.iseq.nil?
-            cr = cfp.iseq.catch_table.find do |x|
-              next false unless (x.st..x.ed).include?(cfp.pc)
-              (x.type == :ensure && x.iseq != e.cfp.iseq) || (x.type == :break && x.iseq == e.cfp.iseq)
-            end
-            if cr
-              cfp.pc = cr.cont
-              case cr.type
-              when :break
-                cfp.push_stack(e.value)
-              when :ensure
-                execute_rescue_iseq(cr.iseq, e, cfp)
-              end
-              return
-            end
-          end
-        when :retry
-          unless cfp.iseq.nil?
-            cr = cfp.iseq.catch_table.find do |x|
-              x.type == :retry && x.iseq == e.cfp.iseq && (x.st..x.ed).include?(cfp.pc)
-            end
-            if cr
-              cfp.pc = cr.cont
-              return
-            end
-          end
-        when :continue
-          pop_control_frame
-          raise e.cfp.throw_data
-        when :next
-          unless cfp.iseq.nil?
-            case cfp.iseq.type
-            when :main, :top, :class
-              Core.rb_raise(Core.eLocalJumpError, "Invalid next")
-            when :block
-              cr = cfp.iseq.catch_table.find do |x|
-                x.type == :ensure && (x.st..x.ed).include?(cfp.pc)
-              end
-              if cr
-                cfp.pc = cr.cont
-                execute_rescue_iseq(cr.iseq, e)
-                return
-              end
-
-              push_stack(e.value)
-              pop_control_frame
-              return
-            end
-          end
-        when :return
-          unless cfp.iseq.nil?
-            if cfp.iseq.type == :class
-              Core.rb_raise(Core.eLocalJumpError, 'Invalid return in class/module body')
-            end
-
-            cr = cfp.iseq.catch_table.find do |x|
-              x.type == :ensure && (x.st..x.ed).include?(cfp.pc)
-            end
-            if cr
-              cfp.pc = cr.cont
-              execute_rescue_iseq(cr.iseq, e)
-              return
-            end
-
-            case cfp.iseq.type
-            when :main, :top
-              pop_control_frame
-              return
-            when :method
-              if cfp == e.cfp || cfp.environment == e.cfp.environment.method_entry
-                push_stack(e.value)
-                pop_control_frame
-                return
-              end
-            end
-          end
-        end
-      end
+      return if e.handle(self, cfp) unless cfp.iseq.nil?
       pop_control_frame
       raise e
     end
 
     def handle_uncaught_throw(e)
-      case e.throw_type
-      when :raise
+      case e
+      when GarnetThrow::Raise
         return if Core.rtest(Core.obj_is_kind_of(e.exc, Core.eSystemExit))
 
         puts "Uncaught Exception: #{e.exc} #{Core.exc_message(e.exc)}"
@@ -1141,7 +1035,7 @@ module GarnetRuby
           end
         end
       else
-        raise "Uncaught throw of type #{e.throw_type}"
+        raise "Uncaught throw of type #{e.class}"
       end
     end
 

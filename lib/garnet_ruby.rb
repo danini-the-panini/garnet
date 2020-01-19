@@ -163,4 +163,5 @@ require 'garnet_ruby/compiler/compiler'
 
 require 'garnet_ruby/vm/environment'
 require 'garnet_ruby/vm/control_frame'
+require 'garnet_ruby/vm/garnet_throw'
 require 'garnet_ruby/vm/vm'

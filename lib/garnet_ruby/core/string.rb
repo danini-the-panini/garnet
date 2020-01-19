@@ -39,14 +39,7 @@ module GarnetRuby
 
     def format(*args)
       fmt_args = args.map do |arg|
-        case arg
-        when RPrimitive
-          arg.value
-        when RString
-          arg.string_value
-        else
-          Core.rb_funcall(arg, :to_s).string_value
-        end
+        Core.garnet2ruby(arg) rescue arg.rb_string.string_value
       end
       RString.from(string_value % fmt_args)
     end

@@ -57,14 +57,14 @@ module GarnetRuby
         vm.current_control_frame.tag = tag
         begin
           vm.rb_yield(tag)
-        rescue VM::GarnetThrow => e
-          raise unless e.throw_type == :throw && e.tag == tag
+        rescue GarnetThrow::Throw => e
+          raise unless e.tag == tag
           e.value
         end
       end
 
       def rb_throw(_, tag, value = Q_NIL)
-        raise VM::GarnetThrow.new(:throw, value, VM.instance.current_control_frame, nil, tag)
+        raise GarnetThrow::Throw.new(value, VM.instance.current_control_frame, nil, tag)
         Q_UNDEF
       end
 
@@ -72,9 +72,7 @@ module GarnetRuby
         loop do
           rb_yield
         end
-      rescue VM::GarnetThrow => e
-        raise unless e.throw_type == :break
-
+      rescue GarnetThrow::Break => e
         e.value
       end
 

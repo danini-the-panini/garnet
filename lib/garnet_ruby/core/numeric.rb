@@ -316,6 +316,9 @@ module GarnetRuby
 
       def int_div(x, y)
         # TODO: type coersion
+        if y.value.zero?
+          rb_raise(eZeroDivError, 'divided by 0')
+        end
         RPrimitive.from(x.value / y.value)
       end
 
@@ -667,6 +670,8 @@ module GarnetRuby
     end
 
     def self.init_numeric
+      @eZeroDivError = rb_define_class(:ZeroDivisionError, eStandardError)
+      @eFloatDomainError = rb_define_class(:FloatDomainError, eRangeError)
       @cNumeric = rb_define_class(:Numeric, cObject)
 
       rb_define_method(cNumeric, :<=>, &method(:num_cmp))

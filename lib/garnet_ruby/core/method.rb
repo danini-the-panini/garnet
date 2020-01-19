@@ -52,7 +52,7 @@ module GarnetRuby
       vm.push_control_frame(control_frame)
       begin
         ret = method.definition.block.call(target, *args)
-      rescue VM::GarnetThrow => e
+      rescue GarnetThrow => e
         vm.handle_rescue_throw(e)
       end
       vm.pop_control_frame if vm.current_control_frame == control_frame

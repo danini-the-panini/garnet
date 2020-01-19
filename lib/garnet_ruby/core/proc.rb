@@ -74,14 +74,14 @@ module GarnetRuby
         vm = VM.instance
         begin
           vm.execute_block(proc.block, args, args.length, vm.current_control_frame.block)
-        rescue VM::GarnetThrow => e
-          case e.throw_type
-          when :break
+        rescue GarnetThrow => e
+          case e
+          when GarnetThrow::Break
             return e.value if proc.lambda?
             raise unless vm.is_block_orphan?(proc.block)
 
             vm.do_raise(make_localjump_error('break from proc-closure', e.value, :break))
-          when :return
+          when GarnetThrow::Return
             raise unless proc.lambda?
 
             e.value

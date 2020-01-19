@@ -108,6 +108,8 @@ module GarnetRuby
         cBasicObject.klass = cClass
 
         init_object
+        init_encoding
+        init_exception
         init_top_self
         init_vm_eval
         init_vm_method
@@ -120,8 +122,6 @@ module GarnetRuby
         init_comparable
         init_range
         init_string
-        init_encoding
-        init_exception
         init_array
         init_hash
         init_regexp

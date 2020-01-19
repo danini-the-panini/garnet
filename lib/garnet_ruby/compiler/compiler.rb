@@ -809,14 +809,11 @@ module GarnetRuby
     end
 
     def compile_redo(node)
-      add_instruction_with_label(:jump, @iseq.start_label)
-      # if @iseq.redo_label
-      #   add_instruction_with_label(:jump, @iseq.start_label)
-      # elsif @iseq.end_label
-      #   add_instruction_with_label(:jump, @iseq.end_label)
-      # else
-      #   # TODO: ??
-      # end
+      if @iseq.start_label
+        add_instruction_with_label(:jump, @iseq.start_label)
+      else
+        add_instruction(:throw, :redo)
+      end
     end
 
     def compile_retry(node)
