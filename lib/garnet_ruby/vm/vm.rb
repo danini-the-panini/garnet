@@ -1027,12 +1027,15 @@ module GarnetRuby
       when GarnetThrow::Raise
         return if Core.rtest(Core.obj_is_kind_of(e.exc, Core.eSystemExit))
 
-        puts "Uncaught Exception: #{e.exc} #{Core.exc_message(e.exc)}"
+        STDERR.puts "Uncaught Exception: #{e.exc} #{Core.exc_message(e.exc)}"
         bt = e.exc.ivar_get(:backtrace)
         if !bt.nil? && bt.type?(Array)
           bt.array_value.each do |x|
-            puts x.string_value
+            STDERR.puts x.string_value
           end
+        end
+        if __vm_debug_exc__?
+          STDERR.puts(e.backtrace)
         end
       else
         raise "Uncaught throw of type #{e.class} (#{e.cfp.iseq&.location})"
