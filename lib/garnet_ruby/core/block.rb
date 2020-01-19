@@ -84,7 +84,7 @@ module GarnetRuby
     end
 
     def description
-      prc.block.description
+      wrapped_proc.block.description
     end
   end
 
