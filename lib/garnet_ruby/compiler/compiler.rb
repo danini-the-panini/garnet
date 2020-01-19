@@ -787,8 +787,6 @@ module GarnetRuby
       case @iseq.type
       when :method, :main, :top
         add_instruction(:leave, :return)
-      when :class
-        raise CompilationError, 'Invalid return in class/module body'
       else
         add_instruction(:throw, :return)
       end
