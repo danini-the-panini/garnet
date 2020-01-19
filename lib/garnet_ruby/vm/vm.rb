@@ -599,6 +599,10 @@ module GarnetRuby
     end
 
     def get_block_for_super(control_frame, callinfo)
+      if callinfo.block_iseq
+        return IseqBlock.new(control_frame.environment, control_frame.self_value, callinfo.block_iseq)
+      end
+
       blockarg = get_block_arg(callinfo)
       if blockarg.nil?
         control_frame.block

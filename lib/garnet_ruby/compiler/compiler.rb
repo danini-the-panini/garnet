@@ -934,11 +934,19 @@ module GarnetRuby
       compiler.compile_block_node(node[3] || [:nil])
 
       call_node = node[1]
-      if call_node[0] == :lambda
+      case call_node[0]
+      when :lambda
         mid = :lambda
         add_instruction(:put_self)
         argc = 0
         flags = [:simple]
+        add_instruction(:send, CallInfo.new(mid, argc, flags, block_iseq))
+      when :super
+        argc, flags = compile_args(call_node[1..-1])
+        add_instruction(:invoke_super, CallInfo.new(nil, argc, flags | [:super], block_iseq))
+      when :zsuper
+        argc, flags = compile_zsuper_args
+        add_instruction(:invoke_super, CallInfo.new(nil, argc, flags, block_iseq))
       else
         mid = call_node[2]
         if call_node[1]
@@ -953,9 +961,9 @@ module GarnetRuby
         end
 
         argc, flags = compile_call_args(call_node)
+        add_instruction(:send, CallInfo.new(mid, argc, flags, block_iseq))
       end
 
-      add_instruction(:send, CallInfo.new(mid, argc, flags, block_iseq))
       add_label(end_label)
       add_instruction(:nop)
 
