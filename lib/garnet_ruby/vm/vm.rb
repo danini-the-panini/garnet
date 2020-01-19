@@ -595,7 +595,7 @@ module GarnetRuby
       block_value = pop_stack
       return block_value if block_value == Q_NIL
 
-      ProcBlock.new(Core.rb_funcall(block_value, :to_proc))
+      ProcBlock.new(rb_call(block_value, :to_proc))
     end
 
     def get_block_for_super(control_frame, callinfo)

@@ -11,7 +11,10 @@ module GarnetRuby
     def to_s
       "<#Block env=#{environment} self=#{self_value}>"
     end
-    alias inspect to_s
+    
+    def inspect
+      to_s
+    end
 
     def proc
       @proc ||= RProc.new(Core.cProc, [], self)
@@ -23,6 +26,10 @@ module GarnetRuby
 
     def description
       '(block)'
+    end
+
+    def iseq
+      nil
     end
   end
 
@@ -53,27 +60,31 @@ module GarnetRuby
   end
 
   class ProcBlock < Block
-    attr_reader :proc
+    attr_reader :wrapped_proc
 
-    def initialize(proc)
-      super(proc.block.environment, proc.block.self_value)
-      @proc = proc
+    def initialize(wrapped_proc)
+      super(wrapped_proc.block.environment, wrapped_proc.block.self_value)
+      @wrapped_proc = wrapped_proc
+    end
+
+    def iseq
+      wrapped_proc.block.iseq
     end
 
     def arity
-      proc.arity
+      wrapped_proc.arity
     end
 
-    def to_S
-      "<#ProcBlock proc=#{proc} env=#{environment} self=#{self_value}>"
+    def to_s
+      "<#ProcBlock env=#{environment} self=#{self_value}>"
     end
 
     def dispatch(vm, args, block_block = nil, override_self_value = nil, method = nil, klass = nil)
-      Core.proc_call(proc, *args, block: block_block, self_value: override_self_value, klass: klass)
+      Core.proc_call(wrapped_proc, *args, block: block_block, self_value: override_self_value, klass: klass)
     end
 
     def description
-      proc.block.description
+      prc.block.description
     end
   end
 
