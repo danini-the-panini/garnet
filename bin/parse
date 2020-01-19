@@ -1,7 +1,6 @@
 #!/usr/bin/env ruby
 
-require "bundler/setup"
-require "garnet_ruby"
+require "ruby_parser"
 
 parser = Ruby26Parser.new
 

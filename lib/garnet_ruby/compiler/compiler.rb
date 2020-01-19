@@ -373,6 +373,10 @@ module GarnetRuby
         compile(node[2])
         add_instruction(:dup)
       end
+      compile_masgn_body(node. locals)
+    end
+
+    def compile_masgn_body(node, locals)
       i = locals.index { |l| l[0] == :splat}
       if i.nil?
         add_instruction(:expand_array, locals.count, false, false)
@@ -675,6 +679,9 @@ module GarnetRuby
       elsif node[0] == :colon2
         compile(node[1])
         return node[2]
+      elsif node[0] == :colon3
+        add_instruction(:put_object, Core.cObject)
+        return node[2]
       else
         raise "UNKNOWN CONST BASE: #{node}"
       end
@@ -965,8 +972,8 @@ module GarnetRuby
 
       block_iseq = Iseq.new("block in #{@iseq.name}", :block, @iseq, {})
       compiler = Compiler.new(block_iseq)
-      populate_local_table(for_block_args(node[2]), compiler, block_iseq)
-      compiler.compile_block_node(node[3])
+      populate_local_table([:'?'], compiler, block_iseq)
+      compiler.compile_for_body(node)
 
       compile(node[1])
       add_instruction(:send, CallInfo.new(:each, 0, [:simple], block_iseq))
@@ -976,17 +983,45 @@ module GarnetRuby
       @iseq.add_catch_type(:break, st, ed, ed, block_iseq)
     end
 
+    def compile_for_body(node)
+      @node = node
+      add_instruction(:get_local, :'?', 0)
+      case node[2][0]
+      when :lasgn
+        add_set_local(:set_local, node[2][1])
+      when :iasgn
+        add_instruction(:set_instance_variable, node[2][1])
+      when :masgn
+        label_one = new_label
+        label_two = new_label
+
+        add_instruction(:dup)
+        add_instruction(:send_without_block, CallInfo.new(:length, 0, [:simple]))
+        add_instruction(:put_object, RPrimitive.from(1))
+        add_instruction(:send_without_block, CallInfo.new(:==, 1, [:simple]))
+        add_instruction_with_label(:branch_unless, label_two)
+        add_instruction(:dup)
+        add_instruction(:put_object, RPrimitive.from(0))
+        add_instruction(:send_without_block, CallInfo.new(:[], 1, [:simple]))
+        add_instruction(:put_object, Core.cArray)
+        add_instruction(:dup)
+        add_instruction_with_label(:branch_unless, label_one)
+        add_instruction(:swap)
+        add_label(label_one)
+        add_instruction(:pop)
+        add_label(label_two)
+        locals = node[2][1][1..-1]
+        compile_masgn_body(node[2], locals)
+      end
+      compile_block_node(node[3])
+    end
+
     def for_block_args(node)
       case node[0]
-      when :lasgn
-        [node[1]]
+      when :lasgn, :iasgn
+        [:'?']
       when :masgn
-        node[1][1..-1].map do |n|
-          case n[0]
-          when :lasgn then n[1]
-          when :splat then :"*#{n[1][1]}"
-          end
-        end
+        [:'*?']
       end
     end
 
