@@ -214,6 +214,7 @@ module GarnetRuby
       rb_define_method(cProc, :clone, &method(:proc_clone))
       rb_define_method(cProc, :dup, &method(:proc_dup))
       rb_define_method(cProc, :to_s, &method(:proc_to_s))
+      rb_alias_method(cProc, :inspect, :to_s)
 
       # Exceptions
       @eLocalJumpError = rb_define_class(:LocalJumpError, eStandardError)
