@@ -480,6 +480,18 @@ module GarnetRuby
         ary
       end
 
+      def mod_attr(mod, *args)
+        if args.length == 2
+          case args.last
+          when Q_TRUE
+            return mod_attr_accessor(mod, args.first)
+          when Q_FALSE
+            return mod_attr_writer(mod, args.first)
+          end
+        end
+        mod_attr_reader(mod, *args)
+      end
+
       def mod_attr_reader(mod, *args)
         args.each do |arg|
           id = check_id(arg)
@@ -598,6 +610,7 @@ module GarnetRuby
       rb_define_method(cModule, :name, &method(:mod_name))
       rb_define_method(cModule, :ancestors, &method(:mod_ancestors))
 
+      rb_define_method(cModule, :attr, &method(:mod_attr))
       rb_define_method(cModule, :attr_reader, &method(:mod_attr_reader))
       rb_define_method(cModule, :attr_writer, &method(:mod_attr_writer))
       rb_define_method(cModule, :attr_accessor, &method(:mod_attr_accessor))
