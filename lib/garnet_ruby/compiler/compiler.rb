@@ -550,7 +550,11 @@ module GarnetRuby
           add_instruction(:pop)
         end
 
-        compile(w[-1]) unless w[-1].nil?
+        if w[-1].nil?
+          add_instruction(:put_nil)
+        else
+          compile(w[-1])
+        end
 
         unless i == whens.length - 1
           add_instruction_with_label(:jump, end_label)
