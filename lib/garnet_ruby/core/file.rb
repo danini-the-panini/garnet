@@ -35,7 +35,7 @@ module GarnetRuby
         args.each { |f| File.unlink(f.string_value) }
       end
 
-      def file_s_expand_path(_, *args)
+      def file_expand_path(*args)
         if args.length == 1
           RString.from(File.expand_path(rb_get_path(args[0]).string_value))
         else
@@ -43,7 +43,18 @@ module GarnetRuby
         end
       end
 
-      def file_s_realpath(klass, *args)
+      def rb_file_absolute_path(fname, dname)
+        fname = rb_get_path(fname)
+        dname = rb_get_path(dname)
+
+        file_expand_path(fname, dname)
+      end
+
+      def file_s_expand_path(_, *args)
+        file_expand_path(*args)
+      end
+
+      def file_realpath(*args)
         basedir = args.length == 2 ? rb_get_path(args[1]).string_value : nil
         path = rb_get_path(args[0]).string_value
 
@@ -52,13 +63,21 @@ module GarnetRuby
         rb_raise(@syserr_tbl[e.errno], e.message)
       end
 
-      def file_s_realdirpath
+      def file_s_realpath(klass, *args)
+        file_realpath(*args)
+      end
+
+      def file_realdirpath(*args)
         basedir = args.length == 2 ? rb_get_path(args[1]).string_value : nil
         path = rb_get_path(args[0]).string_value
 
         RString.from(File.realdirpath(path, basedir))
       rescue SystemCallError => e
         rb_raise(@syserr_tbl[e.errno], e.message)
+      end
+
+      def file_s_realdirpath(_, *args)
+        file_realdirpath(*args)
       end
 
       def file_s_basename(_, *args)
@@ -69,8 +88,12 @@ module GarnetRuby
         end
       end
 
-      def file_s_dirname(_, fname)
+      def file_dirname(fname)
         RString.from(File.dirname(rb_get_path(fname).string_value))
+      end
+
+      def file_s_dirname(_, fname)
+        file_dirname(fname)
       end
 
       def define_filetest_function(name)

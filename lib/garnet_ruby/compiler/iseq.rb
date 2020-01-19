@@ -63,6 +63,13 @@ module GarnetRuby
       i.location
     end
 
+    def file
+      return nil if @instructions.empty?
+
+      i = @instructions.first
+      i.file
+    end
+
     def debug_dump_instructions
       return unless __grb_debug__?
       @instructions.each_with_index do |insn, i|

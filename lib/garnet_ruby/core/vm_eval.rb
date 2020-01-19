@@ -116,6 +116,13 @@ module GarnetRuby
           rb_funcall(obj, id, *args)
         end
       end
+
+      def current_realfilepath
+        cfp = VM.instance.ruby_level_cfp
+        return Q_NIL if cfp.nil?
+
+        file_realpath(RString.from(cfp.iseq.file))
+      end
     end
 
     def self.init_vm_eval

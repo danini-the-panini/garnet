@@ -46,6 +46,13 @@ module GarnetRuby
       @control_frames[-2]
     end
 
+    def ruby_level_cfp
+      @control_frames.reverse_each do |cfp|
+        return cfp unless cfp.iseq.nil?
+      end
+      nil
+    end
+
     def caller_environment(cfp = current_control_frame)
       env = cfp.environment
       env = env.previous until env.previous.nil?

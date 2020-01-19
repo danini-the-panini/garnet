@@ -22,6 +22,14 @@ module GarnetRuby
         rb_require_string(fname)
       end
 
+      def rb_f_require_relative(_, fname)
+        base = current_realfilepath
+        rb_raise(eLoadError, 'cannot infer basepath') if base == Q_NIL
+
+        base = file_dirname(base)
+        rb_require_string(rb_file_absolute_path(fname, base))
+      end
+
       def rb_require_string(fname)
         fname = rb_get_path(fname)
         path = fname.string_value
@@ -65,11 +73,12 @@ module GarnetRuby
       end
 
       def resolve_file_for_require(path)
+        path = add_rb_extension(path)
+
         if Pathname.new(path).absolute?
           return File.exist?(path) ? path : nil
         end
 
-        path = add_rb_extension(path)
         $GARNET_LOAD_PATH.array_value.each do |load_path|
           load_path = load_path.str_to_str.string_value
           full_path = File.join(load_path, path)
@@ -99,6 +108,7 @@ module GarnetRuby
 
       rb_define_global_function(:load, &method(:rb_f_load))
       rb_define_global_function(:require, &method(:rb_f_require))
+      rb_define_global_function(:require_relative, &method(:rb_f_require_relative))
     end
   end
 end
