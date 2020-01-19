@@ -930,6 +930,12 @@ module GarnetRuby
     def compile_iter(node)
       st = @iseq.instructions.length
       end_label = new_label
+      call_node = node[1]
+
+      if call_node[0] == :preexe || call_node[0] == :postexe
+        # TODO: BEGIN and END blocks
+        return
+      end
 
       block_args = node[2] == 0 ? [] : node[2][1..-1]
       block_iseq = Iseq.new("block in #{@iseq.name}", :block, @iseq, {})
@@ -937,7 +943,6 @@ module GarnetRuby
       populate_local_table(block_args, compiler, block_iseq)
       compiler.compile_block_node(node[3] || [:nil])
 
-      call_node = node[1]
       case call_node[0]
       when :lambda
         mid = :lambda
