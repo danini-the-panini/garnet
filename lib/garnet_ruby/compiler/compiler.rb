@@ -1177,6 +1177,7 @@ module GarnetRuby
         add_instruction_with_label(node[3] == :'&&' ? :branch_unless : :branch_if, match_label)
         add_instruction(:pop)
         compile(node[4])
+        add_instruction(:setn, argc + 2)
         add_instruction(:send_without_block, CallInfo.new(setter, argc + 1, flags))
         add_instruction(:pop)
         add_instruction_with_label(:jump, end_label)
