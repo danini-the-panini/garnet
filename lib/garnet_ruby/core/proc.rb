@@ -74,10 +74,11 @@ module GarnetRuby
         RProc.new(cProc, [], block, is_lambda)
       end
 
-      def proc_call(proc, *args)
+      def proc_call(proc, *args, block: nil, self_value: nil, klass: nil)
         vm = VM.instance
+        block_block = block || vm.current_control_frame.block
         begin
-          vm.execute_block(proc.block, args, args.length, vm.current_control_frame.block)
+          vm.execute_block(proc.block, args, args.length, block_block, self_value, nil, klass)
         rescue GarnetThrow => e
           case e
           when GarnetThrow::Break

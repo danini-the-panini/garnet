@@ -42,6 +42,8 @@ module GarnetRuby
         Compiler.new(iseq).compile_node(node)
 
         iseq
+      rescue => e
+        rb_raise(eSyntaxError, e.message)
       end
 
       def rb_f_block_given(_)

@@ -548,7 +548,7 @@ module GarnetRuby
       args = collect_args(callinfo)
       target = pop_stack
       method = find_method(target, callinfo.mid)
-      ret = dispatch_method(target, method, args, blockarg&.block)
+      ret = dispatch_method(target, method, args, blockarg)
       push_stack(ret) unless ret.nil? || ret == Q_UNDEF
     end
 
@@ -595,7 +595,7 @@ module GarnetRuby
       block_value = pop_stack
       return block_value if block_value == Q_NIL
 
-      Core.rb_funcall(block_value, :to_proc)
+      ProcBlock.new(Core.rb_funcall(block_value, :to_proc))
     end
 
     def get_block_for_super(control_frame, callinfo)
@@ -1046,7 +1046,7 @@ module GarnetRuby
           end
         end
       else
-        raise "Uncaught throw of type #{e.class}"
+        raise "Uncaught throw of type #{e.class} (#{e.cfp.iseq&.location})"
       end
     end
 

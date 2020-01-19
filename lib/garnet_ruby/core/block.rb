@@ -52,6 +52,31 @@ module GarnetRuby
     end
   end
 
+  class ProcBlock < Block
+    attr_reader :proc
+
+    def initialize(proc)
+      super(proc.block.environment, proc.block.self_value)
+      @proc = proc
+    end
+
+    def arity
+      proc.arity
+    end
+
+    def to_S
+      "<#ProcBlock proc=#{proc} env=#{environment} self=#{self_value}>"
+    end
+
+    def dispatch(vm, args, block_block = nil, override_self_value = nil, method = nil, klass = nil)
+      Core.proc_call(proc, *args, block: block_block, self_value: override_self_value, klass: klass)
+    end
+
+    def description
+      proc.block.description
+    end
+  end
+
   class BuiltInBlock < Block
     attr_reader :block
 
