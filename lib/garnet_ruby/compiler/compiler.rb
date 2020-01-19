@@ -682,7 +682,7 @@ module GarnetRuby
         return node[2]
       elsif node[0] == :colon3
         add_instruction(:put_object, Core.cObject)
-        return node[2]
+        return node[1]
       else
         raise "UNKNOWN CONST BASE: #{node}"
       end
@@ -1130,6 +1130,15 @@ module GarnetRuby
       compile(node[2])
 
       add_label(end_label)
+    end
+
+    def compile_op_asgn(node)
+      id = compile_const_base(node[1])
+      add_instruction(:dup)
+      add_instruction(:get_constant, id)
+      compile(node[3])
+      add_instruction(:send_without_block, CallInfo.new(node[2], 1, [:simple]))
+      add_instruction(:set_constant, id)
     end
 
     def compile_op_asgn1(node)
