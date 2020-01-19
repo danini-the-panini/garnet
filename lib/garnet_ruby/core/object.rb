@@ -545,7 +545,10 @@ module GarnetRuby
       @cNilClass = rb_define_class(:NilClass)
       ::GarnetRuby.const_set(:Q_NIL, RPrimitive.new(@cNilClass, [], nil))
       rb_define_method(cNilClass, :to_i) { |_| RPrimitive.from(0) }
+      rb_define_method(cNilClass, :to_f) { |_| RPrimitive.from(0.0) }
       rb_define_method(cNilClass, :to_s) { |_| RString.from('') }
+      rb_define_method(cNilClass, :to_a) { |_| RArray.from([]) }
+      rb_define_method(cNilClass, :to_h) { |_| RHash.from([]) }
       rb_define_method(cNilClass, :inspect) { |_| RString.from('nil') }
       rb_define_method(cNilClass, :&, &method(:false_and))
       rb_define_method(cNilClass, :|, &method(:false_or))
