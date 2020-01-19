@@ -129,13 +129,13 @@ module GarnetRuby
       control_frame.stack.pop
     end
 
-    def execute_block_iseq(block, args, block_block = nil, self_value = nil, method = nil)
+    def execute_block_iseq(block, args, block_block = nil, self_value = nil, method = nil, klass = nil)
       prev_control_frame = current_control_frame
 
       self_value ||= block.self_value
 
       iseq = block.iseq
-      env = Environment.new(self_value.klass, block.environment, {}, block.environment, block.environment.method_entry)
+      env = Environment.new(klass || self_value.klass, block.environment, {}, block.environment, block.environment.method_entry)
       if method
         env.method_entry = env
         env.method_object = method
@@ -175,9 +175,9 @@ module GarnetRuby
       control_frame.stack.pop || Q_NIL
     end
 
-    def execute_eval_iseq(iseq, prev_control_frame = previous_control_frame)
-      env = Environment.new(prev_control_frame.klass, prev_control_frame.environment, {}, prev_control_frame.environment)
-      control_frame = ControlFrame.new(prev_control_frame.klass, iseq, env)
+    def execute_eval_iseq(iseq, prev_control_frame = previous_control_frame, klass = nil, self_value = nil)
+      env = Environment.new(klass || prev_control_frame.klass, prev_control_frame.environment, {}, prev_control_frame.environment)
+      control_frame = ControlFrame.new(self_value || prev_control_frame.self_value, iseq, env)
       push_control_frame(control_frame)
 
       execute(iseq) until current_control_frame != control_frame
@@ -829,6 +829,11 @@ module GarnetRuby
       execute_block(block, args, args.length)
     end
 
+    def yield_under(klass, slf, *args)
+      block = caller_environment.block
+      execute_block(block, args, args.length, nil, slf, nil, klass)
+    end
+
     def is_block_orphan?(block)
       @control_frames.reverse_each do |cfp|
         next if cfp.iseq.nil?
@@ -868,7 +873,7 @@ module GarnetRuby
       method.definition.dispatch(self, target, method, args, block)
     end
 
-    def execute_block(block, args, argc, block_block = nil, self_value = nil, method_entry = nil)
+    def execute_block(block, args, argc, block_block = nil, self_value = nil, method_entry = nil, klass = nil)
       if !block.proc.is_lambda &&
          args.length == 1 &&
          argc == 1 &&
@@ -879,7 +884,7 @@ module GarnetRuby
 
       self_value ||= block.self_value
 
-      block.dispatch(self, args, block_block, self_value, method_entry)
+      block.dispatch(self, args, block_block, self_value, method_entry, klass)
     end
 
     def find_or_create_class_by_id(id, type, flags, cbase, super_class)

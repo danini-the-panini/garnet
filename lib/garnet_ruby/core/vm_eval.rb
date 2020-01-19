@@ -4,7 +4,13 @@ module GarnetRuby
       def rb_f_eval(_, *args)
         vm = VM.instance
 
-        src = args.first.obj_as_string.string_value
+        src = args[0].obj_as_string.string_value
+
+        if args.length > 1 && args[1] != Q_NIL
+          cfp = args[1].cfp
+        else
+          cfp = vm.previous_control_frame
+        end
 
         if args.length > 2
           fname = args[2].obj_as_string.string_value
@@ -12,6 +18,18 @@ module GarnetRuby
           fname = "(eval)"
         end
 
+        if args.length > 3
+          lineno = num2long(args[3])
+        else
+          lineno = 1
+        end
+
+        iseq = compile_and_eval(src, fname, lineno, cfp.iseq)
+
+        vm.execute_eval_iseq(iseq, cfp)
+      end
+
+      def compile_and_eval(src, fname, lineno, parent)
         parser = Parser.new(src, fname)
         node = parser.parse
         if __grb_debug__?
@@ -20,16 +38,18 @@ module GarnetRuby
           puts '------'
         end
 
-        if args.length > 1 && args[1] != Q_NIL
-          cfp = args[1].cfp
-        else
-          cfp = vm.previous_control_frame
-        end
-
-        iseq = Iseq.new('eval', :eval, cfp.iseq)
+        iseq = Iseq.new('eval', :eval, parent)
         Compiler.new(iseq).compile_node(node)
 
-        vm.execute_eval_iseq(iseq, cfp)
+        iseq
+      end
+
+      def rb_f_block_given(_)
+        vm = VM.instance
+        if vm.caller_environment(vm.previous_control_frame).block.nil?
+          return Q_FALSE
+        end
+        Q_TRUE
       end
 
       def rb_catch(_, tag = RObject.new(Core.cObject, []))
@@ -48,12 +68,45 @@ module GarnetRuby
         Q_UNDEF
       end
 
-      def rb_f_block_given(_)
-        vm = VM.instance
-        if vm.caller_environment(vm.previous_control_frame).block.nil?
-          return Q_FALSE
+      def rb_loop(_)
+        loop do
+          rb_yield
         end
-        Q_TRUE
+      rescue VM::GarnetThrow => e
+        raise unless e.throw_type == :break
+
+        e.value
+      end
+
+      def rb_instance_eval(slf, *args)
+        klass = singleton_class_for_eval(slf)
+        specific_eval(klass, slf, *args)
+      end
+
+      def specific_eval(klass, slf, *args)
+        return yield_under(klass, slf, *args) if rb_block_given?
+
+        src = args[0].obj_as_string.string_value
+        
+        if args.length > 1
+          fname = args[1].obj_as_string.string_value
+        else
+          fname = "(eval)"
+        end
+
+        if args.length > 2
+          lineno = num2long(args[2])
+        else
+          lineno = 1
+        end
+        
+        vm = VM.instance
+
+        cfp = vm.previous_control_frame
+
+        iseq = compile_and_eval(src, fname, lineno, cfp.iseq)
+
+        vm.execute_eval_iseq(iseq, cfp, klass, slf)
       end
 
       def rb_f_send(obj, name, *args)
@@ -74,6 +127,10 @@ module GarnetRuby
 
       rb_define_global_function(:catch, &method(:rb_catch))
       rb_define_global_function(:throw, &method(:rb_throw))
+
+      rb_define_global_function(:loop, &method(:rb_loop))
+      
+      rb_define_method(cBasicObject, :instance_eval, &method(:rb_instance_eval))
 
       rb_define_method(cBasicObject, :__send__, &method(:rb_f_send))
       rb_define_method(mKernel, :send, &method(:rb_f_send))

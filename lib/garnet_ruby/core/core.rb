@@ -231,6 +231,15 @@ module GarnetRuby
         klass
       end
 
+      def singleton_class_for_eval(obj)
+        return Q_NIL if obj.type?(Float) ||
+                        obj.type?(Integer) ||
+                        obj.type?(Symbol) ||
+                        obj.type?(String)
+
+        singleton_class_of(obj)
+      end
+
       def rb_vm_top_self
         @top_self
       end
@@ -433,6 +442,10 @@ module GarnetRuby
 
       def rb_yield(*args)
         VM.instance.rb_yield(*args)
+      end
+
+      def yield_under(klass, slf, *args)
+        VM.instance.yield_under(klass, slf, *args)
       end
 
       def rb_block_call(recv, mid, *args, &block)

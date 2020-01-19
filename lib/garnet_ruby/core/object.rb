@@ -353,16 +353,6 @@ module GarnetRuby
         VM.instance.backtrace_to_ary(args, 1, true)
       end
 
-      def rb_loop(_)
-        loop do
-          rb_yield
-        end
-      rescue VM::GarnetThrow => e
-        raise unless e.throw_type == :break
-
-        e.value
-      end
-
       def rb_equal(obj1, obj2)
         return Q_TRUE if obj1 == obj2
 
@@ -600,8 +590,6 @@ module GarnetRuby
       rb_define_global_const(:FALSE, Q_FALSE)
 
       rb_define_global_function(:caller, &method(:rb_caller))
-
-      rb_define_global_function(:loop, &method(:rb_loop))
     end
   end
 end

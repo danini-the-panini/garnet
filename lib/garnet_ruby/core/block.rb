@@ -42,9 +42,9 @@ module GarnetRuby
       "<#IseqBlock iseq=#{iseq} env=#{environment} self=#{self_value}>"
     end
 
-    def dispatch(vm, args, block_block = nil, override_self_value = nil, method = nil)
+    def dispatch(vm, args, block_block = nil, override_self_value = nil, method = nil, klass = nil)
       sv = override_self_value || self_value
-      vm.execute_block_iseq(self, args, block_block, sv, method)
+      vm.execute_block_iseq(self, args, block_block, sv, method, klass)
     end
 
     def description
@@ -68,7 +68,7 @@ module GarnetRuby
       "<#BuiltInBlock env=#{environment} self=#{self_value}>"
     end
 
-    def dispatch(vm, args, block_block = nil, override_self_value = nil, method = nil)
+    def dispatch(vm, args, block_block = nil, override_self_value = nil, method = nil, klass = nil)
       if block_block
         sv = override_self_value || self_value
         block.call(*args) do |*blargs|

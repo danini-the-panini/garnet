@@ -879,7 +879,7 @@ module GarnetRuby
     def compile_call(node, safe = false)
       end_label = new_label if safe
 
-      if @iseq.type == :eval && !node[1] && node.length == 3 && @iseq.can_find_local?(node[2])
+      if @iseq.type == :eval && node[1].nil? && node.length == 3 && @iseq.can_find_local?(node[2])
         add_get_local(node[2])
         return
       end

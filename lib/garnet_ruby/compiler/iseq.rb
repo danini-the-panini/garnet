@@ -99,7 +99,7 @@ module GarnetRuby
         return false if i.parent_iseq.nil?
         i = i.parent_iseq
       end
-      true
+      i.local_table.key?(label)
     end
 
     private
