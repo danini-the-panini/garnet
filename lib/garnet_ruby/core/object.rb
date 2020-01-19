@@ -388,6 +388,10 @@ module GarnetRuby
         VM.instance.backtrace_to_ary(args, 1, true)
       end
 
+      def rb_obj_id(obj)
+        RPrimitive.from(obj.__id__)
+      end
+
       def rb_equal(obj1, obj2)
         return Q_TRUE if obj1 == obj2
 
@@ -645,6 +649,8 @@ module GarnetRuby
       rb_define_global_const(:FALSE, Q_FALSE)
 
       rb_define_global_function(:caller, &method(:rb_caller))
+      rb_define_method(cBasicObject, :__id__, &method(:rb_obj_id))
+      rb_define_method(mKernel, :object_id, &method(:rb_obj_id))
     end
   end
 
