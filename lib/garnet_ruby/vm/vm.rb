@@ -46,7 +46,7 @@ module GarnetRuby
       __grb_debug__? && @running
     end
 
-    def __vm_raise_uncaught__?
+    def __vm_debug_exc__?
       ENV['GARNET_EXC'] || __grb_debug__?
     end
 
@@ -1006,13 +1006,19 @@ module GarnetRuby
     end
 
     def do_raise(exception)
-      if __vm_raise_uncaught__?
+      if __vm_debug_exc__?
         @control_frames.reverse_each do |cfp|
           next if cfp.iseq.nil?
-          break if cfp.iseq.catch_table.any? do |x|
+          found_rescue = cfp.iseq.catch_table.any? do |x|
             x.type == :rescue && (x.st..x.ed).include?(cfp.pc)
           end
-          raise "UNCAUGHT EXCEPTION #{exception} (#{exception.ivar_get(:message)})"
+
+          if found_rescue
+            STDERR.puts "RASIED EXCEPTION #{exception} (#{exception.ivar_get(:message)})"
+            break
+          else
+            raise "UNCAUGHT EXCEPTION #{exception} (#{exception.ivar_get(:message)})"
+          end
         end
       end
       exception.ivar_set(:backtrace, backtrace_to_ary([], 0, true))
