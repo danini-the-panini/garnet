@@ -531,6 +531,7 @@ module GarnetRuby
 
       rb_define_method(mKernel, :instance_of?, &method(:obj_is_instance_of))
       rb_define_method(mKernel, :kind_of?, &method(:obj_is_kind_of))
+      rb_define_method(mKernel, :is_a?, &method(:obj_is_kind_of))
 
       rb_define_global_function(:sprintf, &method(:f_sprintf))
 
