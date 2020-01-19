@@ -154,6 +154,7 @@ require 'garnet_ruby/core/marshal'
 require 'garnet_ruby/core/struct'
 require 'garnet_ruby/core/load'
 require 'garnet_ruby/core/version'
+require 'garnet_ruby/core/thread'
 require 'garnet_ruby/core/core'
 
 require 'garnet_ruby/compiler/parser'
