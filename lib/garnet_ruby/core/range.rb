@@ -140,6 +140,8 @@ module GarnetRuby
             end
           end
         end
+
+        range
       end
 
       def range_begin(range)
