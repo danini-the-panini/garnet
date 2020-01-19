@@ -32,6 +32,10 @@ module GarnetRuby
     def description
       block.description
     end
+
+    def proc
+      self
+    end
   end
   
   class RMethod < RObject
