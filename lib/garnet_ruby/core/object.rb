@@ -38,6 +38,13 @@ module GarnetRuby
         RClass.new(cClass, [:CLASS])
       end
 
+      def rb_class_alloc_m(klass)
+        # TODO: check if klass respond_to? allocate
+        obj = klass.alloc_func.call(klass)
+        # TODO: check class of obj
+        obj
+      end
+
       def rb_class_new_instance(klass, *args)
         obj = klass.alloc
 
@@ -47,6 +54,34 @@ module GarnetRuby
           rb_funcall(obj, :initialize, *args)
         end
         obj
+      end
+
+      def rb_class_initialize(klass, *args)
+        if !klass.super_class.nil? || klass == cBasicObject
+          rb_raise(eTypeError, 'already initialized class')
+        end
+        if args.length == 0
+          sup = cObject
+        else
+          sup = args.first
+          if sup != cBasicObject && sup.super_class.nil?
+            rb_raise(eTypeError, "can't inherit uninitialized class")
+          end
+        end
+
+        klass.super_class = sup
+        rb_make_metaclass(klass)
+        # rb_class_inherited
+        mod_initialize(klass)
+
+        klass
+      end
+
+      def mod_initialize(mod)
+        if rb_block_given?
+          mod_module_exec(mod, mod)
+        end
+        Q_NIL
       end
 
       def singleton_class_clone(obj)
@@ -568,11 +603,14 @@ module GarnetRuby
       rb_define_method(cModule, :attr_accessor, &method(:mod_attr_accessor))
 
       rb_define_alloc_func(cModule, &method(:rb_module_s_alloc))
+      rb_define_method(cModule, :initialize, &method(:mod_initialize))
 
       rb_define_method(cModule, :const_set, &method(:mod_const_set))
       rb_define_method(cModule, :const_defined?, &method(:mod_const_defined))
 
+      rb_define_method(cClass, :allocate, &method(:rb_class_alloc_m))
       rb_define_method(cClass, :new, &method(:rb_class_new_instance))
+      rb_define_method(cClass, :initialize, &method(:rb_class_initialize))
       rb_define_alloc_func(cClass, &method(:rb_class_s_alloc))
 
       @cTrueClass = rb_define_class(:TrueClass)
@@ -596,4 +634,5 @@ module GarnetRuby
       rb_define_global_function(:caller, &method(:rb_caller))
     end
   end
+
 end

@@ -119,6 +119,10 @@ module GarnetRuby
         end
       end
 
+      def mod_module_exec(mod, *args)
+        yield_under(mod, mod, *args)
+      end
+
       def current_realfilepath
         cfp = VM.instance.ruby_level_cfp
         return Q_NIL if cfp.nil?
@@ -141,6 +145,8 @@ module GarnetRuby
 
       rb_define_method(cBasicObject, :__send__, &method(:rb_f_send))
       rb_define_method(mKernel, :send, &method(:rb_f_send))
+
+      rb_define_method(cModule, :module_exec, &method(:mod_module_exec))
     end
   end
 end

@@ -91,22 +91,7 @@ module GarnetRuby
       def init
         @virtual_variables = {}
 
-        @cBasicObject = boot_defclass(:BasicObject, nil)
-        @cObject = boot_defclass(:Object, cBasicObject)
-        # rb_gc_register_mark_object(rb_cObject) # TODO
-
-        # resolve class name ASAP for order-independence
-        # rb_class_name(rb_cObject); #TODO ??
-
-        @cModule = boot_defclass(:Module, cObject)
-        @cClass = boot_defclass(:Class, cModule)
-
-        cObject.rb_const_set(:BasicObject, cBasicObject)
-        cClass.klass = cClass
-        cModule.klass = cClass
-        cObject.klass = cClass
-        cBasicObject.klass = cClass
-
+        init_class_heirarchy
         init_object
         init_encoding
         init_exception
