@@ -373,7 +373,7 @@ module GarnetRuby
         compile(node[2])
         add_instruction(:dup)
       end
-      compile_masgn_body(node. locals)
+      compile_masgn_body(node, locals)
     end
 
     def compile_masgn_body(node, locals)
@@ -968,6 +968,11 @@ module GarnetRuby
     end
 
     def compile_for(node)
+      node[2].each_of_type(:lasgn) do |n|
+        next if @iseq.can_find_local?(n[1])
+        @iseq.local_table[n[1]] = []
+      end
+
       st = @iseq.instructions.length
 
       block_iseq = Iseq.new("block in #{@iseq.name}", :block, @iseq, {})
@@ -988,7 +993,7 @@ module GarnetRuby
       add_instruction(:get_local, :'?', 0)
       case node[2][0]
       when :lasgn
-        add_set_local(:set_local, node[2][1])
+        add_set_local(node[2][1])
       when :iasgn
         add_instruction(:set_instance_variable, node[2][1])
       when :masgn
@@ -1287,6 +1292,7 @@ module GarnetRuby
       level = @iseq.local_level(name)
       pi = @iseq
       level.times { pi = pi.parent_iseq }
+      pi.local_table[name] ||= []
       if pi.local_table.dig(name, 0) == :block
         add_instruction(:set_block_param_proxy, name, level, node: node)
       else

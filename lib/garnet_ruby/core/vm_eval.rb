@@ -24,12 +24,12 @@ module GarnetRuby
           lineno = 1
         end
 
-        iseq = compile_and_eval(src, fname, lineno, cfp.iseq)
+        iseq = compile_for_eval(src, fname, lineno, cfp.iseq)
 
         vm.execute_eval_iseq(iseq, cfp)
       end
 
-      def compile_and_eval(src, fname, lineno, parent)
+      def compile_for_eval(src, fname, lineno, parent)
         parser = Parser.new(src, fname)
         node = parser.parse
         if __grb_debug__?
@@ -104,7 +104,7 @@ module GarnetRuby
 
         cfp = vm.previous_control_frame
 
-        iseq = compile_and_eval(src, fname, lineno, cfp.iseq)
+        iseq = compile_for_eval(src, fname, lineno, cfp.iseq)
 
         vm.execute_eval_iseq(iseq, cfp, klass, slf)
       end
