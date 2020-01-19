@@ -98,6 +98,7 @@ module GarnetRuby
 
     def compile_nodes(nodes, debug=true)
       nodes.each do |node|
+        next if node.nil?
         compile(node)
       end
 
