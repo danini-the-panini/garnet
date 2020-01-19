@@ -146,8 +146,8 @@ module GarnetRuby
       def rb_define_class(name, super_class=cObject)
         if cObject.has_const_direct?(name)
           klass = cObject.rb_const_get(name, false)
-          raise TypeError, "#{name} is not a class (#{klass})" unless klass.flags.include?(:CLASS)
-          raise TypeError, "superclass mismatch for class #{name}" if klass.super_class != super_class
+          rb_raise(eTypeError, "#{name} is not a class (#{klass})") unless klass.flags.include?(:CLASS)
+          rb_raise(eTypeError, "superclass mismatch for class #{name}") if klass.super_class != super_class
           return klass
         end
 
@@ -167,7 +167,7 @@ module GarnetRuby
       def rb_define_module(name)
         if cObject.has_const_direct?(name)
           mdl = cObject.rb_const_get(name, false)
-          raise TypeError, "#{name} is not a module (#{mdl})" unless mdl.flags.include?(:MODULE)
+          rb_raise(eTypeError, "#{name} is not a module (#{mdl})") unless mdl.flags.include?(:MODULE)
 
           return mdl
         end
@@ -204,7 +204,7 @@ module GarnetRuby
         # TODO: do some checks
 
         if obj.is_a?(RPrimitive)
-          raise TypeError, "can't define singleton"
+          rb_raise(eTypeError, "can't define singleton")
         end
         # TODO: special const?
         # TODO: builtin type?

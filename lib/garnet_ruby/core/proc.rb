@@ -139,7 +139,7 @@ module GarnetRuby
 
       def method_call(m, *args)
         if m.recv == Q_UNDEF
-          raise TypeError, "can't call unbound method; bind first"
+          rb_raise(eTypeError, "can't call unbound method; bind first")
         end
         block = VM.instance.current_control_frame.block
         VM.instance.dispatch_method(m.recv, m.method_entry, args, block)

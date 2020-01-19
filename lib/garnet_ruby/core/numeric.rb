@@ -13,7 +13,7 @@ module GarnetRuby
 
       def num2long(val)
         if val == Q_NIL
-          raise TypeError, 'no implicit conversion from nil to integer'
+          rb_raise(eTypeError, 'no implicit conversion from nil to integer')
         end
 
         return val.value if fixnum?(val)

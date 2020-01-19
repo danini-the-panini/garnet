@@ -167,7 +167,7 @@ module GarnetRuby
         if idx.negative?
           idx += len
           if idx.negative?
-            raise IndexError, "index #{idx - len} too small for array; minimum #{-len}"
+            rb_raise(eIndexError, "index #{idx - len} too small for array; minimum #{-len}")
           end
           # TODO: check against ARY_MAX_SIZE
         end
@@ -467,7 +467,7 @@ module GarnetRuby
 
         len = times.value
         return RArray.from([]) if len.zero?
-        raise ArgumentError, "negative argument" if len.negative?
+        rb_raise(eArgError, "negative argument") if len.negative?
         # TODO: check ARY_MAX_SIZE
 
         RArray.from(ary.array_value * len)

@@ -189,7 +189,7 @@ module GarnetRuby
           when Q_FALSE then 'false'
           else self.klass
           end
-          raise TypeError, "can't convert #{cname} into #{tname}"
+          Core.rb_raise(core.eTypeError, "can't convert #{cname} into #{tname}")
         end
         return Q_NIL
       end
@@ -198,7 +198,7 @@ module GarnetRuby
 
     def conversion_mismatch(tname, method, result)
       cname = self.klass
-      raise TypeError, "can't convert #{cname} to #{tname} (#{cname}##{method} gives #{result.klass})"
+      Core.rb_raise(Core.eTypeError, "can't convert #{cname} to #{tname} (#{cname}##{method} gives #{result.klass})")
     end
   end
 end

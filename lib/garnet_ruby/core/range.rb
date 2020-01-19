@@ -128,7 +128,7 @@ module GarnetRuby
             end
           else
             if !beg.discrete_object?
-              raise TypeError, "can't iterate from #{beg.klass}"
+              rb_raise(eTypeError, "can't iterate from #{beg.klass}")
             end
             if ed != Q_NIL
               range.each_func(nil, &method(:each_i))
@@ -154,7 +154,7 @@ module GarnetRuby
 
       def range_to_a(range)
         if range.ed == Q_NIL
-          raise RangeError, 'cannot convert endless range to an array'
+          rb_raise(eRangeError, 'cannot convert endless range to an array')
         end
 
         rb_call_super
@@ -223,7 +223,7 @@ module GarnetRuby
 
       def out_of_range(beg, ed, excl, err=1)
         return if err.zero?
-        raise RangeError, "#{beg}#{excl ? '...' : '..'}#{ed} out of range"
+        rb_raise(eRangeError, "#{beg}#{excl ? '...' : '..'}#{ed} out of range")
       end
     end
 

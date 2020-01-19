@@ -173,7 +173,7 @@ module GarnetRuby
         end
         b = prc.rb_check_convert_type_with_id(Proc, "Proc", :to_proc)
         if b == Q_NIL || !b.type?(Proc)
-          raise TypeError, "wrong default_proc type #{prc.klass} (expected Proc)"
+          rb_raise(eTypeError, "wrong default_proc type #{prc.klass} (expected Proc)")
         end
         prc = b
         hash.default_proc = prc

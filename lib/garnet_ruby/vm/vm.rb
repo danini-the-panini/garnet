@@ -898,29 +898,29 @@ module GarnetRuby
 
     def check_if_namespace(klass)
       unless klass.flags.include?(:CLASS) || klass.flags.include?(:MODULE)
-        raise TypeError, "#{klass} is not a class/module"
+        Core.rb_raise(Core.eTypeError, "#{klass} is not a class/module")
       end
     end
 
     def check_class_redefinition(id, flags, super_class, klass)
       unless klass.flags.include?(:CLASS)
-        raise TypeError, "#{klass} is not a class"
+        Core.rb_raise(Core.eTypeError, "#{klass} is not a class")
       end
 
       if flags.include?(:has_superclass) && super_class != klass.super_class.real
-        raise TypeError, "superclass mismatch for #{id}"
+        Core.rb_raise(Core.eTypeError, "superclass mismatch for #{id}")
       end
     end
 
     def check_module_redefinition(id, flags, klass)
       unless klass.flags.include?(:MODULE)
-        raise TypeError, "#{klass} is not a module"
+        Core.rb_raise(Core.eTypeError, "#{klass} is not a module")
       end
     end
 
     def define_class(id, flags, cbase, super_class)
       if flags.include?(:has_superclass) && !super_class.flags.include?(:CLASS) # TODO: also check it isn't a model
-        raise TypeError, "superclass must be a Class (#{super_class.klass} given)"
+        Core.rb_raise(Core.eTypeError, "superclass must be a Class (#{super_class.klass} given)")
       end
 
       check_if_namespace(cbase)
@@ -1001,7 +1001,7 @@ module GarnetRuby
 
       klass = env.klass
 
-      raise TypeError, 'no class variables available' if klass == Q_NIL
+      Core.rb_raise(Core.eTypeError, 'no class variables available') if klass == Q_NIL
 
       klass
     end
@@ -1076,15 +1076,15 @@ module GarnetRuby
           # TODO
         else
           lev = level.value
-          raise ArgumentError, "negative level (#{lev})" if lev.negative?
+          Core.rb_raise(Core.eArgError, "negative level (#{lev})") if lev.negative?
 
           n = bt.length - lev
         end
       when 2
         lev = level.value
         n = vn.value
-        raise ArgumentError, "negative level (#{lev})" if lev.negative?
-        raise ArgumentError, "negative size (#{n})" if n.negative?
+        Core.rb_raise(Core.eArgError, "negative level (#{lev})") if lev.negative?
+        Core.rb_raise(Core.eArgError, "negative size (#{n})") if n.negative?
       end
 
       return RArray.from([]) if n.zero?

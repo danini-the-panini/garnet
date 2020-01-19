@@ -310,7 +310,7 @@ module GarnetRuby
         elsif pattern == Q_NIL
           pattern = ' '
         else
-          raise TypeError, "(wrong argument type #{pattern.klass} (expected Regexp))"
+          rb_raise(eTypeError, "wrong argument type #{pattern.klass} (expected Regexp)")
         end
 
         split_args = [pattern, limit].compact
@@ -392,7 +392,7 @@ module GarnetRuby
         elsif pattern.type?(Regexp)
           pattern = pattern.regexp_value
         else
-          raise TypeError, "(wrong argument type #{pattern.klass} (expected Regexp))"
+          rb_raise(eTypeError, "wrong argument type #{pattern.klass} (expected Regexp)")
         end
 
         if rb_block_given?
