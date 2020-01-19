@@ -133,6 +133,7 @@ module GarnetRuby
 
       def hash_aset(hash, k, v)
         hash.update(k, v)
+        v
       end
 
       def hash_lookup(hash, k)
