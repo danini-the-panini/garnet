@@ -455,6 +455,16 @@ module GarnetRuby
         str
       end
 
+      def str_chomp(str, *args)
+        sep = if args.empty?
+                get_global(:'$/')
+              else
+                args[0]
+              end
+
+        RString.from(str.string_value.chomp(sep.string_value))
+      end
+
       def str_sub_bang(str, *args)
         rb_str_sub(str, :sub!, *args)
       end
@@ -625,6 +635,7 @@ module GarnetRuby
 
       rb_define_method(cString, :sub, &method(:str_sub))
       rb_define_method(cString, :gsub, &method(:str_gsub))
+      rb_define_method(cString, :chomp, &method(:str_chomp))
 
       rb_define_method(cString, :sub!, &method(:str_sub_bang))
       rb_define_method(cString, :gsub!, &method(:str_gsub_bang))

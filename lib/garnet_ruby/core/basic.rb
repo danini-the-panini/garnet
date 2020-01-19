@@ -127,6 +127,10 @@ module GarnetRuby
       rb_check_convert_type_with_id(String, 'String', :to_str)
     end
 
+    def string_value
+      str_to_str.string_value
+    end
+
     def str_to_str
       rb_convert_type_with_id(String, 'String', :to_str)
     end

@@ -457,6 +457,11 @@ module GarnetRuby
         me.basic?
       end
 
+      def get_global(name, vm = VM.instance)
+        return virtual_variable_get(name) if virtual_variable?(name)
+        vm.get_global(name)
+      end
+
       def rtest(value)
         value != Q_FALSE && value != Q_NIL
       end
