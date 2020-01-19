@@ -1269,6 +1269,16 @@ module GarnetRuby
       [count, flags]
     end
 
+    def compile_flip2(node)
+      # TODO: skipping flop flops for now
+      add_instruction(:put_object, Q_FALSE)
+    end
+
+    def compile_flip3(node)
+      # TODO: skipping flop flops for now
+      add_instruction(:put_object, Q_FALSE)
+    end
+
     def new_label
       Label.new(@iseq)
     end
