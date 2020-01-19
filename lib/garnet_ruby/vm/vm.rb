@@ -1007,22 +1007,11 @@ module GarnetRuby
     end
 
     def do_raise(exception)
+      bt = backtrace_to_ary([], 0, true)
+      exception.ivar_set(:backtrace, bt)
       if __vm_debug_exc__?
-        @control_frames.reverse_each do |cfp|
-          next if cfp.iseq.nil?
-          found_rescue = cfp.iseq.catch_table.any? do |x|
-            x.type == :rescue && (x.st..x.ed).include?(cfp.pc)
-          end
-
-          if found_rescue
-            STDERR.puts "RASIED EXCEPTION #{exception} (#{exception.ivar_get(:message)})"
-            break
-          else
-            raise "UNCAUGHT EXCEPTION #{exception} (#{exception.ivar_get(:message)})"
-          end
-        end
+        STDERR.puts "RASIED EXCEPTION #{exception} (#{exception.ivar_get(:message)}) at #{bt.array_value[0].string_value}"
       end
-      exception.ivar_set(:backtrace, backtrace_to_ary([], 0, true))
       raise GarnetThrow::Raise.new(exception, current_control_frame, exception)
     end
 
