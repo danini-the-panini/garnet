@@ -84,6 +84,12 @@ module GarnetRuby
         Q_NIL
       end
 
+      def mod_initialize_clone(clone, orig)
+        ret = obj_init_dup_clone(clone, orig)
+        # rb_class_name(clone) if orig.flags.include?(:frozen) # TODO
+        ret
+      end
+
       def singleton_class_clone(obj)
         singleton_class_clone_and_attach(obj, Q_UNDEF)
       end
@@ -732,7 +738,7 @@ module GarnetRuby
 
       rb_define_alloc_func(cModule, &method(:rb_module_s_alloc))
       rb_define_method(cModule, :initialize, &method(:mod_initialize))
-      rb_define_method(cModule, :initialize_clone, &method(:TODO_not_implemented))
+      rb_define_method(cModule, :initialize_clone, &method(:mod_initialize_clone))
       rb_define_method(cModule, :instance_methods, &method(:TODO_not_implemented))
       rb_define_method(cModule, :public_instance_methods, &method(:TODO_not_implemented))
       rb_define_method(cModule, :protected_instance_methods, &method(:TODO_not_implemented))
