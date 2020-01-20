@@ -363,13 +363,26 @@ module GarnetRuby
         obj_freeze(mod)
       end
 
-      def rb_any_to_s(obj)
+      def any_to_s(obj)
         RString.from(obj.any_to_s)
       end
 
-      def rb_obj_inspect(obj)
+      def obj_inspect(obj)
         # TODO: put ivars in
         RString.from(obj.any_to_s)
+      end
+
+      def obj_singleton_methods(obj)
+        ary = RArray.from([])
+        obj.klass.method_table.keys.map { |m| ary_push(ary, RSymbol.from(m)) }
+        ary
+      end
+
+      def obj_methods(obj, *args)
+        if !args.empty? && !rtest(args[0])
+          return obj_singleton_methods(obj)
+        end
+        obj.klass.instance_method_list
       end
 
       def rb_obj_instance_variables(obj)
@@ -631,9 +644,9 @@ module GarnetRuby
       rb_define_method(mKernel, :freeze, &method(:obj_freeze))
       rb_define_method(mKernel, :frozen?, &method(:TODO_not_implemented))
 
-      rb_define_method(mKernel, :to_s, &method(:rb_any_to_s))
-      rb_define_method(mKernel, :inspect, &method(:rb_obj_inspect))
-      rb_define_method(mKernel, :methods, &method(:TODO_not_implemented))
+      rb_define_method(mKernel, :to_s, &method(:any_to_s))
+      rb_define_method(mKernel, :inspect, &method(:obj_inspect))
+      rb_define_method(mKernel, :methods, &method(:obj_methods))
       rb_define_method(mKernel, :singleton_methods, &method(:TODO_not_implemented))
       rb_define_method(mKernel, :protected_methods, &method(:TODO_not_implemented))
       rb_define_method(mKernel, :private_methods, &method(:TODO_not_implemented))

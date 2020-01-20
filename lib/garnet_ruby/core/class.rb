@@ -29,7 +29,7 @@ module GarnetRuby
     def alloc_func
       return super_class&.alloc_func if @allocator.nil?
       return nil if @allocator == UNDEF_ALLOC_FUNC
-      
+
       @allocator
     end
 
@@ -148,6 +148,7 @@ module GarnetRuby
 
     def inherited?(arg)
         return Q_TRUE if self == arg
+
         if !arg.is_a?(RClass) && !arg.flags.include?(:ICLASS)
           rb_raise(eTypeError, "compared with non class/module")
         end
@@ -338,6 +339,12 @@ module GarnetRuby
       end
 
       self
+    end
+
+    def instance_method_list(ary = RArray.from([]))
+      method_table.keys.each { |m| ary.array_value << RSymbol.from(m) }
+      super_class&.instance_method_list(ary)
+      ary
     end
 
     protected
