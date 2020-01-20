@@ -34,6 +34,7 @@ module GarnetRuby
         fname = rb_get_path(fname)
         path = fname.string_value
 
+        path = add_rb_extension(path)
         full_path = resolve_file_for_require(path)
 
         if full_path.nil?
@@ -73,8 +74,6 @@ module GarnetRuby
       end
 
       def resolve_file_for_require(path)
-        path = add_rb_extension(path)
-
         if Pathname.new(path).absolute?
           return File.exist?(path) ? path : nil
         end
