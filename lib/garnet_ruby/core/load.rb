@@ -88,7 +88,7 @@ module GarnetRuby
       end
 
       def add_rb_extension(path)
-        return "#{path}.rb" if File.extname(path).empty?
+        return "#{path}.rb" unless ['.rb', '.rbo'].include?(File.extname(path))
 
         path
       end
