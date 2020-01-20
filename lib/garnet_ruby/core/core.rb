@@ -513,7 +513,12 @@ module GarnetRuby
         cfp = VM.instance.current_control_frame
         slf = cfp.self_value
         mid = cfp.environment.method_name
-        raise NotImplementedError, "#{slf}.#{mid} has not been implemented"
+        s = if slf.is_a?(RClass)
+              "#{slf.real.name}::#{mid}"
+            else
+              "#{slf.klass.real.name}##{mid}"
+            end
+        raise NotImplementedError, "#{s} has not been implemented"
       end
 
       def ruby2garnet(value)
