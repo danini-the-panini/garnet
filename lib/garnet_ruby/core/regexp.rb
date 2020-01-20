@@ -1,6 +1,6 @@
 module GarnetRuby
   class RRegexp < RObject
-    attr_reader :regexp_value
+    attr_accessor :regexp_value
 
     def initialize(klass, flags, value)
       super(klass, flags)
@@ -150,6 +150,36 @@ module GarnetRuby
         RString.from(Regexp.quote(str.obj_as_string.string_value))
       end
 
+      def reg_initialize(slf, *args)
+        # enc = nil
+        if args[0].type?(Regexp)
+          re = args[0]
+
+          puts "WARNING: flags ignored" if args.length > 1
+
+          flags = re.regexp_value.options
+          str = re.regexp_value.source
+        else
+          if args.length >= 2
+            if fixnum?(args[1])
+              flags = args[1].value
+            elsif rtest(args[1])
+              flags = Regexp::IGNORECASE
+            end
+          end
+          # TODO: third argument?
+          str = args[0].string_value
+        end
+
+        # if enc && str.string_value.encoding != enc
+          # TODO: enc is always nil
+        # else
+
+        slf.regexp_value = Regexp.new(str, flags)
+
+        slf
+      end
+
       def reg_match(re, *args)
         str = args[0]
 
@@ -198,6 +228,7 @@ module GarnetRuby
       rb_define_alloc_func(cRegexp, &method(:regexp_alloc))
       rb_define_singleton_method(cRegexp, :quote, &method(:reg_s_quote))
 
+      rb_define_method(cRegexp, :initialize, &method(:reg_initialize))
       rb_define_method(cRegexp, :=~) { |re, str| re.match(str) }
       rb_define_method(cRegexp, :===) { |re, str| rtest(re.match(str)) ? Q_TRUE : Q_FALSE }
       rb_define_method(cRegexp, :match, &method(:reg_match))
