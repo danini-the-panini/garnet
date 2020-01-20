@@ -1,7 +1,8 @@
 module GarnetRuby
   module Core
     class << self
-      def exc_new(type, message)
+      def exc_new(type, *args)
+        message = args.empty? ? RString.from('') : args.first
         exc = type.alloc
         rb_funcall(exc, :initialize, message)
         exc

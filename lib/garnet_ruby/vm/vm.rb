@@ -125,12 +125,11 @@ module GarnetRuby
     end
 
     def execute_block_iseq(block, args, block_block = nil, self_value = nil, method = nil, klass = nil)
-      prev_control_frame = current_control_frame
-
       self_value ||= block.self_value
 
       iseq = block.iseq
       env = Environment.new(klass || self_value.klass, block.environment, {}, block.environment, block.environment.method_entry)
+      env.errinfo = block.environment.errinfo
       if method
         env.method_entry = env
         env.method_object = method
@@ -1008,6 +1007,13 @@ module GarnetRuby
     end
 
     def do_raise(exception)
+      if exception == Q_NIL
+        exception = if previous_control_frame.environment.errinfo
+                      previous_control_frame.environment.errinfo
+                    else
+                      Core.exc_new(Core.eRuntimeError)
+                    end
+      end
       bt = backtrace_to_ary([], 0, true)
       exception.ivar_set(:backtrace, bt)
       if __vm_debug_exc__?
