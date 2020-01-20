@@ -808,6 +808,8 @@ module GarnetRuby
       method = find_method(recv, mid)
       block = BuiltInBlock.new(control_frame.environment, control_frame.self_value, &block)
       dispatch_method(recv, method, args, block)
+    rescue GarnetThrow::Break => e
+      e.value if e.cfp.nil?
     end
 
     def rb_respond_to(recv, mid)

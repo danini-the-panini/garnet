@@ -11,6 +11,27 @@ module GarnetRuby
         ary
       end
 
+      def enum_find(obj, *args)
+        if_none = args.empty? ? Q_NIL : args.first
+
+        vm = VM.instance
+        block = vm.caller_environment.block
+
+        memo = Q_UNDEF
+        rb_block_call(obj, :each) do |x|
+          if rtest(vm.execute_block(block, [x], 1))
+            memo = x
+            rb_iter_break
+          end
+          Q_NIL
+        end
+
+        return memo if memo != Q_UNDEF
+        return rb_funcall(if_none, :call) if if_none != Q_NIL
+
+        Q_NIL
+      end
+
       def enum_collect(obj)
         # TODO: return enumerator
 
@@ -106,6 +127,7 @@ module GarnetRuby
 
       rb_define_method(mEnumerable, :to_a, &method(:enum_to_a))
 
+      rb_define_method(mEnumerable, :find, &method(:enum_find))
       rb_define_method(mEnumerable, :collect, &method(:enum_collect))
       rb_define_method(mEnumerable, :inject, &method(:enum_inject))
       rb_define_method(mEnumerable, :reduce, &method(:enum_inject))

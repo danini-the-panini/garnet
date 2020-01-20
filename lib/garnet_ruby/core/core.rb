@@ -438,6 +438,10 @@ module GarnetRuby
         VM.instance.rb_block_call(recv, mid, *args, &block)
       end
 
+      def rb_iter_break(value = Q_NIL)
+        raise GarnetThrow::Break.new(value, VM.instance.current_control_frame)
+      end
+
       def rb_block_proc
         rb_block.proc
       end
