@@ -466,13 +466,11 @@ module GarnetRuby
     def exec_set_method_alias(control_frame, insn)
       new_mid_sym, old_mid_sym = pop_stack_multi(2)
       mid = new_mid_sym.symbol_value
+      old_mid = old_mid_sym.symbol_value
 
       klass = control_frame.environment.lexical_scope.klass
-      original_method = find_method(klass, old_mid_sym.symbol_value, klass)
 
-      definition = AliasMethodDef.new(original_method)
-      method = Core.method_entry_create(mid, klass, :public, definition)
-      klass.method_table[mid] = method
+      Core.rb_alias(klass, mid, old_mid)
 
       push_stack(new_mid_sym)
     end
