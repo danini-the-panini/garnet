@@ -341,9 +341,15 @@ module GarnetRuby
       self
     end
 
-    def instance_method_list(ary = RArray.from([]))
-      method_table.keys.each { |m| ary.array_value << RSymbol.from(m) }
-      super_class&.instance_method_list(ary)
+    def instance_method_list(all, visi, ary = RArray.from([]))
+      mhash = {}
+      method_table.each do |mid, me|
+        next unless visi.include?(me.visibility)
+
+        mhash[mid] ||= me
+      end
+      mhash.keys.each { |mid| ary.array_value << RSymbol.from(mid) }
+      super_class&.instance_method_list(true, visi, ary) if all
       ary
     end
 

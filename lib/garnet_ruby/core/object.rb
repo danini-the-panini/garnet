@@ -374,7 +374,11 @@ module GarnetRuby
 
       def obj_singleton_methods(obj)
         ary = RArray.from([])
-        obj.klass.method_table.keys.map { |m| ary_push(ary, RSymbol.from(m)) }
+        obj.klass.method_table.map do |mid, me|
+          next unless %i[public protected].include?(me.visibility)
+
+          ary_push(ary, RSymbol.from(mid))
+        end
         ary
       end
 
@@ -382,7 +386,22 @@ module GarnetRuby
         if !args.empty? && !rtest(args[0])
           return obj_singleton_methods(obj)
         end
-        obj.klass.instance_method_list
+        obj.klass.instance_method_list(true, %i[public protected])
+      end
+
+      def obj_protected_methods(obj, *args)
+        all = args.empty? || rtest(args[0])
+        obj.klass.instance_method_list(all, %i[protected])
+      end
+
+      def obj_private_methods(obj, *args)
+        all = args.empty? || rtest(args[0])
+        obj.klass.instance_method_list(all, %i[private])
+      end
+
+      def obj_public_methods(obj, *args)
+        all = args.empty? || rtest(args[0])
+        obj.klass.instance_method_list(all, %i[public])
       end
 
       def rb_obj_instance_variables(obj)
@@ -647,10 +666,10 @@ module GarnetRuby
       rb_define_method(mKernel, :to_s, &method(:any_to_s))
       rb_define_method(mKernel, :inspect, &method(:obj_inspect))
       rb_define_method(mKernel, :methods, &method(:obj_methods))
-      rb_define_method(mKernel, :singleton_methods, &method(:TODO_not_implemented))
-      rb_define_method(mKernel, :protected_methods, &method(:TODO_not_implemented))
-      rb_define_method(mKernel, :private_methods, &method(:TODO_not_implemented))
-      rb_define_method(mKernel, :public_methods, &method(:TODO_not_implemented))
+      rb_define_method(mKernel, :singleton_methods, &method(:obj_singleton_methods))
+      rb_define_method(mKernel, :protected_methods, &method(:obj_protected_methods))
+      rb_define_method(mKernel, :private_methods, &method(:obj_private_methods))
+      rb_define_method(mKernel, :public_methods, &method(:obj_public_methods))
       rb_define_method(mKernel, :instance_variables, &method(:rb_obj_instance_variables))
       rb_define_method(mKernel, :instance_variable_get, &method(:rb_obj_ivar_get))
       rb_define_method(mKernel, :instance_variable_set, &method(:rb_obj_ivar_set))
