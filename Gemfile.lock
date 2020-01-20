@@ -9,10 +9,10 @@ GEM
   specs:
     minitest (5.11.3)
     rake (10.5.0)
-    ruby_parser (3.14.0)
+    ruby_parser (3.14.1)
       sexp_processor (~> 4.9)
     sample (0.1.1)
-    sexp_processor (4.12.0)
+    sexp_processor (4.13.0)
 
 PLATFORMS
   ruby
