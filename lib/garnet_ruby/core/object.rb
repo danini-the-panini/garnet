@@ -616,6 +616,14 @@ module GarnetRuby
         # TODO: string stuff
         Q_FALSE
       end
+
+      def mod_class_variables(mod, *args)
+        inherit = args.empty? ? true : rtest(args.first)
+
+        tbl = mod.cvars(inherit)
+
+        RArray.from(tbl)
+      end
     end
 
     def self.init_object
@@ -751,7 +759,7 @@ module GarnetRuby
       rb_define_method(cModule, :const_source_location, &method(:TODO_not_implemented))
       rb_define_method(cModule, :remove_const, &method(:TODO_not_implemented))
       rb_define_method(cModule, :const_missing, &method(:TODO_not_implemented))
-      rb_define_method(cModule, :class_variables, &method(:TODO_not_implemented))
+      rb_define_method(cModule, :class_variables, &method(:mod_class_variables))
       rb_define_method(cModule, :remove_class_variable, &method(:TODO_not_implemented))
       rb_define_method(cModule, :class_variable_get, &method(:TODO_not_implemented))
       rb_define_method(cModule, :class_variable_set, &method(:TODO_not_implemented))

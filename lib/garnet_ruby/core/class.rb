@@ -118,6 +118,17 @@ module GarnetRuby
       super_class.cvar_set(name, value)
     end
 
+    def cvars(inherit, ary = [])
+      ivars.each do |k, _|
+        next unless k.to_s.start_with?('@@')
+
+        ary << k
+      end
+      super_class&.cvars(true, ary) if inherit
+
+      ary
+    end
+
     def super_class=(s)
       if s && s != Q_UNDEF
         remove_from_super_subclasses
