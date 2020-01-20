@@ -14,6 +14,14 @@ module GarnetRuby
       super(klass, flags)
       @time_value = time_value
     end
+
+    def self.from(value)
+      return Q_NIL if val.nil?
+
+      raise "NOT A TIME OBJECT: #{value}" unless value.is_a?(Time)
+
+      new(Core.cTime, [], value)
+    end
   end
 
   module Core
@@ -52,6 +60,24 @@ module GarnetRuby
         return time_init_0(time) if args.empty?
         time_init_1(time, *args)
       end
+
+      def time_add(torig, offset, sign)
+        RTime.from(torig.time_value + (sign * num2long(offset)))
+      end
+
+      def time_plus(time1, time2)
+        rb_raise(eTypeError, 'time + time?') if time2.type?(Time)
+        
+        time_add(time1, time2, 1)
+      end
+
+      def time_minus(time1, time2)
+        if time2.type?(Time)
+          return RPrimitive.from(time1.time_value - time2.time_value)
+        end
+
+        time_add(time1, time2, -1)
+      end
     end
 
     def self.init_time
@@ -88,8 +114,8 @@ module GarnetRuby
       rb_define_method(cTime, :inspect, &method(:TODO_not_implemented))
       rb_define_method(cTime, :to_a, &method(:TODO_not_implemented))
 
-      rb_define_method(cTime, :+, &method(:TODO_not_implemented))
-      rb_define_method(cTime, :-, &method(:TODO_not_implemented))
+      rb_define_method(cTime, :+, &method(:time_plus))
+      rb_define_method(cTime, :-, &method(:time_minus))
 
       rb_define_method(cTime, :succ, &method(:TODO_not_implemented))
       rb_define_method(cTime, :round, &method(:TODO_not_implemented))
