@@ -71,7 +71,9 @@ module GarnetRuby
       sep = sep.is_a?(RString) ? sep.string_value : nil
 
       # TODO: extract getline_args
-      RString.from(io.gets(sep, limit))
+      line = RString.from(io.gets(sep, limit))
+      Core.last_read_line = line
+      line
     end
   end
 
@@ -135,6 +137,8 @@ module GarnetRuby
       def io_isatty(io)
         io.io.tty? ? Q_TRUE : Q_FALSE
       end
+
+      attr_accessor :last_read_line
     end
 
     def self.init_io
@@ -198,7 +202,8 @@ module GarnetRuby
       rb_define_virtual_variable(:'$-0', rs_getter, rs_setter)
       rb_define_virtual_variable(:'$\\', -> { @output_rs }, ->(x) { @output_rs = x })
 
-      rb_define_virtual_variable(:'$_', -> { raise "NOT IMPLEMENTED ($_)" }, ->(x) { raise "NOT IMPLEMENTED ($_=)" })
+      @last_read_line = Q_NIL
+      rb_define_virtual_variable(:'$_', method(:last_read_line), method(:last_read_line=))
 
       rb_define_method(cIO, :initialize_copy, &method(:TODO_not_implemented))
       rb_define_method(cIO, :reopen, &method(:TODO_not_implemented))
