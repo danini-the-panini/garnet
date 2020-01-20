@@ -134,6 +134,20 @@ module GarnetRuby
       super_class.cvar_set(name, value)
     end
 
+    def cvar_defined?(name)
+      !cvar_get(name).nil?
+    end
+
+    def cvar_remove(name)
+      if ivars.key?(name)
+        val = ivars[name]
+        ivars.delete(name)
+        val
+      else
+        Core.rb_raise(Core.eNameError, "class variable #{name} not defined for #{self}")
+      end
+    end
+
     def cvars(inherit, ary = [])
       ivars.each do |k, _|
         next unless k.to_s.start_with?('@@')

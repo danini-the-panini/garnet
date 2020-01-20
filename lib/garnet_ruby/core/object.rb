@@ -635,12 +635,52 @@ module GarnetRuby
         mod.rb_const_remove(id)
       end
 
+      def mod_remove_cvar(mod, iv)
+        id = check_id(iv)
+        mod.cvar_remove(id)
+      end
+
+      def mod_cvar_set(mod, iv, val)
+        id = check_id(iv)
+        mod.cvar_set(id, val)
+        val
+      end
+
+      def mod_cvar_get(mod, iv)
+        id = check_id(iv)
+        mod.cvar_get(id)
+      end
+
       def mod_class_variables(mod, *args)
         inherit = args.empty? ? true : rtest(args.first)
 
         tbl = mod.cvars(inherit)
 
         RArray.from(tbl)
+      end
+
+      def mod_cvar_defined(mod, iv)
+        id = check_id(iv)
+        mod.cvar_defined?(id) ? Q_TRUE : Q_FALSE
+      end
+
+      def mod_public_constant(mod, *args)
+        # TODO: actually do something
+        mod
+      end
+
+      def mod_private_constant(mod, *args)
+        # TODO: actually do something
+        mod
+      end
+
+      def mod_deprecate_constant(mod, *args)
+        # TODO: actually do something
+        mod
+      end
+
+      def mod_singleton_class(mod)
+        mod.flags.include?(:SINGLETON) ? Q_TRUE : Q_FALSE
       end
     end
 
@@ -778,14 +818,14 @@ module GarnetRuby
       rb_define_method(cModule, :remove_const, &method(:mod_remove_const))
       rb_define_method(cModule, :const_missing, &method(:TODO_not_implemented))
       rb_define_method(cModule, :class_variables, &method(:mod_class_variables))
-      rb_define_method(cModule, :remove_class_variable, &method(:TODO_not_implemented))
-      rb_define_method(cModule, :class_variable_get, &method(:TODO_not_implemented))
-      rb_define_method(cModule, :class_variable_set, &method(:TODO_not_implemented))
-      rb_define_method(cModule, :class_variable_defined?, &method(:TODO_not_implemented))
-      rb_define_method(cModule, :public_constant, &method(:TODO_not_implemented))
-      rb_define_method(cModule, :private_constant, &method(:TODO_not_implemented))
-      rb_define_method(cModule, :deprecate_constant, &method(:TODO_not_implemented))
-      rb_define_method(cModule, :singleton_class?, &method(:TODO_not_implemented))
+      rb_define_method(cModule, :remove_class_variable, &method(:mod_remove_cvar))
+      rb_define_method(cModule, :class_variable_get, &method(:mod_cvar_get))
+      rb_define_method(cModule, :class_variable_set, &method(:mod_cvar_set))
+      rb_define_method(cModule, :class_variable_defined?, &method(:mod_cvar_defined))
+      rb_define_method(cModule, :public_constant, &method(:mod_public_constant))
+      rb_define_method(cModule, :private_constant, &method(:mod_private_constant))
+      rb_define_method(cModule, :deprecate_constant, &method(:mod_deprecate_constant))
+      rb_define_method(cModule, :singleton_class?, &method(:mod_singleton_class))
 
       rb_define_method(cClass, :allocate, &method(:rb_class_alloc_m))
       rb_define_method(cClass, :new, &method(:rb_class_new_instance))
