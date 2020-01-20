@@ -77,10 +77,22 @@ module GarnetRuby
         klass
       end
 
-      def mod_initialize(mod)
-        if rb_block_given?
-          mod_module_exec(mod, mod)
+      def class_superclass(klass)
+        sup = klass.super_class
+
+        unless sup
+          return Q_NIL if klass == cBasicObject
+
+          rb_raise(eTypeError, 'uninitialized class')
         end
+        sup = sup.super_class while sup.flags.include?(:ICLASS)
+        return Q_NIL unless sup
+
+        sup
+      end
+
+      def mod_initialize(mod)
+        mod_module_exec(mod, mod) if rb_block_given?
         Q_NIL
       end
 
@@ -772,7 +784,7 @@ module GarnetRuby
       rb_define_method(cClass, :allocate, &method(:rb_class_alloc_m))
       rb_define_method(cClass, :new, &method(:rb_class_new_instance))
       rb_define_method(cClass, :initialize, &method(:rb_class_initialize))
-      rb_define_method(cClass, :superclass, &method(:TODO_not_implemented))
+      rb_define_method(cClass, :superclass, &method(:class_superclass))
       rb_define_alloc_func(cClass, &method(:rb_class_s_alloc))
       rb_define_method(cClass, :extend_object, &method(:TODO_not_implemented))
       rb_define_method(cClass, :append_features, &method(:TODO_not_implemented))
