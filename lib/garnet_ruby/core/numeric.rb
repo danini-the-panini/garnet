@@ -17,7 +17,7 @@ module GarnetRuby
         end
 
         return val.value if fixnum?(val)
-        return RPrimitive.from(val.value.to_i) if val.type?(Float)
+        return val.value.to_i if val.type?(Float)
 
         num2long(rb_to_int(val))
       end
