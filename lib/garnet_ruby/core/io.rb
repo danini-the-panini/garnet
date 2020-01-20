@@ -49,7 +49,7 @@ module GarnetRuby
         sep, limit, getline_args = args
       when 2
         if args.first.type?(Integer)
-          sep = VM.instance.get_global(:'$/')
+          sep = Core.rs
           limit = args.first.value
         else
           sep = args.first
@@ -57,14 +57,14 @@ module GarnetRuby
         end
       when 1
         if args.first.type?(Integer)
-          sep = VM.instance.get_global(:'$/')
+          sep = Core.rs
           limit = args.first.value
         else
           sep = args.first
           limit = -1
         end
       else
-        sep = VM.instance.get_global(:'$/')
+        sep = Core.rs
         limit = -1
       end
 
@@ -138,7 +138,7 @@ module GarnetRuby
         io.io.tty? ? Q_TRUE : Q_FALSE
       end
 
-      attr_accessor :last_read_line
+      attr_accessor :output_fs, :output_rs, :rs, :last_read_line
     end
 
     def self.init_io
@@ -185,22 +185,18 @@ module GarnetRuby
       rb_define_singleton_method(cIO, :pipe, &method(:TODO_not_implemented))
       rb_define_singleton_method(cIO, :try_convert, &method(:TODO_not_implemented))
       rb_define_singleton_method(cIO, :copy_stream, &method(:TODO_not_implemented))
-      
+
       rb_define_method(cIO, :initialize, &method(:TODO_not_implemented))
 
       @output_fs = Q_NIL
-      output_fs_setter = ->(x) { @output_fs = x }
-      output_fs_getter = -> { @output_fs }
-      rb_define_virtual_variable(:'$,', output_fs_setter, output_fs_getter)
+      rb_define_virtual_variable(:'$,', method(:output_fs), method(:output_fs=))
 
       @default_rs = RString.from("\n")
       @rs = @default_rs
-      rs_setter = ->(x) { @rs = x }
-      rs_getter = -> { @rs }
       @output_rs = Q_NIL
-      rb_define_virtual_variable(:'$/', rs_getter, rs_setter)
-      rb_define_virtual_variable(:'$-0', rs_getter, rs_setter)
-      rb_define_virtual_variable(:'$\\', -> { @output_rs }, ->(x) { @output_rs = x })
+      rb_define_virtual_variable(:'$/', method(:rs), method(:rs=))
+      rb_define_virtual_variable(:'$-0', method(:rs), method(:rs=))
+      rb_define_virtual_variable(:'$\\', method(:output_rs), method(:output_rs=))
 
       @last_read_line = Q_NIL
       rb_define_virtual_variable(:'$_', method(:last_read_line), method(:last_read_line=))
