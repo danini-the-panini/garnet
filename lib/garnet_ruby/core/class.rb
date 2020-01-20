@@ -59,16 +59,31 @@ module GarnetRuby
     end
 
     def rb_const_get(name, check = true)
-      return const_direct(name) if has_const_direct?(name)
-
-      result = find_constant_in_lexical_scope(name) ||
-               find_constant_in_superclass(name)
+      result = find_const(name)
 
       # TODO: call missing const
 
-      Core.rb_raise(Core.eNameError, "uninitialized constant #{name}") if check && result.nil?
+      if check && result.nil?
+        Core.rb_raise(Core.eNameError, "uninitialized constant #{name}")
+      end
 
       result
+    end
+
+    def rb_const_remove(name)
+      unless has_const_direct?(name)
+        Core.rb_raise(Core.eNameError, "uninitialized constant #{name}")
+      end
+
+      value = @const_table[name]
+      @const_table.delete(name)
+      value
+    end
+
+    def find_const(name)
+      return const_direct(name) if has_const_direct?(name)
+
+      find_constant_in_lexical_scope(name) || find_constant_in_superclass(name)
     end
 
     def has_const?(name)
@@ -86,6 +101,7 @@ module GarnetRuby
       while scope
         klass = scope.klass
         return klass.const_direct(name) if klass.has_const_direct?(name)
+
         scope = scope.next_scope
       end
       nil

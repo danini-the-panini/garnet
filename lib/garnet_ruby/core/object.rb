@@ -629,6 +629,12 @@ module GarnetRuby
         Q_FALSE
       end
 
+      def mod_remove_const(mod, name)
+        id = check_id(name)
+
+        mod.rb_const_remove(id)
+      end
+
       def mod_class_variables(mod, *args)
         inherit = args.empty? ? true : rtest(args.first)
 
@@ -769,7 +775,7 @@ module GarnetRuby
       rb_define_method(cModule, :const_set, &method(:mod_const_set))
       rb_define_method(cModule, :const_defined?, &method(:mod_const_defined))
       rb_define_method(cModule, :const_source_location, &method(:TODO_not_implemented))
-      rb_define_method(cModule, :remove_const, &method(:TODO_not_implemented))
+      rb_define_method(cModule, :remove_const, &method(:mod_remove_const))
       rb_define_method(cModule, :const_missing, &method(:TODO_not_implemented))
       rb_define_method(cModule, :class_variables, &method(:mod_class_variables))
       rb_define_method(cModule, :remove_class_variable, &method(:TODO_not_implemented))
