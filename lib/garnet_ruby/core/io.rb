@@ -205,7 +205,7 @@ module GarnetRuby
 
       rb_define_method(cIO, :print) { |io, *args| io.io_print(*args) }
       rb_define_method(cIO, :putc, &method(:TODO_not_implemented))
-      rb_define_method(cIO, :puts, &method(:TODO_not_implemented))
+      rb_define_method(cIO, :puts) { |io, *args| io.io_puts(*args) }
       rb_define_method(cIO, :printf, &method(:TODO_not_implemented))
 
       rb_define_method(cIO, :each, &method(:TODO_not_implemented))
