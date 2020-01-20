@@ -461,6 +461,11 @@ module GarnetRuby
         copy
       end
 
+      def ary_clear(ary)
+        ary.array_value.clear
+        ary
+      end
+
       def ary_cmp(ary1, ary2)
         ary2 = ary2.check_array_type
         return Q_NIL if ary2 == Q_NIL
@@ -812,6 +817,7 @@ module GarnetRuby
       rb_define_method(cArray, :delete_if, &method(:ary_delete_if))
       rb_define_method(cArray, :reject!, &method(:ary_reject_bang))
       rb_define_method(cArray, :replace, &method(:ary_replace))
+      rb_define_method(cArray, :clear, &method(:ary_clear))
       rb_define_method(cArray, :include?, &method(:ary_includes))
       rb_define_method(cArray, :<=>, &method(:ary_cmp))
 
