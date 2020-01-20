@@ -413,6 +413,30 @@ module GarnetRuby
         ary
       end
 
+      def ary_select(ary)
+        unless rb_block_given?
+          return sized_enumerator(ary, [], ARRAY_ENUM_LENGTH)
+        end
+
+        result = RArray.from([])
+        ary.array_value.each do |elt|
+          ary_push(result, elt) if rtest(rb_yield(elt))
+        end
+        result
+      end
+
+      def ary_select_bang(ary)
+        unless rb_block_given?
+          return sized_enumerator(ary, [], ARRAY_ENUM_LENGTH)
+        end
+
+        result = ary.array_value.select! do |elt|
+          rtest(rb_yield(elt))
+        end
+        result.nil? ? Q_NIL : ary
+      end
+
+
       def ary_delete_if(ary)
         unless rb_block_given?
           return sized_enumerator(ary, [], ARRAY_ENUM_LENGTH)
@@ -781,6 +805,10 @@ module GarnetRuby
       rb_define_method(cArray, :collect!, &method(:ary_collect_bang))
       rb_define_method(cArray, :map, &method(:ary_collect))
       rb_define_method(cArray, :map!, &method(:ary_collect_bang))
+      rb_define_method(cArray, :select, &method(:ary_select))
+      rb_define_method(cArray, :select!, &method(:ary_select_bang))
+      rb_define_method(cArray, :filter, &method(:ary_select))
+      rb_define_method(cArray, :filter!, &method(:ary_select_bang))
       rb_define_method(cArray, :delete_if, &method(:ary_delete_if))
       rb_define_method(cArray, :reject!, &method(:ary_reject_bang))
       rb_define_method(cArray, :replace, &method(:ary_replace))
