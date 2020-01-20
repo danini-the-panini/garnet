@@ -164,6 +164,30 @@ module GarnetRuby
         define_class_id_under(outer, name, super_class)
       end
 
+      def rb_define_module_under(outer, name)
+        define_module_id_under(outer, name)
+      end
+      
+      def define_class_id_under(outer, id, super_class)
+        # TODO: do some checks
+        klass = RClass.new_class(super_class)
+        # TODO: rb_set_class_path_string
+        outer.rb_const_set(id, klass)
+        # TODO: rb_class_inherited
+        # TODO: rb_vm_add_root_module
+
+        klass
+      end
+
+      def define_module_id_under(outer, id)
+        # TODO: do some checks
+        mod = RClass.new_module
+        outer.rb_const_set(id, mod)
+        # TODO: rb_set_class_path_string
+
+        mod
+      end
+
       def rb_define_module(name)
         if cObject.has_const_direct?(name)
           mdl = cObject.rb_const_get(name, false)
@@ -485,7 +509,10 @@ module GarnetRuby
       end
 
       def TODO_not_implemented(*)
-        raise NotImplementedError, "#{VM.instance.current_control_frame.environment.method_name} has not been implemented"
+        cfp = VM.instance.current_control_frame
+        slf = cfp.self_value
+        mid = cfp.environment.method_name
+        raise NotImplementedError, "#{slf}.#{mid} has not been implemented"
       end
 
       def ruby2garnet(value)

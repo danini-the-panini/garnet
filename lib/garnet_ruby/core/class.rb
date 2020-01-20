@@ -357,19 +357,6 @@ module GarnetRuby
   end
 
   module Core
-    class << self
-      def define_class_id_under(outer, id, super_class)
-        # TODO: do some checks
-        klass = RClass.new_class(super_class)
-        # TODO: rb_set_class_path_string
-        outer.rb_const_set(id, klass)
-        # TODO: rb_class_inherited
-        # TODO: rb_vm_add_root_module
-
-        klass
-      end
-    end
-
     def self.init_class_heirarchy
       @cBasicObject = boot_defclass(:BasicObject, nil)
       @cObject = boot_defclass(:Object, cBasicObject)
