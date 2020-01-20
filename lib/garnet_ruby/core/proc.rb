@@ -70,6 +70,10 @@ module GarnetRuby
       end
 
       def new_proc(is_lambda)
+        unless rb_block_given?
+          rb_raise(eArgError, 'tried to create Proc object without a block')
+        end
+
         block = VM.instance.current_control_frame.block
         RProc.new(cProc, [], block, is_lambda)
       end
