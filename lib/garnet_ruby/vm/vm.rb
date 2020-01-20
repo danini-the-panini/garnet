@@ -671,9 +671,14 @@ module GarnetRuby
 
     def exec_get_constant(control_frame, insn)
       const_base = pop_stack
-      name = insn.arguments[0]
-      ret = const_base.rb_const_get(name)
-      push_stack(ret)
+
+      if const_base.is_a?(RClass)
+        name = insn.arguments[0]
+        ret = const_base.rb_const_get(name)
+        push_stack(ret)
+      else
+        Core.rb_raise(Core.eTypeError, "#{const_base} is not a class/module")
+      end
     end
 
     def exec_set_global(control_frame, insn)

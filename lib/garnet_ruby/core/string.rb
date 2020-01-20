@@ -14,6 +14,8 @@ module GarnetRuby
     def self.from(str)
       return Q_NIL if str.nil?
 
+      raise "NOT A STRING: #{str.inspect}" unless str.is_a?(String)
+
       new(Core.cString, [], str)
     end
 

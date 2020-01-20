@@ -547,7 +547,7 @@ module GarnetRuby
       end
 
       def mod_name(mod)
-        RString.from(mod.name)
+        RString.from(mod.name.to_s)
       end
 
       def mod_ancestors(mod)

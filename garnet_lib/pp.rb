@@ -4,7 +4,7 @@
 
 module Kernel
   def pretty_inspect
-    inspect
+    String(inspect)
   end
 
   def pp(*objs)
