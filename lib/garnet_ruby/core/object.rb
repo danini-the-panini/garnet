@@ -147,6 +147,10 @@ module GarnetRuby
         dup
       end
 
+      def obj_yield_self(obj)
+        rb_yield(obj)
+      end
+
       def init_copy(clone, obj)
         rb_copy_generic_ivar(clone, obj)
       end
@@ -176,6 +180,11 @@ module GarnetRuby
 
         # TODO: make sure c is a module/class
         c.search_ancestor(cl) ? Q_TRUE : Q_FALSE
+      end
+
+      def obj_tap(obj)
+        rb_yield(obj)
+        obj
       end
 
       def f_sprintf(_, *args)
@@ -307,8 +316,21 @@ module GarnetRuby
         RMethod.new(mclass, [], me, obj)
       end
 
+      def obj_cmp(obj1, obj2)
+        return RPrimitive.from(0) if obj1 == obj2 || rtest(rb_equal(obj1, obj2))
+        Q_NIL
+      end
+
       def obj_class(obj)
         obj.klass.real
+      end
+
+      def obj_singleton_class(obj)
+        klass = singleton_class_of(obj)
+
+        klass.ensure_eigenclass if obj.flags.include?(:CLASS)
+
+        klass
       end
 
       def obj_clone(obj)
@@ -334,6 +356,11 @@ module GarnetRuby
       def obj_freeze(obj)
         obj.flags |= [:freeze]
         obj
+      end
+
+      def mod_freeze(mod)
+        # TODO: something else?
+        obj_freeze(mod)
       end
 
       def rb_any_to_s(obj)
@@ -406,6 +433,10 @@ module GarnetRuby
         rtest(result) ? Q_TRUE : Q_FALSE
       end
 
+      def mod_eqq(mod, arg)
+        obj_is_kind_of(arg, mod)
+      end
+
       def mod_cmp(mod, arg)
         return RPrimitive.from(0) if mod == arg
         return Q_NIL unless arg.is_a?(RClass)
@@ -458,6 +489,11 @@ module GarnetRuby
         end
         
         clone
+      end
+
+      def mod_to_s(mod)
+        # TODO: fully qualified name?
+        mod_name(mod)
       end
 
       def mod_name(mod)
@@ -545,35 +581,63 @@ module GarnetRuby
     end
 
     def self.init_object
-      rb_define_private_method(cBasicObject, :initialize) { Q_NIL }
+      rb_define_private_method(cBasicObject, :initialize) { |_| Q_NIL }
       rb_define_alloc_func(cBasicObject, &method(:rb_class_allocate_instance))
       rb_define_method(cBasicObject, :==, &method(:obj_equal))
       rb_define_method(cBasicObject, :equal?, &method(:obj_equal))
       rb_define_method(cBasicObject, :'!', &method(:obj_not))
       rb_define_method(cBasicObject, :'!=', &method(:obj_not_equal))
+      
+      rb_define_private_method(cBasicObject, :singleton_method_added) { |_| Q_NIL }
+      rb_define_private_method(cBasicObject, :singleton_method_removed) { |_| Q_NIL }
+      rb_define_private_method(cBasicObject, :singleton_method_undefined) { |_| Q_NIL }
 
       @mKernel = rb_define_module(:Kernel)
       cObject.include_module(mKernel)
+      rb_define_private_method(cClass, :inherited) { |_| Q_NIL }
+      rb_define_private_method(cModule, :included) { |_| Q_NIL }
+      rb_define_private_method(cModule, :extended) { |_| Q_NIL }
+      rb_define_private_method(cModule, :prepended) { |_| Q_NIL }
+      rb_define_private_method(cModule, :method_added) { |_| Q_NIL }
+      rb_define_private_method(cModule, :method_removed) { |_| Q_NIL }
+      rb_define_private_method(cModule, :method_undefined) { |_| Q_NIL }
 
       rb_define_method(mKernel, :nil?) { |_| Q_FALSE }
       rb_define_method(mKernel, :===, &method(:rb_equal))
-      rb_define_method(mKernel, :=~) { Q_NIL }
+      rb_define_method(mKernel, :=~) { |_| Q_NIL }
       rb_define_method(mKernel, :'!~', &method(:obj_not_match))
       rb_define_method(mKernel, :eql?, &method(:obj_equal))
       rb_define_method(mKernel, :hash, &method(:obj_hash))
       rb_define_method(mKernel, :method, &method(:obj_method))
+      rb_define_method(mKernel, :<=>, &method(:obj_cmp))
 
       rb_define_method(mKernel, :class, &method(:obj_class))
+      rb_define_method(mKernel, :singleton_class, &method(:obj_singleton_class))
       rb_define_method(mKernel, :clone, &method(:obj_clone))
       rb_define_method(mKernel, :dup, &method(:obj_dup))
+      rb_define_method(mKernel, :itself) { |obj| obj }
+      rb_define_method(mKernel, :yield_self, &method(:obj_yield_self))
+      rb_define_method(mKernel, :then, &method(:obj_yield_self))
       rb_define_method(mKernel, :initialize_copy, &method(:obj_init_copy))
       rb_define_method(mKernel, :initialize_dup, &method(:obj_init_dup_clone))
       rb_define_method(mKernel, :initialize_clone, &method(:obj_init_dup_clone))
 
+      rb_define_method(mKernel, :taint, &method(:TODO_not_implemented))
+      rb_define_method(mKernel, :tainted?, &method(:TODO_not_implemented))
+      rb_define_method(mKernel, :untaint, &method(:TODO_not_implemented))
+      rb_define_method(mKernel, :untrust, &method(:TODO_not_implemented))
+      rb_define_method(mKernel, :untrusted?, &method(:TODO_not_implemented))
+      rb_define_method(mKernel, :trust, &method(:TODO_not_implemented))
       rb_define_method(mKernel, :freeze, &method(:obj_freeze))
+      rb_define_method(mKernel, :frozen?, &method(:TODO_not_implemented))
 
       rb_define_method(mKernel, :to_s, &method(:rb_any_to_s))
       rb_define_method(mKernel, :inspect, &method(:rb_obj_inspect))
+      rb_define_method(mKernel, :methods, &method(:TODO_not_implemented))
+      rb_define_method(mKernel, :singleton_methods, &method(:TODO_not_implemented))
+      rb_define_method(mKernel, :protected_methods, &method(:TODO_not_implemented))
+      rb_define_method(mKernel, :private_methods, &method(:TODO_not_implemented))
+      rb_define_method(mKernel, :public_methods, &method(:TODO_not_implemented))
       rb_define_method(mKernel, :instance_variables, &method(:rb_obj_instance_variables))
       rb_define_method(mKernel, :instance_variable_get, &method(:rb_obj_ivar_get))
       rb_define_method(mKernel, :instance_variable_set, &method(:rb_obj_ivar_set))
@@ -583,8 +647,10 @@ module GarnetRuby
       rb_define_method(mKernel, :instance_of?, &method(:obj_is_instance_of))
       rb_define_method(mKernel, :kind_of?, &method(:obj_is_kind_of))
       rb_define_method(mKernel, :is_a?, &method(:obj_is_kind_of))
+      rb_define_method(mKernel, :tap, &method(:obj_tap))
 
       rb_define_global_function(:sprintf, &method(:f_sprintf))
+      rb_define_global_function(:format, &method(:f_sprintf))
 
       rb_define_global_function(:Integer, &method(:rb_f_integer))
       rb_define_global_function(:Float, &method(:rb_f_float))
@@ -601,16 +667,29 @@ module GarnetRuby
       rb_define_method(cNilClass, :to_a) { |_| RArray.from([]) }
       rb_define_method(cNilClass, :to_h) { |_| RHash.from([]) }
       rb_define_method(cNilClass, :inspect) { |_| RString.from('nil') }
+      rb_define_method(cNilClass, :=~) { |_| Q_NIL }
       rb_define_method(cNilClass, :&, &method(:false_and))
       rb_define_method(cNilClass, :|, &method(:false_or))
       rb_define_method(cNilClass, :'^', &method(:false_xor))
+      rb_define_method(cNilClass, :===, &method(:rb_equal))
+
+      rb_define_method(cNilClass, :nil?) { |_| Q_TRUE }
+      rb_undef_alloc_func(cNilClass)
       rb_define_global_const(:NIL, Q_NIL)
 
-      rb_define_method(cModule, :===) do |mod, arg|
-        obj_is_kind_of(arg, mod)
-      end
+      rb_define_method(cModule, :freeze, &method(:mod_freeze))
+      rb_define_method(cModule, :===, &method(:mod_eqq))
+      rb_define_method(cModule, :==, &method(:obj_equal))
       rb_define_method(cModule, :<=>, &method(:mod_cmp))
+      rb_define_method(cModule, :<, &method(:TODO_not_implemented))
+      rb_define_method(cModule, :<=, &method(:TODO_not_implemented))
+      rb_define_method(cModule, :>, &method(:TODO_not_implemented))
+      rb_define_method(cModule, :>=, &method(:TODO_not_implemented))
       rb_define_method(cModule, :initialize_copy, &method(:mod_init_copy))
+      rb_define_method(cModule, :to_s, &method(:mod_to_s))
+      rb_alias_method(cModule, :inspect, :to_s)
+      rb_define_method(cModule, :included_modules, &method(:TODO_not_implemented))
+      rb_define_method(cModule, :include?, &method(:TODO_not_implemented))
       rb_define_method(cModule, :name, &method(:mod_name))
       rb_define_method(cModule, :ancestors, &method(:mod_ancestors))
 
@@ -621,14 +700,40 @@ module GarnetRuby
 
       rb_define_alloc_func(cModule, &method(:rb_module_s_alloc))
       rb_define_method(cModule, :initialize, &method(:mod_initialize))
+      rb_define_method(cModule, :initialize_clone, &method(:TODO_not_implemented))
+      rb_define_method(cModule, :instance_methods, &method(:TODO_not_implemented))
+      rb_define_method(cModule, :public_instance_methods, &method(:TODO_not_implemented))
+      rb_define_method(cModule, :protected_instance_methods, &method(:TODO_not_implemented))
+      rb_define_method(cModule, :private_instance_methods, &method(:TODO_not_implemented))
 
+      rb_define_method(cModule, :constants, &method(:TODO_not_implemented))
+      rb_define_method(cModule, :const_get, &method(:TODO_not_implemented))
       rb_define_method(cModule, :const_set, &method(:mod_const_set))
       rb_define_method(cModule, :const_defined?, &method(:mod_const_defined))
+      rb_define_method(cModule, :const_source_location, &method(:TODO_not_implemented))
+      rb_define_method(cModule, :remove_const, &method(:TODO_not_implemented))
+      rb_define_method(cModule, :const_missing, &method(:TODO_not_implemented))
+      rb_define_method(cModule, :class_variables, &method(:TODO_not_implemented))
+      rb_define_method(cModule, :remove_class_variable, &method(:TODO_not_implemented))
+      rb_define_method(cModule, :class_variable_get, &method(:TODO_not_implemented))
+      rb_define_method(cModule, :class_variable_set, &method(:TODO_not_implemented))
+      rb_define_method(cModule, :class_variable_defined?, &method(:TODO_not_implemented))
+      rb_define_method(cModule, :public_constant, &method(:TODO_not_implemented))
+      rb_define_method(cModule, :private_constant, &method(:TODO_not_implemented))
+      rb_define_method(cModule, :deprecate_constant, &method(:TODO_not_implemented))
+      rb_define_method(cModule, :singleton_class?, &method(:TODO_not_implemented))
 
       rb_define_method(cClass, :allocate, &method(:rb_class_alloc_m))
       rb_define_method(cClass, :new, &method(:rb_class_new_instance))
       rb_define_method(cClass, :initialize, &method(:rb_class_initialize))
+      rb_define_method(cClass, :superclass, &method(:TODO_not_implemented))
       rb_define_alloc_func(cClass, &method(:rb_class_s_alloc))
+      rb_define_method(cClass, :extend_object, &method(:TODO_not_implemented))
+      rb_define_method(cClass, :append_features, &method(:TODO_not_implemented))
+      rb_define_method(cClass, :prepend_features, &method(:TODO_not_implemented))
+      
+      @cData = rb_define_class(:Data, cObject)
+      rb_undef_alloc_func(cData)
 
       @cTrueClass = rb_define_class(:TrueClass)
       ::GarnetRuby.const_set(:Q_TRUE, RPrimitive.new(@cTrueClass, [], true))
@@ -637,6 +742,8 @@ module GarnetRuby
       rb_define_method(cTrueClass, :&, &method(:true_and))
       rb_define_method(cTrueClass, :|, &method(:true_or))
       rb_define_method(cTrueClass, :'^', &method(:true_xor))
+      rb_define_method(cTrueClass, :===, &method(:rb_equal))
+      rb_undef_alloc_func(cTrueClass)
       rb_define_global_const(:TRUE, Q_TRUE)
 
       @cFalseClass = rb_define_class(:FalseClass)
@@ -646,6 +753,8 @@ module GarnetRuby
       rb_define_method(cFalseClass, :&, &method(:false_and))
       rb_define_method(cFalseClass, :|, &method(:false_or))
       rb_define_method(cFalseClass, :'^', &method(:false_xor))
+      rb_define_method(cFalseClass, :===, &method(:rb_equal))
+      rb_undef_alloc_func(cFalseClass)
       rb_define_global_const(:FALSE, Q_FALSE)
 
       rb_define_global_function(:caller, &method(:rb_caller))

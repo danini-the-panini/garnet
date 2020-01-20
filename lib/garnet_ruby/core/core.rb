@@ -484,6 +484,10 @@ module GarnetRuby
         end
       end
 
+      def TODO_not_implemented(*)
+        raise NotImplementedError, "#{VM.instance.current_control_frame.environment.method_name} has not been implemented"
+      end
+
       def ruby2garnet(value)
         case value
         when NilClass then Q_NIL
