@@ -575,8 +575,12 @@ module GarnetRuby
         str
       end
 
+      def str_encoding(str)
+        REncoding.from(str.string_value.encoding)
+      end
+
       def str_force_encoding(str, enc)
-        # TODO: actually implement encoding logic
+        str.string_value.force_encoding(rb_to_encoding(enc).enc_value)
         str
       end
 
@@ -654,6 +658,7 @@ module GarnetRuby
 
       rb_define_method(cString, :each_byte, &method(:str_each_byte))
 
+      rb_define_method(cString, :encoding, &method(:str_encoding))
       rb_define_method(cString, :force_encoding, &method(:str_force_encoding))
 
       rb_define_method(cString, :unpack, &method(:str_unpack))

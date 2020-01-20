@@ -172,8 +172,24 @@ module GarnetRuby
         m
       end
 
+      def reg_to_s(re)
+        RString.from(re.regexp_value.to_s)
+      end
+
       def reg_inspect(re)
         RString.from(re.regexp_value.inspect)
+      end
+
+      def reg_options(re)
+        RPrimitive.from(re.regexp_value.options)
+      end
+
+      def reg_encoding(re)
+        REncoding.from(re.regexp_value&.encoding || Encoding::BINARY)
+      end
+
+      def reg_fixed_encoding(re)
+        re.regexp_value.fixed_encoding? ? Q_TRUE : Q_FALSE
       end
     end
 
@@ -185,7 +201,11 @@ module GarnetRuby
       rb_define_method(cRegexp, :=~) { |re, str| re.match(str) }
       rb_define_method(cRegexp, :===) { |re, str| rtest(re.match(str)) ? Q_TRUE : Q_FALSE }
       rb_define_method(cRegexp, :match, &method(:reg_match))
+      rb_define_method(cRegexp, :to_s, &method(:reg_to_s))
       rb_define_method(cRegexp, :inspect, &method(:reg_inspect))
+      rb_define_method(cRegexp, :options, &method(:reg_options))
+      rb_define_method(cRegexp, :encoding, &method(:reg_encoding))
+      rb_define_method(cRegexp, :fixed_encoding?, &method(:reg_fixed_encoding))
 
       @cMatch = rb_define_class(:MatchData, cObject)
       rb_define_alloc_func(cMatch, &method(:match_alloc))

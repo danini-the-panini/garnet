@@ -299,6 +299,8 @@ module GarnetRuby
       options, count = insn.arguments
       strings = pop_stack_multi(count)
       string = RString.from(strings.map(&:string_value).join(''))
+      isfixed = !((options || 0) & Regexp::FIXEDENCODING).zero?
+      string.string_value.force_encoding(isfixed ? 'utf-8' : 'ascii')
       regexp = RRegexp.from_string(string, options)
       push_stack(regexp)
     end
