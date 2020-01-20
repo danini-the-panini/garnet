@@ -137,11 +137,13 @@ module GarnetRuby
         end
         # rb_singleton_class_attached(clone.klass, clone)
         clone.flags |= [:SINGLETON]
-      
+
         clone
       end
 
       def rb_obj_clone(obj)
+        return obj if obj.is_a?(RPrimitive) || obj.is_a?(RSymbol)
+
         clone = obj_class(obj).alloc
 
         singleton = singleton_class_clone_and_attach(obj, clone)
