@@ -58,6 +58,12 @@ module GarnetRuby
       @const_table.key?(name)
     end
 
+    def consts(inherit, ary = [])
+      @const_table.keys.each { |k| ary << k }
+      super_class&.consts(true, ary) if inherit
+      ary
+    end
+
     def rb_const_get(name, check = true)
       result = find_const(name)
 

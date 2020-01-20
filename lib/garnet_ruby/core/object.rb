@@ -607,6 +607,19 @@ module GarnetRuby
         Q_NIL
       end
 
+      def mod_constants(mod, *args)
+        inherit = args.empty? ? true : rtest(args.first)
+
+        tbl = mod.consts(inherit)
+
+        RArray.from(tbl)
+      end
+
+      def mod_const_get(mod, name)
+        id = check_id(name)
+        mod.rb_const_get(id)
+      end
+
       def mod_const_set(mod, name, value)
         id = check_id(name)
         mod.rb_const_set(id, value)
@@ -812,8 +825,8 @@ module GarnetRuby
       rb_define_method(cModule, :protected_instance_methods, &method(:TODO_not_implemented))
       rb_define_method(cModule, :private_instance_methods, &method(:TODO_not_implemented))
 
-      rb_define_method(cModule, :constants, &method(:TODO_not_implemented))
-      rb_define_method(cModule, :const_get, &method(:TODO_not_implemented))
+      rb_define_method(cModule, :constants, &method(:mod_constants))
+      rb_define_method(cModule, :const_get, &method(:mod_const_get))
       rb_define_method(cModule, :const_set, &method(:mod_const_set))
       rb_define_method(cModule, :const_defined?, &method(:mod_const_defined))
       rb_define_method(cModule, :const_source_location, &method(:TODO_not_implemented))
