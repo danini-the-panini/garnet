@@ -77,7 +77,7 @@ module GarnetRuby
 
   module Core
     class << self
-      def rb_f_backquote(str)
+      def rb_f_backquote(_, str)
         result = `#{str.string_value}`
         RString.from(result)
       end
