@@ -819,6 +819,7 @@ module GarnetRuby
     end
 
     def compile_retry(node)
+      raise CompilationError, 'Invalid retry' if @iseq.top_level?
       add_instruction(:throw, :retry)
     end
 

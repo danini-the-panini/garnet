@@ -56,6 +56,10 @@ module GarnetRuby
       "#<Iseq:#{name}>"
     end
 
+    def top_level?
+      type == :main || type == :eval
+    end
+
     def location
       return '???' if @instructions.empty?
 
