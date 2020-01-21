@@ -672,6 +672,79 @@ module GarnetRuby
         ary
       end
 
+      def flatten_array(ary, level)
+        tmp = nil
+        i = ary.array_value.find_index do |elt|
+          rtest(tmp = elt.check_array_type)
+        end
+
+        return ary if i.nil? # already flat
+        rb_raise(eArgError, 'tried to flatten recursive array') if tmp == ary
+
+        result = RArray.new(nil, [], ary.array_value[0, i])
+
+        stack = [ary, i + 1]
+
+        memo = RHash.from({})
+        hash_aset(memo, ary, Q_TRUE)
+        hash_aset(memo, tmp, Q_TRUE)
+
+        ary = tmp
+        i = 0
+
+        loop do
+          while i < ary.len
+            elt = ary.array_value[i]
+            i += 1
+            if level >= 0 && stack.length / 2 >= level
+              ary_push(result, elt)
+              next
+            end
+            tmp = elt.check_array_type
+            if result.klass
+              rb_raise(eRuntimeError, 'flatten reentered')
+            end
+            if tmp == Q_NIL
+              ary_push(result, elt)
+            else
+              if rtest(hash_has_key(memo, tmp))
+                rb_raise(eArgError, 'tried to flatten recursive array')
+              end
+              hash_aset(memo, tmp, Q_TRUE)
+              stack << ary
+              stack << i
+              ary = tmp
+              i = 0
+            end
+          end
+
+          break if stack.empty?
+
+          hash_delete_entry(memo, ary)
+          ary, i = stack.pop(2)
+        end
+
+        result.klass = ary.klass.real
+        result
+      end
+
+      def ary_flatten(ary, *args)
+        level = -1
+
+        unless args.empty? || args[0] == Q_NIL
+          level = num2long(args[0])
+          return ary_dup(ary) if level.zero?
+        end
+
+        result = flatten_array(ary, level)
+        return ary_dup(ary) if result == ary
+
+        result
+      end
+
+      def ary_flatten_bang(ary, *args)
+      end
+
       def ary_any(ary, *args)
         return Q_FALSE if ary.len.zero?
 
@@ -853,6 +926,8 @@ module GarnetRuby
       rb_define_method(cArray, :uniq!, &method(:ary_uniq_bang))
       rb_define_method(cArray, :compact, &method(:ary_compact))
       rb_define_method(cArray, :compact!, &method(:ary_compact_bang))
+      rb_define_method(cArray, :flatten, &method(:ary_flatten))
+      rb_define_method(cArray, :flatten!, &method(:ary_flatten_bang))
 
       rb_define_method(cArray, :any?, &method(:ary_any))
       rb_define_method(cArray, :all?, &method(:ary_all))
