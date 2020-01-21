@@ -94,6 +94,16 @@ module GarnetRuby
         end
       end
 
+      def method_entry_set(klass, mid, me, visi, defined_class)
+        newme = method_entry_create(mid, defined_class, visi, me.definition.clone)
+        # method_added(target_klass, alias_name)
+        klass.method_table[mid] = newme
+      end
+
+      def rb_method_entry_set(klass, mid, me, visi)
+        method_entry_set(klass, mid, me, visi, klass)
+      end
+
       def mod_public(mdl, *args)
         set_visibility(mdl, :public, *args)
       end
@@ -105,6 +115,35 @@ module GarnetRuby
       def mod_private(mdl, *args)
         set_visibility(mdl, :private, *args)
       end
+
+      def mod_modfunc(mdl, *args)
+        unless mdl.flags.include?(:MODULE)
+          rb_raise(eTypeError, 'module_function must be called for modules')
+        end
+
+        # TODO: scope_module_func_set
+        # TODO: set visibility private
+
+        args.each do |arg|
+          m = mdl
+          me = nil
+
+          id = arg.to_id
+          loop do
+            me = find_method(m, id)
+            me = find_method(cObject, id) if me.nil?
+            if me.nil? || me.undefined?
+              rb_raise(eNameError, "undefined method `#{id}' for module `#{mdl.name}'")
+            end
+            break unless me.definition.is_a?(ZSuperMethodDef)
+
+            m = m.super_class
+            break unless m
+          end
+          rb_method_entry_set(singleton_class_of(mdl), id, me, :public)
+        end
+        mdl
+      end
     end
 
     def self.init_vm_method
@@ -114,6 +153,7 @@ module GarnetRuby
       rb_define_private_method(cModule, :public, &method(:mod_public))
       rb_define_private_method(cModule, :protected, &method(:mod_protected))
       rb_define_private_method(cModule, :private, &method(:mod_private))
+      rb_define_private_method(cModule, :module_function, &method(:mod_modfunc))
     end
   end
 end
