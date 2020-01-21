@@ -374,16 +374,15 @@ module GarnetRuby
         compile(node[2])
         add_instruction(:dup)
       end
-      compile_masgn_body(node, locals)
+      compile_masgn_body(node)
     end
 
-    def compile_masgn_body(node, locals)
+    def compile_masgn_body(node, locals = node[1][1..-1])
       i = locals.index { |l| l[0] == :splat}
       if i.nil?
         add_instruction(:expand_array, locals.count, false, false)
         locals.each do |l|
           compile_assignment(l)
-          add_instruction(:pop)
         end
       else
         pre = locals[0...i]
@@ -393,18 +392,14 @@ module GarnetRuby
         add_instruction(:expand_array, pre.count, true, false)
         pre.each do |l|
           compile_assignment(l)
-          add_instruction(:pop)
         end
         if post.empty?
           compile_assignment(splat[1])
-          add_instruction(:pop)
         else
           add_instruction(:expand_array, post.count, true, true)
           compile_assignment(splat[1])
-          add_instruction(:pop)
           post.each do |l|
             compile_assignment(l)
-            add_instruction(:pop)
           end
         end
       end
@@ -416,8 +411,10 @@ module GarnetRuby
       case node[0]
       when :lasgn
         add_set_local(node[1])
+        add_instruction(:pop)
       when :iasgn
         add_instruction(:set_instance_variable, node[1])
+        add_instruction(:pop)
       when :attrasgn
         compile(node[1])
         argc, flags = compile_call_args(node)
@@ -425,10 +422,15 @@ module GarnetRuby
         argc += 1
         add_instruction(:send_without_block, CallInfo.new(node[2], argc, flags))
         add_instruction(:pop)
+        add_instruction(:pop)
       when :gasgn
         add_instruction(:set_global, node[1])
+        add_instruction(:pop)
       when :cvdecl, :cvasgn
         add_instruction(:set_class_variable, node[1])
+        add_instruction(:pop)
+      when :masgn
+        compile_masgn_body(node)
       end
     end
 
