@@ -1,8 +1,6 @@
 module GarnetRuby
   class RHash < RObject
-    attr_reader :table
-
-    attr_accessor :ifnone, :proc_default
+    attr_accessor :table, :ifnone, :proc_default
 
     def initialize(klass, flags)
       super(klass, flags)
@@ -110,8 +108,81 @@ module GarnetRuby
         rb_funcall(obj, :hash).value
       end
 
+      def hash_alloc_flags(klass, flags, ifnone)
+        hash = RHash.new(klass, flags)
+        hash.ifnone = ifnone
+        hash
+      end
+
+      def hash_alloc(klass)
+        hash_alloc_flags(klass, [], Q_NIL)
+      end
+
       def empty_hash_alloc(klass)
-        RHash.new(klass, [])
+        hash_alloc(klass)
+      end
+
+      def hash_s_create(klass, *args)
+        if args.length == 1
+          tmp = hash_s_try_convert(Q_NIL, args[0])
+          if tmp != Q_NIL
+            hash = hash_alloc(klass)
+            hash.table = table_copy(tmp.table)
+            return hash
+          end
+
+          tmp = args[0].check_array_type
+          if tmp != Q_NIL
+            hash = hash_alloc(klass)
+            tmp.array_value.each_with_index do |e, i|
+              v = e.check_array_type
+              val = Q_NIL
+
+              if v == Q_NIL
+                rb_raise(eArgError, "wrong element type #{e.klass.name} at #{i} (expected array)")
+              end
+              l = v.len
+              if l < 1 || l > 2
+                rb_raise(eArgError, "invalid anumber of elements at #{i} (#{l} for 1..2)")
+              end
+              if l >= 1
+                key = v.array_value[0]
+                if l == 2
+                  val = v.array_value[1]
+                end
+                hash_aset(hash, key, val)
+              end
+            end
+            return hash
+          end
+        end
+        if args.length.odd?
+          rb_raise(eArgError, 'odd number of arguments for Hash')
+        end
+
+        hash = hash_alloc(klass)
+        hash_bulk_insert(hash, *args)
+        return hash
+      end
+
+      def table_copy(table)
+        new_table = {}
+        table.each do |k, v|
+          new_table[k] = v.map { |e| RHash::Entry.new(e.key, e.value) }
+        end
+        new_table
+      end
+
+      def hash_bulk_insert(hash, *args)
+        return if args.empty?
+
+        args.each_slice(2) do |k, v|
+          hash_aset(hash, k, v)
+        end
+      end
+
+      def hash_s_try_convert(_, hash)
+        hash.check_hash_type
       end
 
       def hash_initialize(hash, *args)
@@ -353,6 +424,7 @@ module GarnetRuby
       cHash.include_module(mEnumerable)
 
       rb_define_alloc_func(cHash, &method(:empty_hash_alloc))
+      rb_define_singleton_method(cHash, :[], &method(:hash_s_create))
       rb_define_method(cHash, :initialize, &method(:hash_initialize))
 
       rb_define_method(cHash, :inspect, &method(:hash_inspect))
