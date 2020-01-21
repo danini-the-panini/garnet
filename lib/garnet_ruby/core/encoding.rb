@@ -42,6 +42,17 @@ module GarnetRuby
       @cEncoding = rb_define_class(:Encoding, cObject)
       rb_define_method(cEncoding, :to_s, &method(:env_to_s))
       rb_define_method(cEncoding, :inspect, &method(:env_inspect))
+
+      Encoding.list.each do |encoding|
+        enc = REncoding.from(encoding)
+        encoding.names.each do |s|
+          s = "#{s[0].upcase}#{s[1..].gsub(/-/, '_')}"
+          id = s.to_sym
+          id2 = s.upcase.to_sym
+          rb_define_const(cEncoding, id, enc)
+          rb_define_const(cEncoding, id2, enc) if id != id2
+        end
+      end
     end
   end
 end
