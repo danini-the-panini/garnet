@@ -518,7 +518,7 @@ module GarnetRuby
             else
               "#{slf.klass.real.name}##{mid}"
             end
-        raise NotImplementedError, "#{s} has not been implemented"
+        rb_raise(eNotImpError, "#{s} has not been implemented")
       end
 
       def ruby2garnet(value)
