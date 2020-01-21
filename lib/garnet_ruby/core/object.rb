@@ -502,6 +502,26 @@ module GarnetRuby
         end
       end
 
+      def mod_lt(mod, arg)
+        return Q_FALSE if mod == arg
+        mod.inherited?(arg)
+      end
+
+      def mod_le(mod, arg)
+        mod.inherited?(arg)
+      end
+
+      def mod_gt(mod, arg)
+        return Q_FALSE if mod == arg
+        mod_ge(mod, arg)
+      end
+
+      def mod_ge(mod, arg)
+        rb_raise(eTypeError, 'compared with non class/module') unless arg.is_a?(RClass)
+
+        arg.inherited?(mod)
+      end
+
       def mod_init_copy(clone, orig)
         # TODO: cloned flag for const inline cache
 
@@ -824,10 +844,10 @@ module GarnetRuby
       rb_define_method(cModule, :===, &method(:mod_eqq))
       rb_define_method(cModule, :==, &method(:obj_equal))
       rb_define_method(cModule, :<=>, &method(:mod_cmp))
-      rb_define_method(cModule, :<, &method(:TODO_not_implemented))
-      rb_define_method(cModule, :<=, &method(:TODO_not_implemented))
-      rb_define_method(cModule, :>, &method(:TODO_not_implemented))
-      rb_define_method(cModule, :>=, &method(:TODO_not_implemented))
+      rb_define_method(cModule, :<, &method(:mod_lt))
+      rb_define_method(cModule, :<=, &method(:mod_le))
+      rb_define_method(cModule, :>, &method(:mod_gt))
+      rb_define_method(cModule, :>=, &method(:mod_ge))
       rb_define_method(cModule, :initialize_copy, &method(:mod_init_copy))
       rb_define_method(cModule, :to_s, &method(:mod_to_s))
       rb_alias_method(cModule, :inspect, :to_s)
