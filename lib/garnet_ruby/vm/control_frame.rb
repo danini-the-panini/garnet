@@ -32,6 +32,7 @@ module GarnetRuby
     def push_stack(obj)
       raise "PUSH NIL!" if obj.nil?
       raise "PUSH UNDEF!" if obj == Q_UNDEF
+      raise "PUSH NON-GARNET: #{obj.inspect}" unless obj.is_a?(RBasic)
       stack.push obj
     end
   end

@@ -610,6 +610,7 @@ module GarnetRuby
           definition = IvarMethodDef.new(:"@#{id}")
           rb_add_method(mod, id, :public, definition)
         end
+        Q_NIL
       end
 
       def mod_attr_writer(mod, *args)
@@ -618,6 +619,7 @@ module GarnetRuby
           definition = AttrsetMethodDef.new(:"@#{id}")
           rb_add_method(mod, :"#{id}=", :public, definition)
         end
+        Q_NIL
       end
 
       def mod_attr_accessor(mod, *args)

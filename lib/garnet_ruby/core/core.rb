@@ -84,7 +84,9 @@ module GarnetRuby
                   :eLoadError,
                   :eMathDomainError,
                   :mMarshal,
-                  :mSignal
+                  :mSignal,
+                  :cRubyVM,
+                  :cISeq
 
       attr_reader :env_table, :stdin, :stdout, :stderr
 
@@ -122,6 +124,8 @@ module GarnetRuby
         init_version
         init_thread
         init_time
+        init_vm
+        init_iseq
 
         @env_table = RHash.new(cHash, [])
         cObject.rb_const_set(:ENV, env_table)

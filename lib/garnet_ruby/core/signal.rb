@@ -226,6 +226,7 @@ module GarnetRuby
         end
 
         trap(sig, cmd)
+        Q_NIL # TODO: return previous handler
       end
     end
 

@@ -37,10 +37,12 @@ module GarnetRuby
 
     def io_flush
       io.flush
+      self
     end
 
     def io_close
       io.close
+      self
     end
 
     def io_gets(*args)

@@ -1,5 +1,5 @@
 module GarnetRuby
-  class Iseq
+  class Iseq < RObject
     class CatchRecord
       attr_reader :type, :st, :ed, :cont, :iseq
 
@@ -27,6 +27,7 @@ module GarnetRuby
     attr_accessor :start_label, :end_label, :redo_label, :start_index
 
     def initialize(name, type, parent = nil, local_table = {})
+      super(Core.cISeq, [])
       @name = name
       @type = type
       @instructions = []

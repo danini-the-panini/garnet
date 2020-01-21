@@ -33,6 +33,7 @@ module GarnetRuby
 
       def file_s_unlink(_, *args)
         args.each { |f| File.unlink(f.string_value) }
+        RPrimitive.from(args.length)
       end
 
       def file_expand_path(*args)

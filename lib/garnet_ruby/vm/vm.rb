@@ -11,7 +11,7 @@ module GarnetRuby
 
     class ExecutionError < StandardError
       def initialize(message, insn)
-        super("#{message} (#{insn.file}:#{insn.line})")
+        super("#{message} in #{insn.type}#{insn.arguments.inspect} (#{insn.file}:#{insn.line})")
       end
     end
 

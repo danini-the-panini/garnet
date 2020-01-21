@@ -66,7 +66,7 @@ module GarnetRuby
       def num_equal(x, y)
         return Q_TRUE if x == y
 
-        rtest(rb_funcall(y, :==, x))
+        rb_funcall(y, :==, x)
       end
 
       def fix_equal(x, y)

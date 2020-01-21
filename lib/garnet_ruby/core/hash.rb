@@ -408,6 +408,8 @@ module GarnetRuby
             end
           end
         end
+
+        hash
       end
 
       def hash_has_value(hash, value)
