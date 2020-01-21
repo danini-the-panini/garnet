@@ -73,6 +73,24 @@ module GarnetRuby
         RString.from("[#{strings.join(', ')}]")
       end
 
+      def ary_to_h(ary)
+        hash = RHash.from({})
+        block_given = rb_block_given?
+
+        ary.array_value.each_with_index do |e, i|
+          elt = block_given ? rb_yield(e) : e
+          key_value_pair = elt.check_array_type
+          if key_value_pair == Q_NIL
+            rb_raise(eTypeError, "wrong element type #{elt.klass.name} at #{i} (expected array)")
+          end
+          if key_value_pair.len != 2
+            rb_raise(eArgError, "wrong array length at #{i} (expected 2, was #{key_value_pair.len})")
+          end
+          hash_aset(hash, key_value_pair.array_value[0], key_value_pair.array_value[1])
+        end
+        hash
+      end
+
       def ary_check_equality(ary1, ary2, &block)
         return Q_TRUE if ary1 == ary2
         ary2 = ary2.check_to_array
@@ -780,6 +798,7 @@ module GarnetRuby
 
       rb_define_method(cArray, :inspect, &method(:ary_inspect))
       rb_alias_method(cArray, :to_s, :inspect)
+      rb_define_method(cArray, :to_h, &method(:ary_to_h))
 
       rb_define_method(cArray, :==, &method(:ary_equal))
       rb_define_method(cArray, :eql?, &method(:ary_eql))
