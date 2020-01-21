@@ -589,8 +589,10 @@ module GarnetRuby
       add_instruction_with_label(:jump, next_label)
 
       add_label(redo_label)
-      compile(body)
-      add_instruction(:pop)
+      if body
+        compile(body)
+        add_instruction(:pop)
+      end
 
       add_label(next_label)
       compile(cond)
