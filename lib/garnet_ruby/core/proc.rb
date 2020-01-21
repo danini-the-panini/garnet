@@ -37,7 +37,7 @@ module GarnetRuby
       self
     end
   end
-  
+
   class RMethod < RObject
     attr_reader :method_entry, :recv
 

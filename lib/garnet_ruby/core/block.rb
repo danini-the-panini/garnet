@@ -104,7 +104,7 @@ module GarnetRuby
       "<#BuiltInBlock env=#{environment} self=#{self_value}>"
     end
 
-    def dispatch(vm, args, block_block = nil, override_self_value = nil, method = nil, klass = nil)
+    def dispatch(vm, args, block_block = nil, override_self_value = nil, *)
       if block_block
         sv = override_self_value || self_value
         block.call(*args) do |*blargs|
@@ -112,6 +112,37 @@ module GarnetRuby
         end
       else
         block.call(*args)
+      end
+    end
+  end
+
+  class SymbolBlock < Block
+    attr_reader :symbol
+
+    def initialize(environment, self_value, symbol)
+      super(environment, self_value)
+
+      @symbol = symbol
+    end
+
+    def arity
+      -1
+    end
+
+    def description
+      "(&:#{symbol})"
+    end
+
+    def to_s
+      "<#SymbolBlock symbol=#{symbol}>"
+    end
+
+    def dispatch(_vm, args, block_block = nil, *)
+      target, *args = args
+      if block_block
+        Core.rb_funcall_with_block(target, symbol, block_block, *args)
+      else
+        Core.rb_funcall(target, symbol, *args)
       end
     end
   end

@@ -19,6 +19,12 @@ module GarnetRuby
       RString.from(symbol_value.to_s)
     end
 
+    def sym_to_proc
+      cfp = VM.instance.current_control_frame
+      block = SymbolBlock.new(cfp.environment, cfp.environment.lexical_scope.klass, symbol_value)
+      RProc.new(Core.cProc, [], block)
+    end
+
     def self.from(value)
       return Q_NIL if value.nil?
 
@@ -54,7 +60,8 @@ module GarnetRuby
       rb_define_method(cSymbol, :inspect) do |x|
         RString.from(":#{x.symbol_value}")
       end
-      rb_define_method(cSymbol, :to_s) { |x| x.sym2str }
+      rb_define_method(cSymbol, :to_s, &:sym2str)
+      rb_define_method(cSymbol, :to_proc, &:sym_to_proc)
     end
   end
 end
