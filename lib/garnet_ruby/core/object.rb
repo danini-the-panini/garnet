@@ -607,6 +607,30 @@ module GarnetRuby
         Q_NIL
       end
 
+      def mod_instance_methods(mod, *args)
+        include_super = args.empty? ? true : rtest(args.first)
+
+        RArray.from(mod.instance_method_list(include_super, %i[public protected]))
+      end
+
+      def mod_public_instance_methods(mod, *args)
+        include_super = args.empty? ? true : rtest(args.first)
+
+        RArray.from(mod.instance_method_list(include_super, %i[public]))
+      end
+
+      def mod_private_instance_methods(mod, *args)
+        include_super = args.empty? ? true : rtest(args.first)
+
+        RArray.from(mod.instance_method_list(include_super, %i[private]))
+      end
+
+      def mod_protected_instance_methods(mod, *args)
+        include_super = args.empty? ? true : rtest(args.first)
+
+        RArray.from(mod.instance_method_list(include_super, %i[protected]))
+      end
+
       def mod_constants(mod, *args)
         inherit = args.empty? ? true : rtest(args.first)
 
@@ -820,7 +844,7 @@ module GarnetRuby
       rb_define_alloc_func(cModule, &method(:rb_module_s_alloc))
       rb_define_method(cModule, :initialize, &method(:mod_initialize))
       rb_define_method(cModule, :initialize_clone, &method(:mod_initialize_clone))
-      rb_define_method(cModule, :instance_methods, &method(:TODO_not_implemented))
+      rb_define_method(cModule, :instance_methods, &method(:mod_instance_methods))
       rb_define_method(cModule, :public_instance_methods, &method(:TODO_not_implemented))
       rb_define_method(cModule, :protected_instance_methods, &method(:TODO_not_implemented))
       rb_define_method(cModule, :private_instance_methods, &method(:TODO_not_implemented))
