@@ -610,25 +610,25 @@ module GarnetRuby
       def mod_instance_methods(mod, *args)
         include_super = args.empty? ? true : rtest(args.first)
 
-        RArray.from(mod.instance_method_list(include_super, %i[public protected]))
+        mod.instance_method_list(include_super, %i[public protected])
       end
 
       def mod_public_instance_methods(mod, *args)
         include_super = args.empty? ? true : rtest(args.first)
 
-        RArray.from(mod.instance_method_list(include_super, %i[public]))
+        mod.instance_method_list(include_super, %i[public])
       end
 
       def mod_private_instance_methods(mod, *args)
         include_super = args.empty? ? true : rtest(args.first)
 
-        RArray.from(mod.instance_method_list(include_super, %i[private]))
+        mod.instance_method_list(include_super, %i[private])
       end
 
       def mod_protected_instance_methods(mod, *args)
         include_super = args.empty? ? true : rtest(args.first)
 
-        RArray.from(mod.instance_method_list(include_super, %i[protected]))
+        mod.instance_method_list(include_super, %i[protected])
       end
 
       def mod_constants(mod, *args)
