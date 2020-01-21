@@ -82,8 +82,20 @@ module GarnetRuby
       end
 
       def sym_each_i(v, arg)
-        rb_yield(RSymbol.from(v.to_sym))
+        rb_yield(RSymbol.from(v.string_value.to_sym))
         false
+      end
+
+      def rb_str_upto_endless_each(beg, arg)
+        (beg.string_value..).each do |v|
+          yield(RString.from(v), arg)
+        end
+      end
+
+      def rb_str_upto_each(beg, ed, excl, arg)
+        Range.new(beg.string_value, ed.string_value, excl).each do |v|
+          yield(RString.from(v), arg)
+        end
       end
 
       def range_each(range)
