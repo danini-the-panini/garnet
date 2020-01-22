@@ -94,6 +94,15 @@ module GarnetRuby
         Q_NIL
       end
 
+      def num_zero_p(num)
+        if fixnum?(num)
+          return Q_TRUE if num.value.zero?
+        else
+          return rb_equal(num, RPrimitive.from(0))
+        end
+        Q_FALSE
+      end
+
       def int_chr(num)
         # TODO: encoding
         RString.from(num.value.chr)
@@ -675,6 +684,8 @@ module GarnetRuby
       @cNumeric = rb_define_class(:Numeric, cObject)
 
       rb_define_method(cNumeric, :<=>, &method(:num_cmp))
+
+      rb_define_method(cNumeric, :zero?, &method(:num_zero_p))
 
       @cInteger = rb_define_class(:Integer, cNumeric)
       rb_define_method(cInteger, :to_s, &method(:int_to_s))
