@@ -96,13 +96,13 @@ module GarnetRuby
         init_class_heirarchy
         init_object
         init_encoding
-        init_exception
         init_top_self
         init_vm_eval
         init_vm_method
         init_eval
         init_symbol
         init_numeric
+        init_exception
         init_math
         init_enum
         init_enumerator
@@ -177,6 +177,7 @@ module GarnetRuby
         # TODO: do some checks
         klass = RClass.new_class(super_class)
         # TODO: rb_set_class_path_string
+        klass.name = id
         outer.rb_const_set(id, klass)
         # TODO: rb_class_inherited
         # TODO: rb_vm_add_root_module
