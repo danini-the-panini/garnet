@@ -864,7 +864,14 @@ module GarnetRuby
     end
 
     def find_super_method(target, me)
-      find_method(target, me.called_id, me.defined_class.super_class)
+      meklass = me.defined_class
+      sup = meklass.super_class
+      if sup.nil? && meklass.flags.include?(:MODULE)
+        sup2 = target.klass.super_class
+        sup2 = sup2.super_class until sup2.method_table == meklass.method_table
+        sup = sup2.super_class
+      end
+      find_method(target, me.called_id, sup)
     end
 
     def dispatch_method(target, method, args, block=nil)
