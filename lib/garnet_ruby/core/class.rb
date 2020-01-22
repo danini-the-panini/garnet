@@ -182,7 +182,7 @@ module GarnetRuby
     end
 
     def to_s
-      "<#Class:#{name}>"
+      "#<RClass[#{flags.map(&:to_s).join('|')}]:#{name}>"
     end
 
     def search_ancestor(cl)

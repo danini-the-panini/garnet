@@ -8,9 +8,12 @@ module GarnetRuby
     end
 
     def to_s
-      "<##{klass.name}>"
+      "#<#{self.class.name}:#{klass.name}>"
     end
-    alias inspect to_s
+
+    def inspect
+      to_s
+    end
 
     def type
       nil
@@ -112,7 +115,7 @@ module GarnetRuby
     end
 
     def any_to_s
-      "<#{klass.name}:#{__id__}>"
+      "#<#{klass.name}:#{__id__}>"
     end
 
     def rb_string

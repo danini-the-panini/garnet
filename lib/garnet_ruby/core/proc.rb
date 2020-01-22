@@ -25,9 +25,12 @@ module GarnetRuby
     end
 
     def to_s
-      "<#Proc block=#{block}>"
+      "#<Proc block=#{block}>"
     end
-    alias inspect to_s
+    
+    def inspect
+      to_s
+    end
 
     def description
       block.description

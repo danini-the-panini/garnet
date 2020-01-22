@@ -17,7 +17,7 @@ module GarnetRuby
     end
 
     def inspect
-      "<##{klass}:#{value}>"
+      "##{klass}:#{value}>"
     end
 
     def ==(other)

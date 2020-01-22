@@ -9,7 +9,7 @@ module GarnetRuby
     end
 
     def to_s
-      "<#Block env=#{environment} self=#{self_value}>"
+      "#<Block env=#{environment} self=#{self_value}>"
     end
     
     def inspect
@@ -46,7 +46,7 @@ module GarnetRuby
     end
 
     def to_s
-      "<#IseqBlock iseq=#{iseq} env=#{environment} self=#{self_value}>"
+      "#<IseqBlock iseq=#{iseq} env=#{environment} self=#{self_value}>"
     end
 
     def dispatch(vm, args, block_block = nil, override_self_value = nil, method = nil, klass = nil)
@@ -76,7 +76,7 @@ module GarnetRuby
     end
 
     def to_s
-      "<#ProcBlock env=#{environment} self=#{self_value}>"
+      "#<ProcBlock env=#{environment} self=#{self_value}>"
     end
 
     def dispatch(vm, args, block_block = nil, override_self_value = nil, method = nil, klass = nil)
@@ -101,7 +101,7 @@ module GarnetRuby
     end
 
     def to_s
-      "<#BuiltInBlock env=#{environment} self=#{self_value}>"
+      "#<BuiltInBlock env=#{environment} self=#{self_value}>"
     end
 
     def dispatch(vm, args, block_block = nil, override_self_value = nil, *)
@@ -134,7 +134,7 @@ module GarnetRuby
     end
 
     def to_s
-      "<#SymbolBlock symbol=#{symbol}>"
+      "#<SymbolBlock symbol=#{symbol}>"
     end
 
     def dispatch(_vm, args, block_block = nil, *)

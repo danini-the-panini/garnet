@@ -12,7 +12,7 @@ module GarnetRuby
     end
 
     def inspect
-      "<#Symbol:#{symbol_value}>"
+      "#<RSymbol:#{symbol_value}>"
     end
 
     def sym2str
