@@ -11,6 +11,27 @@ module GarnetRuby
         ary
       end
 
+      def enum_grep(obj, pat)
+        ary = RArray.from([])
+        block_given = rb_block_given?
+
+        if rb_block_given?
+          vm = VM.instance
+          block = vm.caller_environment.block
+
+          rb_block_call(obj, :each) do |x|
+            if rtest(rb_funcall(pat, :===, x))
+              ary_push(ary, vm.execute_block(block, [x], 1))
+            end
+          end
+        else
+          rb_block_call(obj, :each) do |x|
+            ary_push(ary, x) if rtest(rb_funcall(pat, :===, x))
+          end
+        end
+        ary
+      end
+
       def enum_find(obj, *args)
         if_none = args.empty? ? Q_NIL : args.first
 
@@ -184,7 +205,7 @@ module GarnetRuby
 
       rb_define_method(mEnumerable, :sort, &method(:TODO_not_implemented))
       rb_define_method(mEnumerable, :sort_by, &method(:TODO_not_implemented))
-      rb_define_method(mEnumerable, :grep, &method(:TODO_not_implemented))
+      rb_define_method(mEnumerable, :grep, &method(:enum_grep))
       rb_define_method(mEnumerable, :grep_v, &method(:TODO_not_implemented))
       rb_define_method(mEnumerable, :count, &method(:TODO_not_implemented))
       rb_define_method(mEnumerable, :find, &method(:enum_find))
