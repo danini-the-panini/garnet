@@ -158,6 +158,7 @@ require 'garnet_ruby/core/thread'
 require 'garnet_ruby/core/time'
 require 'garnet_ruby/core/vm'
 require 'garnet_ruby/core/iseq'
+require 'garnet_ruby/core/transcode'
 require 'garnet_ruby/core/core'
 
 require 'garnet_ruby/compiler/parser'

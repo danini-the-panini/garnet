@@ -126,6 +126,7 @@ module GarnetRuby
         init_time
         init_vm
         init_iseq
+        init_transcode
 
         @env_table = RHash.new(cHash, [])
         cObject.rb_const_set(:ENV, env_table)
