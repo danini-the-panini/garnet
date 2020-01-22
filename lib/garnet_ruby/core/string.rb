@@ -211,6 +211,40 @@ module GarnetRuby
         RPrimitive.from(pos)
       end
 
+      def str_rindex(str, *args)
+        len = str.length
+        sub, vpos = args
+        if args.length == 2
+          pos = num2long(vpos)
+          if pos.negative?
+            pos += len
+            if pos.negative?
+              backref_set(Q_NIL) if sub.type?(Regexp)
+              return Q_NIL
+            end
+          end
+          pos = len if pos > len
+        else
+          pos = len
+        end
+
+        pos = if sub.type?(Regexp)
+                str.string_value.rindex(sub.regexp_value, pos)
+              elsif sub.type?(String)
+                str.string_value.rindex(sub.string_value, pos)
+              else
+                tmp = sub.check_string_type
+                if tmp == Q_NIL
+                  rb_raise(eTypeError, "type mismatch: #{sub.klass.name} given")
+                end
+                str.string_value.rindex(tmp.string_value, pos)
+              end
+
+        return Q_NIL if pos.nil?
+
+        RPrimitive.from(pos)
+      end
+
       def str_subpat(str, re, backref)
         if re.match_pos(str).positive?
           br = backref.type?(Symbol) ? backref.symbol_value : num2long(backref)
@@ -349,6 +383,10 @@ module GarnetRuby
         else
           str_append(str1, str2)
         end
+      end
+
+      def str_intern(str)
+        RSymbol.from(str.string_value.to_sym)
       end
 
       def str_reverse(str)
@@ -567,6 +605,17 @@ module GarnetRuby
         RString.from(str.string_value.squeeze!(*args.map { |a| a.obj_as_string.string_value }))
       end
 
+      def str_each_line(str, *args)
+        return enumerator(str, args) unless rb_block_given?
+
+        # TODO: chomp kwarg
+        sep = args.empty? ? rs : args[0]
+        str.string_value.each_line(sep.string_value) do |line|
+          rb_yield(RString.from(line))
+        end
+        str
+      end
+
       def str_each_byte(str)
         # TODO: return enumerator
         str.string_value.each_byte do |byte|
@@ -608,6 +657,7 @@ module GarnetRuby
       rb_define_method(cString, :empty?, &method(:str_empty))
       rb_define_method(cString, :=~, &method(:str_match))
       rb_define_method(cString, :index, &method(:str_index))
+      rb_define_method(cString, :rindex, &method(:str_rindex))
 
       rb_define_method(cString, :to_i, &method(:str_to_i))
       rb_define_method(cString, :to_f, &method(:str_to_f))
@@ -628,6 +678,8 @@ module GarnetRuby
       rb_define_method(cString, :reverse, &method(:str_reverse))
       rb_define_method(cString, :reverse!, &method(:str_reverse_bang))
       rb_define_method(cString, :<<, &method(:str_concat))
+      rb_define_method(cString, :to_sym, &method(:str_intern))
+      rb_define_method(cString, :intern, &method(:str_intern))
 
       rb_define_method(cString, :include?, &method(:str_include))
       rb_define_method(cString, :start_with?, &method(:str_start_with))
@@ -656,6 +708,7 @@ module GarnetRuby
       rb_define_method(cString, :delete!, &method(:str_delete_bang))
       rb_define_method(cString, :squeeze!, &method(:str_squeeze_bang))
 
+      rb_define_method(cString, :each_line, &method(:str_each_line))
       rb_define_method(cString, :each_byte, &method(:str_each_byte))
 
       rb_define_method(cString, :encoding, &method(:str_encoding))

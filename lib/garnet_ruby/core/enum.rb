@@ -32,6 +32,33 @@ module GarnetRuby
         Q_NIL
       end
 
+      def enum_find_index(obj, *args)
+        vm = VM.instance
+        block = vm.caller_environment.block
+
+        memo = Q_NIL
+        i = 0
+        if args.empty?
+          # TODO: return enumerator
+          rb_block_call(obj, :each) do |x|
+            if rtest(vm.execute_block(block, [x], 1))
+              memo = RPrimitive.from(i)
+              rb_iter_break
+            end
+            i += 1
+          end
+        else
+          rb_block_call(obj, :each) do |x|
+            if rtest(rb_equal(x, args[0]))
+              memo = RPrimitive.from(i)
+              rb_iter_break
+            end
+            i += 1
+          end
+        end
+        memo
+      end
+
       def enum_collect(obj)
         # TODO: return enumerator
 
@@ -128,6 +155,8 @@ module GarnetRuby
       rb_define_method(mEnumerable, :to_a, &method(:enum_to_a))
 
       rb_define_method(mEnumerable, :find, &method(:enum_find))
+      rb_define_method(mEnumerable, :detect, &method(:enum_find))
+      rb_define_method(mEnumerable, :find_index, &method(:enum_find_index))
       rb_define_method(mEnumerable, :collect, &method(:enum_collect))
       rb_define_method(mEnumerable, :inject, &method(:enum_inject))
       rb_define_method(mEnumerable, :reduce, &method(:enum_inject))

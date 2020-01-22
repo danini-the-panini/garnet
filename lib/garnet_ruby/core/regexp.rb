@@ -221,6 +221,10 @@ module GarnetRuby
       def reg_fixed_encoding(re)
         re.regexp_value.fixed_encoding? ? Q_TRUE : Q_FALSE
       end
+
+      def match_to_a(match)
+        RArray.from(match.match_value.to_a)
+      end
     end
 
     def self.init_regexp
@@ -240,6 +244,8 @@ module GarnetRuby
 
       @cMatch = rb_define_class(:MatchData, cObject)
       rb_define_alloc_func(cMatch, &method(:match_alloc))
+
+      rb_define_method(cMatch, :to_a, &method(:match_to_a))
     end
   end
 end

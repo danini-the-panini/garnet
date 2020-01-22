@@ -40,12 +40,15 @@ module GarnetRuby
     end
 
     def self.from(value)
+      case value
+      when NilClass   then return Q_NIL
+      when TrueClass  then return Q_TRUE
+      when FalseClass then return Q_FALSE
+      end
+
       klass = case value
-              when NilClass then Q_NIL
-              when TrueClass then Q_TRUE
-              when FalseClass then Q_FALSE
               when Integer then Core.cInteger
-              when Float then Core.cFloat
+              when Float   then Core.cFloat
               else
                 raise "unsupported primitive (#{value.class})"
               end

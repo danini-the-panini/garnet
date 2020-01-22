@@ -5,6 +5,14 @@
         VM.instance.get_errinfo
       end
 
+      def f_current_dirname(_)
+        base = current_realfilepath
+        return Q_NIL if base == Q_NIL
+
+        base = file_dirname(base)
+        base
+      end
+
       def rb_mod_include(mod, *args)
         # TODO: check type if args (they must be Module)
         # TODO: check that module has not already been included
@@ -36,6 +44,8 @@
 
     def self.init_eval
       rb_define_virtual_variable(:'$!', method(:errinfo_getter), nil)
+
+      rb_define_global_function(:__dir__, &method(:f_current_dirname))
 
       rb_define_method(cModule, :include, &method(:rb_mod_include))
 

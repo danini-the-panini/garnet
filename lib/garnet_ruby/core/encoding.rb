@@ -29,19 +29,31 @@ module GarnetRuby
         str_to_encoding(enc)
       end
 
-      def env_to_s(enc)
+      def enc_to_s(enc)
         RString.from(enc.enc_value.to_s)
       end
 
-      def env_inspect(enc)
+      def enc_names(enc)
+        RArray.from(enc.enc_value.names)
+      end
+
+      def enc_inspect(enc)
         RString.from("#<#{enc.klass.real.name}:#{enc.enc_value}>")
+      end
+
+      def enc_list(_)
+        RArray.from(@encodings)
       end
     end
 
     def self.init_encoding
       @cEncoding = rb_define_class(:Encoding, cObject)
-      rb_define_method(cEncoding, :to_s, &method(:env_to_s))
-      rb_define_method(cEncoding, :inspect, &method(:env_inspect))
+      rb_define_method(cEncoding, :to_s, &method(:enc_to_s))
+      rb_define_method(cEncoding, :names, &method(:enc_names))
+      rb_define_method(cEncoding, :inspect, &method(:enc_inspect))
+      rb_define_singleton_method(cEncoding, :list, &method(:enc_list));
+
+      @encodings = []
 
       Encoding.list.each do |encoding|
         enc = REncoding.from(encoding)
@@ -52,6 +64,7 @@ module GarnetRuby
           rb_define_const(cEncoding, id, enc)
           rb_define_const(cEncoding, id2, enc) if id != id2
         end
+        @encodings << enc
       end
     end
   end

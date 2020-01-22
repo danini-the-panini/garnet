@@ -278,6 +278,10 @@ module GarnetRuby
         RPrimitive.from(hash.size)
       end
 
+      def hash_empty_p(hash)
+        hash.size.zero? ? Q_TRUE : Q_FALSE
+      end
+
       def hash_equal(hash1, hash2)
         hash_equal_internal(hash1, hash2, false)
       end
@@ -444,6 +448,7 @@ module GarnetRuby
       rb_define_method(cHash, :default_proc=, &method(:hash_set_default_proc))
       rb_define_method(cHash, :size, &method(:hash_size))
       rb_define_method(cHash, :length, &method(:hash_size))
+      rb_define_method(cHash, :empty?, &method(:hash_empty_p))
 
       rb_define_method(cHash, :each_pair, &method(:hash_each_pair))
       rb_define_method(cHash, :each, &method(:hash_each_pair))
