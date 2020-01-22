@@ -8,7 +8,7 @@ module GarnetRuby
     end
 
     def to_s
-      string_value.inspect
+      "#<RString:#{string_value.inspect}>"
     end
 
     def self.from(str)
@@ -257,7 +257,7 @@ module GarnetRuby
         if fixnum?(indx)
           idx = indx.value
         elsif indx.type?(Regexp)
-          return RString.from(str_subpat(str, indx, RPrimitive.from(0)))
+          return str_subpat(str, indx, RPrimitive.from(0))
         elsif indx.type?(String)
           if str.string_value.include?(indx.string_value)
             return rb_str_dup(indx)
