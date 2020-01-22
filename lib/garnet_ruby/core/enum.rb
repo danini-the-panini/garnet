@@ -92,6 +92,34 @@ module GarnetRuby
         RArray.from([v1, v2])
       end
 
+      def enum_first(obj, *args)
+        return enum_take(obj, args[0]) unless args.empty?
+
+        memo = Q_NIL
+        rb_block_call(obj, :each) do |x|
+          memo = x
+          rb_iter_break
+        end
+        memo
+      end
+
+      def enum_take(obj, n)
+        len = num2long(n)
+
+        rb_raise(eArgError, 'attempt to take a negative size') if len.negative?
+        return RArray.from([]) if len.zero?
+
+        result = RArray.from([])
+        i = len
+        rb_block_call(obj, :each) do |x|
+          ary_push(result, x)
+          i -= 1
+          rb_iter_break if i.zero?
+          Q_NIL
+        end
+        result
+      end
+
       def enum_inject(obj, *args)
         init, op = args
         iter = :inject
@@ -154,13 +182,60 @@ module GarnetRuby
 
       rb_define_method(mEnumerable, :to_a, &method(:enum_to_a))
 
+      rb_define_method(mEnumerable, :sort, &method(:TODO_not_implemented))
+      rb_define_method(mEnumerable, :sort_by, &method(:TODO_not_implemented))
+      rb_define_method(mEnumerable, :grep, &method(:TODO_not_implemented))
+      rb_define_method(mEnumerable, :grep_v, &method(:TODO_not_implemented))
+      rb_define_method(mEnumerable, :count, &method(:TODO_not_implemented))
       rb_define_method(mEnumerable, :find, &method(:enum_find))
       rb_define_method(mEnumerable, :detect, &method(:enum_find))
       rb_define_method(mEnumerable, :find_index, &method(:enum_find_index))
+      rb_define_method(mEnumerable, :find_all, &method(:TODO_not_implemented))
+      rb_define_method(mEnumerable, :select, &method(:TODO_not_implemented))
+      rb_define_method(mEnumerable, :filter, &method(:TODO_not_implemented))
+      rb_define_method(mEnumerable, :filter_map, &method(:TODO_not_implemented))
+      rb_define_method(mEnumerable, :reject, &method(:TODO_not_implemented))
       rb_define_method(mEnumerable, :collect, &method(:enum_collect))
+      rb_define_method(mEnumerable, :map, &method(:enum_collect))
+      rb_define_method(mEnumerable, :flat_map, &method(:TODO_not_implemented))
+      rb_define_method(mEnumerable, :collect_concat, &method(:TODO_not_implemented))
       rb_define_method(mEnumerable, :inject, &method(:enum_inject))
       rb_define_method(mEnumerable, :reduce, &method(:enum_inject))
       rb_define_method(mEnumerable, :partition, &method(:enum_partition))
+      rb_define_method(mEnumerable, :group_by, &method(:TODO_not_implemented))
+      rb_define_method(mEnumerable, :tally, &method(:TODO_not_implemented))
+      rb_define_method(mEnumerable, :first, &method(:enum_first))
+      rb_define_method(mEnumerable, :all?, &method(:TODO_not_implemented))
+      rb_define_method(mEnumerable, :any?, &method(:TODO_not_implemented))
+      rb_define_method(mEnumerable, :one?, &method(:TODO_not_implemented))
+      rb_define_method(mEnumerable, :none?, &method(:TODO_not_implemented))
+      rb_define_method(mEnumerable, :min, &method(:TODO_not_implemented))
+      rb_define_method(mEnumerable, :max, &method(:TODO_not_implemented))
+      rb_define_method(mEnumerable, :minmax, &method(:TODO_not_implemented))
+      rb_define_method(mEnumerable, :min_by, &method(:TODO_not_implemented))
+      rb_define_method(mEnumerable, :max_by, &method(:TODO_not_implemented))
+      rb_define_method(mEnumerable, :minmax_by, &method(:TODO_not_implemented))
+      rb_define_method(mEnumerable, :member?, &method(:TODO_not_implemented))
+      rb_define_method(mEnumerable, :include?, &method(:TODO_not_implemented))
+      rb_define_method(mEnumerable, :each_with_index, &method(:TODO_not_implemented))
+      rb_define_method(mEnumerable, :reverse_each, &method(:TODO_not_implemented))
+      rb_define_method(mEnumerable, :each_entry, &method(:TODO_not_implemented))
+      rb_define_method(mEnumerable, :each_slice, &method(:TODO_not_implemented))
+      rb_define_method(mEnumerable, :each_cons, &method(:TODO_not_implemented))
+      rb_define_method(mEnumerable, :each_with_object, &method(:TODO_not_implemented))
+      rb_define_method(mEnumerable, :zip, &method(:TODO_not_implemented))
+      rb_define_method(mEnumerable, :take, &method(:enum_take))
+      rb_define_method(mEnumerable, :take_while, &method(:TODO_not_implemented))
+      rb_define_method(mEnumerable, :drop, &method(:TODO_not_implemented))
+      rb_define_method(mEnumerable, :drop_while, &method(:TODO_not_implemented))
+      rb_define_method(mEnumerable, :cycle, &method(:TODO_not_implemented))
+      rb_define_method(mEnumerable, :chunk, &method(:TODO_not_implemented))
+      rb_define_method(mEnumerable, :slice_before, &method(:TODO_not_implemented))
+      rb_define_method(mEnumerable, :slice_after, &method(:TODO_not_implemented))
+      rb_define_method(mEnumerable, :slice_when, &method(:TODO_not_implemented))
+      rb_define_method(mEnumerable, :chunk_while, &method(:TODO_not_implemented))
+      rb_define_method(mEnumerable, :sum, &method(:TODO_not_implemented))
+      rb_define_method(mEnumerable, :uniq, &method(:TODO_not_implemented))
     end
   end
 end
