@@ -633,6 +633,10 @@ module GarnetRuby
         str
       end
 
+      def str_valid_encoding_p(str)
+        str.string_value.valid_encoding? ? Q_TRUE : Q_FALSE
+      end
+
       def str_unpack(str, format)
         RArray.from(str.string_value.unpack(format.obj_as_string.string_value))
       end
@@ -713,6 +717,7 @@ module GarnetRuby
 
       rb_define_method(cString, :encoding, &method(:str_encoding))
       rb_define_method(cString, :force_encoding, &method(:str_force_encoding))
+      rb_define_method(cString, :valid_encoding?, &method(:str_valid_encoding_p))
 
       rb_define_method(cString, :unpack, &method(:str_unpack))
     end

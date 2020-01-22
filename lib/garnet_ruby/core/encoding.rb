@@ -33,6 +33,10 @@ module GarnetRuby
         RString.from(enc.enc_value.to_s)
       end
 
+      def enc_name(enc)
+        RString.from(enc.enc_value.name)
+      end
+
       def enc_names(enc)
         RArray.from(enc.enc_value.names)
       end
@@ -49,6 +53,7 @@ module GarnetRuby
     def self.init_encoding
       @cEncoding = rb_define_class(:Encoding, cObject)
       rb_define_method(cEncoding, :to_s, &method(:enc_to_s))
+      rb_define_method(cEncoding, :name, &method(:enc_name))
       rb_define_method(cEncoding, :names, &method(:enc_names))
       rb_define_method(cEncoding, :inspect, &method(:enc_inspect))
       rb_define_singleton_method(cEncoding, :list, &method(:enc_list));
