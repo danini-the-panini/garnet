@@ -18,8 +18,9 @@ module GarnetRuby
     attr_reader :special_variables
     attr_accessor :running
 
-    def initialize(top_self)
+    def initialize(top_self, options)
       $indent = '' if __grb_debug__?
+      @options = options
       @top_self = top_self
       @running = false
       @control_frames = []
@@ -31,7 +32,7 @@ module GarnetRuby
     end
 
     def __vm_debug__?
-      __grb_debug__? && @running
+      (@options[:debug] || __grb_debug__?) && @running
     end
 
     def __vm_debug_exc__?
@@ -547,7 +548,7 @@ module GarnetRuby
       args = collect_args(callinfo)
       target = pop_stack
       method = find_method(target, callinfo.mid)
-      ret = dispatch_method(target, method, args, blockarg)
+      ret = dispatch_method(target, method, args, blockarg&.block)
       push_stack(ret) unless ret.nil? || ret == Q_UNDEF
     end
 
@@ -594,7 +595,7 @@ module GarnetRuby
       block_value = pop_stack
       return block_value if block_value == Q_NIL
 
-      ProcBlock.new(rb_call(block_value, :to_proc))
+      rb_call(block_value, :to_proc)
     end
 
     def get_block_for_super(control_frame, callinfo)
@@ -1026,7 +1027,7 @@ module GarnetRuby
       bt = backtrace_to_ary([], 0, true)
       exception.ivar_set(:backtrace, bt)
       if __vm_debug_exc__?
-        STDERR.puts "RASIED EXCEPTION #{exception} (#{exception.ivar_get(:message)}) at #{bt.array_value[0].string_value}"
+        STDERR.puts "RASIED EXCEPTION #{exception} (#{exception.ivar_get(:message)})\n#{bt.array_value.map { |x| "\t#{x.string_value}" }.join("\n")}"
       end
       raise GarnetThrow::Raise.new(exception, current_control_frame, exception)
     end

@@ -1,9 +1,10 @@
 # frozen_string_literal: true
 
 require 'optparse'
+require 'pp'
 
 def __grb_debug__?
-  ENV['GARNET_DEBUG']
+  $__grb_debug__ || ENV['GARNET_DEBUG']
 end
 
 module GarnetRuby
@@ -14,6 +15,10 @@ module GarnetRuby
   def self.parse_options(argv=ARGV, options={})
     OptionParser.new do |opts|
       opts.banner = "Usage: garnet [switches] [--] [progfile] [arguments]"
+
+      opts.on('-d', '--debug', 'set debugging flags') do |v|
+        $__grb_debug__ = options[:debug] = v
+      end
 
       opts.on("-e 'command'", "one line of script. Several -e's allowed. Omit [programfile]") do |v|
         options[:script_name] = '-e'
@@ -111,7 +116,7 @@ module GarnetRuby
     iseq = Iseq.new('<main>', :main)
     Compiler.new(iseq).compile_node(node)
 
-    vm = VM.new(Core.rb_vm_top_self)
+    vm = VM.new(Core.rb_vm_top_self, options)
     Core.prog_init(vm, options)
 
     vm.running = true
