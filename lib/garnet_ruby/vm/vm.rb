@@ -128,7 +128,7 @@ module GarnetRuby
       self_value ||= block.self_value
 
       iseq = block.iseq
-      env = Environment.new(klass || self_value.klass, block.environment, {}, block.environment, block.environment.method_entry)
+      env = Environment.new(klass || self_value.klass.real, block.environment, {}, block.environment, block.environment.method_entry)
       env.errinfo = block.environment.errinfo
       if method
         env.method_entry = env
@@ -145,7 +145,7 @@ module GarnetRuby
 
     def execute_rescue_iseq(iseq, throw_data, prev_control_frame=current_control_frame)
       locals = { :"\#$!" => throw_data.exc }
-      env = Environment.new(prev_control_frame.self_value.klass, prev_control_frame.environment, locals, prev_control_frame.environment, prev_control_frame.environment.method_entry)
+      env = Environment.new(prev_control_frame.environment.klass, prev_control_frame.environment, locals, prev_control_frame.environment, prev_control_frame.environment.method_entry)
       env.errinfo = throw_data.exc
       control_frame = ControlFrame.new(prev_control_frame.self_value, iseq, env, prev_control_frame.block)
       control_frame.throw_data = throw_data
