@@ -337,7 +337,7 @@ module GarnetRuby
         if args.length == 2
           limit = num2long(args[1])
         end
-        
+
         pattern = args.empty? ? VM.instance.get_global(:'$;') : args[0]
         if pattern.type?(String)
           pattern = pattern.string_value
@@ -360,6 +360,10 @@ module GarnetRuby
           result = str.string_value.split(*split_args)
           RArray.from(result)
         end
+      end
+
+      def str_bytes(str)
+        RArray.from(str.string_value.bytes)
       end
 
       def str_reverse_bang(str)
@@ -679,6 +683,7 @@ module GarnetRuby
       rb_define_method(cString, :swapcase!, &method(:str_swapcase_bang))
 
       rb_define_method(cString, :split, &method(:str_split))
+      rb_define_method(cString, :bytes, &method(:str_bytes))
       rb_define_method(cString, :reverse, &method(:str_reverse))
       rb_define_method(cString, :reverse!, &method(:str_reverse_bang))
       rb_define_method(cString, :<<, &method(:str_concat))
