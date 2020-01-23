@@ -97,6 +97,26 @@ module GarnetRuby
         file_dirname(fname)
       end
 
+      def rb_file_join(ary)
+        return RString.from('') if ary.len.zero?
+
+        args = ary.array_value.map do |x|
+          if x.type?(String)
+            x.string_value
+          elsif x.type?(Array)
+            rb_file_join(x).string_value
+          else
+            rb_get_path(x).string_value
+          end
+        end
+
+        RString.from(File.join(*args))
+      end
+
+      def rb_file_s_join(_, *args)
+        rb_file_join(RArray.new(cArray, [], args))
+      end
+
       def define_filetest_function(name)
         x = -> (_, *args) { File.__send__(name, *args.map(&:string_value)) ? Q_TRUE : Q_FALSE }
         rb_define_module_function(mFileTest, name, &x)
@@ -146,6 +166,8 @@ module GarnetRuby
       rb_define_singleton_method(cFile, :realdirpath, &method(:file_s_realdirpath))
       rb_define_singleton_method(cFile, :basename, &method(:file_s_basename))
       rb_define_singleton_method(cFile, :dirname, &method(:file_s_dirname))
+
+      rb_define_singleton_method(cFile, :join, &method(:rb_file_s_join))
     end
   end
 end

@@ -204,7 +204,7 @@ module GarnetRuby
         __send__(method_name, control_frame, insn)
       rescue GarnetThrow => e
         handle_rescue_throw(e)
-      rescue => e
+      rescue Object => e
         raise ExecutionError.new(e.message, insn)
       end
       control_frame.pc += 1 if control_frame.pc == prev_pc
@@ -215,7 +215,7 @@ module GarnetRuby
     def exec_leave(control_frame, insn)
       if insn.arguments.empty?
         pop_control_frame
-          if control_frame.iseq.type == :rescue
+        if control_frame.iseq.type == :rescue
           cfp = current_control_frame
           cr = cfp.iseq.catch_table.find do |x|
             x.type == :rescue && x.iseq == control_frame.iseq

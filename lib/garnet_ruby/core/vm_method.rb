@@ -55,6 +55,14 @@ module GarnetRuby
         mdl
       end
 
+      def mod_undef_method(mod, *args)
+        args.each do |v|
+          id = check_id(v)
+          rb_undef_method(mod, id)
+        end
+        mod
+      end
+
       def mod_alias_method(mod, newname, oldname)
         oldid = check_id(oldname)
         unless oldid
@@ -144,16 +152,28 @@ module GarnetRuby
         end
         mdl
       end
+
+      def top_public(_, *args)
+        mod_public(cObject, *args)
+      end
+
+      def top_private(_, *args)
+        mod_private(cObject, *args)
+      end
     end
 
     def self.init_vm_method
       rb_define_method(mKernel, :respond_to?, &method(:obj_respond_to))
 
+      rb_define_method(cModule, :undef_method, &method(:mod_undef_method))
       rb_define_method(cModule, :alias_method, &method(:mod_alias_method))
       rb_define_private_method(cModule, :public, &method(:mod_public))
       rb_define_private_method(cModule, :protected, &method(:mod_protected))
       rb_define_private_method(cModule, :private, &method(:mod_private))
       rb_define_private_method(cModule, :module_function, &method(:mod_modfunc))
+
+      rb_define_private_method(singleton_class_of(@top_self), :public, &method(:top_public))
+      rb_define_private_method(singleton_class_of(@top_self), :private, &method(:top_private))
     end
   end
 end

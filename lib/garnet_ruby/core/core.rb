@@ -271,7 +271,7 @@ module GarnetRuby
       end
 
       def rb_undef_method(klass, name)
-        definition = UndefinedMethodDef.new(&block)
+        definition = UndefinedMethodDef.new
         me = method_entry_create(name, klass, :public, definition)
         klass.method_table[name] = me
         me

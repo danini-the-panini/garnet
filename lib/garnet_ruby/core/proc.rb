@@ -124,6 +124,10 @@ module GarnetRuby
         RString.from("#<Proc #{prc.description}>")
       end
 
+      def proc_lambda_p(prc)
+        prc.is_lambda ? Q_TRUE : Q_FALSE
+      end
+
       def proc_dup(prc)
         RProc.new(cProc, [], prc.block, prc.is_lambda, prc.is_from_method)
       end
@@ -222,6 +226,7 @@ module GarnetRuby
       rb_define_method(cProc, :dup, &method(:proc_dup))
       rb_define_method(cProc, :to_s, &method(:proc_to_s))
       rb_alias_method(cProc, :inspect, :to_s)
+      rb_define_method(cProc, :lambda?, &method(:proc_lambda_p))
 
       # Exceptions
       @eLocalJumpError = rb_define_class(:LocalJumpError, eStandardError)

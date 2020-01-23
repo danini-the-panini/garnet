@@ -83,11 +83,16 @@ module GarnetRuby
         specific_eval(klass, slf, *args)
       end
 
+      def rb_instance_exec(slf, *args)
+        klass = singleton_class_for_eval(slf)
+        yield_under(klass, slf, *args)
+      end
+
       def specific_eval(klass, slf, *args)
         return yield_under(klass, slf, *args) if rb_block_given?
 
         src = args[0].obj_as_string.string_value
-        
+
         if args.length > 1
           fname = args[1].obj_as_string.string_value
         else
@@ -99,7 +104,7 @@ module GarnetRuby
         else
           lineno = 1
         end
-        
+
         vm = VM.instance
 
         cfp = vm.previous_control_frame
@@ -146,6 +151,7 @@ module GarnetRuby
       rb_define_global_function(:loop, &method(:rb_loop))
       
       rb_define_method(cBasicObject, :instance_eval, &method(:rb_instance_eval))
+      rb_define_method(cBasicObject, :instance_exec, &method(:rb_instance_exec))
 
       rb_define_method(cBasicObject, :__send__, &method(:rb_f_send))
       rb_define_method(mKernel, :send, &method(:rb_f_send))

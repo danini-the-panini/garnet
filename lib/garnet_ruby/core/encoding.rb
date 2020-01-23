@@ -48,6 +48,10 @@ module GarnetRuby
       def enc_list(_)
         RArray.from(@encodings)
       end
+
+      def enc_find(_, enc)
+        REncoding.from(Encoding.find(enc.string_value))
+      end
     end
 
     def self.init_encoding
@@ -57,6 +61,7 @@ module GarnetRuby
       rb_define_method(cEncoding, :names, &method(:enc_names))
       rb_define_method(cEncoding, :inspect, &method(:enc_inspect))
       rb_define_singleton_method(cEncoding, :list, &method(:enc_list));
+      rb_define_singleton_method(cEncoding, :find, &method(:enc_find));
 
       @encodings = []
 

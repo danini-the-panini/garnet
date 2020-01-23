@@ -44,23 +44,35 @@ module GarnetRuby
     def type?(x)
       x == Symbol
     end
+
+    def sym_hash
+      RPrimitive.from(symbol_value.hash)
+    end
+
+    def sym_inspect
+      RString.from(":#{symbol_value}")
+    end
+
+    def sym_equal(other)
+      self == other ? Q_TRUE : Q_FALSE
+    end
   end
 
   module Core
     class << self
-      def sym_hash(sym)
-        RPrimitive.from(sym.symbol_value.hash)
-      end
     end
 
     def self.init_symbol
       @cSymbol = rb_define_class(:Symbol)
 
-      rb_define_method(cSymbol, :hash, &method(:sym_hash))
-      rb_define_method(cSymbol, :inspect) do |x|
-        RString.from(":#{x.symbol_value}")
-      end
+      rb_define_method(cSymbol, :==, &:sym_equal)
+      rb_define_method(cSymbol, :===, &:sym_equal)
+      rb_define_method(cSymbol, :hash, &:sym_hash)
+      rb_define_method(cSymbol, :inspect, &:sym_inspect)
       rb_define_method(cSymbol, :to_s, &:sym2str)
+      rb_define_method(cSymbol, :id2name, &:sym2str)
+      rb_define_method(cSymbol, :intern, &:itself)
+      rb_define_method(cSymbol, :to_sym, &:itself)
       rb_define_method(cSymbol, :to_proc, &:sym_to_proc)
     end
   end

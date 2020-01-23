@@ -78,7 +78,7 @@ module GarnetRuby
           return File.exist?(path) ? path : nil
         end
 
-        $GARNET_LOAD_PATH.array_value.each do |load_path|
+        load_path.array_value.each do |load_path|
           load_path = load_path.str_to_str.string_value
           full_path = File.join(load_path, path)
           return full_path if File.exist?(full_path)
@@ -91,17 +91,21 @@ module GarnetRuby
 
         path
       end
+
+      attr_accessor :load_path
     end
 
     def self.init_load
-      $GARNET_LOAD_PATH = RArray.new(cArray, [], $LOAD_PATH.map { |s| RString.from(s) })
-      $GARNET_LOAD_PATH.array_value.unshift(RString.from(File.expand_path("../../../garnet_lib", __dir__)))
+      @load_path = RArray.new(cArray, [], $LOAD_PATH.map { |s| RString.from(s) })
+      @load_path.array_value.unshift(RString.from(File.expand_path('../../../garnet_lib', __dir__)))
 
-      lp_getter = -> { $GARNET_LOAD_PATH }
-      lp_setter = -> (v) { $GARNET_LOAD_PATH = v }
-      rb_define_virtual_variable(:'$:', lp_getter, lp_setter)
-      rb_define_virtual_variable(:$-I, lp_getter, lp_setter)
-      rb_define_virtual_variable(:$LOAD_PATH, lp_getter, lp_setter)
+      rb_define_virtual_variable(:'$:', method(:load_path), method(:load_path=))
+      rb_define_virtual_variable(:'$-I', method(:load_path), method(:load_path=))
+      rb_define_virtual_variable(:$LOAD_PATH, method(:load_path), method(:load_path=))
+
+      get_loaded_features = -> { RArray.from(@required_files.keys) }
+      rb_define_virtual_variable(:'$"', get_loaded_features, nil)
+      rb_define_virtual_variable(:$LOADED_FEATURES, get_loaded_features, nil)
 
       rb_define_global_variable(:'$:', $LOAD_PATH)
 

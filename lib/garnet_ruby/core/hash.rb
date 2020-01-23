@@ -83,6 +83,13 @@ module GarnetRuby
       end
     end
 
+    def delete_entry(key)
+      hash = Core.hash_of(key)
+      entries = table[hash] ||= []
+      entry, = entries.delete_if { |e| e.key_eql?(key) }
+      entry
+    end
+
     class Entry
       attr_reader :key
       attr_accessor :value
@@ -389,7 +396,19 @@ module GarnetRuby
 
         h
       end
-      
+
+      def hash_delete(hash, key)
+        entry = hash.delete_entry(key)
+
+        if entry
+          entry.value
+        else
+          return rb_yield(key) if rb_block_given?
+
+          Q_NIL
+        end
+      end
+
       def hash_update_block_i(hash, entry)
         val = entry.value
         if oldval = hash.get(entry.key)
@@ -458,6 +477,7 @@ module GarnetRuby
       rb_define_method(cHash, :values_at, &method(:hash_values_at))
 
       rb_define_method(cHash, :shift, &method(:hash_shift))
+      rb_define_method(cHash, :delete, &method(:hash_delete))
       rb_define_method(cHash, :invert, &method(:hash_invert))
       rb_define_method(cHash, :update, &method(:hash_update))
       rb_define_method(cHash, :merge!, &method(:hash_update))

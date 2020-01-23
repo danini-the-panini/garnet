@@ -509,6 +509,18 @@ module GarnetRuby
         RString.from(str.string_value.chomp(sep.string_value))
       end
 
+      def str_strip(str)
+        RString.from(str.string_value.strip)
+      end
+
+      def str_lstrip(str)
+        RString.from(str.string_value.lstrip)
+      end
+
+      def str_rstrip(str)
+        RString.from(str.string_value.rstrip)
+      end
+
       def str_sub_bang(str, *args)
         rb_str_sub(str, :sub!, *args)
       end
@@ -703,6 +715,9 @@ module GarnetRuby
       rb_define_method(cString, :sub, &method(:str_sub))
       rb_define_method(cString, :gsub, &method(:str_gsub))
       rb_define_method(cString, :chomp, &method(:str_chomp))
+      rb_define_method(cString, :strip, &method(:str_strip))
+      rb_define_method(cString, :lstrip, &method(:str_lstrip))
+      rb_define_method(cString, :rstrip, &method(:str_rstrip))
 
       rb_define_method(cString, :sub!, &method(:str_sub_bang))
       rb_define_method(cString, :gsub!, &method(:str_gsub_bang))

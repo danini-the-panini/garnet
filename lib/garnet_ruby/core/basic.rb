@@ -189,14 +189,14 @@ module GarnetRuby
       if r == Q_UNDEF
         if should_raise
           # TODO: fancier error message
-          
+
           cname = case self
-          when Q_NIL   then 'nil'
-          when Q_TRUE  then 'true'
-          when Q_FALSE then 'false'
-          else self.klass
-          end
-          Core.rb_raise(core.eTypeError, "can't convert #{cname} into #{tname}")
+                  when Q_NIL   then 'nil'
+                  when Q_TRUE  then 'true'
+                  when Q_FALSE then 'false'
+                  else self.klass
+                  end
+          Core.rb_raise(Core.eTypeError, "can't convert #{cname} into #{tname}")
         end
         return Q_NIL
       end

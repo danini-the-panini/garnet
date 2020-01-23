@@ -3,6 +3,8 @@
 require 'optparse'
 require 'pp'
 
+$__grb_debug__ = false
+
 def __grb_debug__?
   $__grb_debug__ || ENV['GARNET_DEBUG']
 end

@@ -644,6 +644,15 @@ module GarnetRuby
         RPrimitive.from(num.value.abs)
       end
 
+      def float_to_i(num)
+        f = num.value
+
+        f = f.floor if f.positive?
+        f = f.ceil if f.negative?
+
+        RPrimitive.from(f.to_i)
+      end
+
       def float_floor(num, *args)
         if args.length.zero?
           RPrimitive.from(num.value.floor)
@@ -751,6 +760,7 @@ module GarnetRuby
       rb_define_method(cFloat, :<=, &method(:float_le))
       rb_define_method(cFloat, :abs, &method(:float_abs))
 
+      rb_define_method(cFloat, :to_i, &method(:float_to_i))
       rb_define_method(cFloat, :floor, &method(:float_floor))
       rb_define_method(cFloat, :ceil, &method(:float_ceil))
       rb_define_method(cFloat, :round, &method(:float_round))
