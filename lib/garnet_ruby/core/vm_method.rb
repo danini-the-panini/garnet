@@ -59,6 +59,27 @@ module GarnetRuby
         mdl
       end
 
+      def remove_method(klass, mid)
+        if mid == :object_id || mid == :__send__ || mid == :initialize
+          puts "WARNING: removing `#{mid}' may cause serious problems"
+        end
+
+        me = klass.method_table[mid]
+        if me.nil? || me.undefined?
+          rb_raise(eNameError, "method `#{mid}' not defined in #{klass}")
+        end
+
+        klass.method_table.delete(mid)
+      end
+
+      def mod_remove_method(mod, *args)
+        args.each do |v|
+          id = check_id(v)
+          remove_method(mod, id)
+        end
+        mod
+      end
+
       def mod_undef_method(mod, *args)
         args.each do |v|
           id = check_id(v)
@@ -173,6 +194,7 @@ module GarnetRuby
     def self.init_vm_method
       rb_define_method(mKernel, :respond_to?, &method(:obj_respond_to))
 
+      rb_define_method(cModule, :remove_method, &method(:mod_remove_method))
       rb_define_method(cModule, :undef_method, &method(:mod_undef_method))
       rb_define_method(cModule, :alias_method, &method(:mod_alias_method))
       rb_define_private_method(cModule, :public, &method(:mod_public))
