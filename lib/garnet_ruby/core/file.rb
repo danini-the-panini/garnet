@@ -97,6 +97,10 @@ module GarnetRuby
         file_dirname(fname)
       end
 
+      def file_s_extname(_, fname)
+        RString.from(File.extname(rb_get_path(fname).string_value))
+      end
+
       def rb_file_join(ary)
         return RString.from('') if ary.len.zero?
 
@@ -166,6 +170,7 @@ module GarnetRuby
       rb_define_singleton_method(cFile, :realdirpath, &method(:file_s_realdirpath))
       rb_define_singleton_method(cFile, :basename, &method(:file_s_basename))
       rb_define_singleton_method(cFile, :dirname, &method(:file_s_dirname))
+      rb_define_singleton_method(cFile, :extname, &method(:file_s_extname))
 
       rb_define_singleton_method(cFile, :join, &method(:rb_file_s_join))
     end
