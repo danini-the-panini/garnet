@@ -178,6 +178,15 @@ module GarnetRuby
         end
       end
 
+      def str_succ(str)
+        RString.from(str.string_value.succ)
+      end
+
+      def str_succ_bang(str)
+        str.string_value.succ!
+        str
+      end
+
       def str_index(str, *args)
         sub, initpos = args
         pos = if args.length == 2
@@ -676,6 +685,10 @@ module GarnetRuby
       rb_define_method(cString, :size, &method(:str_length))
       rb_define_method(cString, :empty?, &method(:str_empty))
       rb_define_method(cString, :=~, &method(:str_match))
+      rb_define_method(cString, :succ, &method(:str_succ))
+      rb_define_method(cString, :succ!, &method(:str_succ_bang))
+      rb_define_method(cString, :next, &method(:str_succ))
+      rb_define_method(cString, :next!, &method(:str_succ_bang))
       rb_define_method(cString, :index, &method(:str_index))
       rb_define_method(cString, :rindex, &method(:str_rindex))
 
