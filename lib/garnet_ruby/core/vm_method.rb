@@ -182,6 +182,47 @@ module GarnetRuby
         mdl
       end
 
+      def check_definition_visibility(mod, *args)
+        lookup_mod = mod
+
+        mid, include_super = args
+        id = check_id(mid)
+
+        if args.length == 1
+          inc_super = true
+        else
+          inc_super = rtest(include_super)
+          lookup_mod = lookup_mod.origin unless inc_super
+        end
+
+        me = find_method(lookup_mod, id)
+        return nil if me.nil? || me.undefined?
+        return nil if !inc_super && me.defined_class != mod
+
+        me.visibility
+      end
+
+      def mod_method_defined(mod, *args)
+        visi = check_definition_visibility(mod, *args)
+        visi == :public || visi == :protected ? Q_TRUE : Q_FALSE
+      end
+
+      def check_definition(mod, visi, *args)
+        check_definition_visibility(mod, *args) == visi ? Q_TRUE : Q_FALSE
+      end
+
+      def mod_public_method_defined
+        check_definition(mod, :public, *args)
+      end
+
+      def mod_private_method_defined
+        check_definition(mod, :private, *args)
+      end
+
+      def mod_protected_method_defined
+        check_definition(mod, :protected, *args)
+      end
+
       def top_public(_, *args)
         mod_public(cObject, *args)
       end
@@ -201,6 +242,11 @@ module GarnetRuby
       rb_define_private_method(cModule, :protected, &method(:mod_protected))
       rb_define_private_method(cModule, :private, &method(:mod_private))
       rb_define_private_method(cModule, :module_function, &method(:mod_modfunc))
+
+      rb_define_method(cModule, :method_defined?, &method(:mod_method_defined))
+      rb_define_method(cModule, :public_method_defined?, &method(:mod_public_method_defined))
+      rb_define_method(cModule, :private_method_defined?, &method(:mod_private_method_defined))
+      rb_define_method(cModule, :protected_method_defined?, &method(:mod_protected_method_defined))
 
       rb_define_private_method(singleton_class_of(@top_self), :public, &method(:top_public))
       rb_define_private_method(singleton_class_of(@top_self), :private, &method(:top_private))
