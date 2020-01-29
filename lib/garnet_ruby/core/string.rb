@@ -157,6 +157,18 @@ module GarnetRuby
         str_aset(str, args[0], args[1])
       end
 
+      def str_insert(str, idx, str2)
+        pos = num2long(idx)
+
+        if pos == -1
+          return str_append(str, str2)
+        elsif pos.negative?
+          pos += 1
+        end
+        str_splice(str, pos, 0, str2)
+        str
+      end
+
       def str_length(str)
         RPrimitive.from(str.string_value.length)
       end
@@ -681,6 +693,7 @@ module GarnetRuby
       rb_define_method(cString, :%, &method(:str_format))
       rb_define_method(cString, :[], &method(:str_aref_m))
       rb_define_method(cString, :[]=, &method(:str_aset_m))
+      rb_define_method(cString, :insert, &method(:str_insert))
       rb_define_method(cString, :length, &method(:str_length))
       rb_define_method(cString, :size, &method(:str_length))
       rb_define_method(cString, :empty?, &method(:str_empty))
