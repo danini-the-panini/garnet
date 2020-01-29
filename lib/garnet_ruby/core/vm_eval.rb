@@ -88,6 +88,11 @@ module GarnetRuby
         yield_under(klass, slf, *args)
       end
 
+      def rb_method_missing(obj, *args)
+        mid = check_id(args.first)
+        rb_raise(eNoMethodError, "undefined method `#{mid}' for #{obj}")
+      end
+
       def specific_eval(klass, slf, *args)
         return yield_under(klass, slf, *args) if rb_block_given?
 
@@ -149,9 +154,10 @@ module GarnetRuby
       rb_define_global_function(:throw, &method(:rb_throw))
 
       rb_define_global_function(:loop, &method(:rb_loop))
-      
+
       rb_define_method(cBasicObject, :instance_eval, &method(:rb_instance_eval))
       rb_define_method(cBasicObject, :instance_exec, &method(:rb_instance_exec))
+      rb_define_private_method(cBasicObject, :method_missing, &method(:rb_method_missing))
 
       rb_define_method(cBasicObject, :__send__, &method(:rb_f_send))
       rb_define_method(mKernel, :send, &method(:rb_f_send))

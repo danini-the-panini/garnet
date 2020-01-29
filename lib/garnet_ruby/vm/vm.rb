@@ -552,8 +552,9 @@ module GarnetRuby
       blockarg = nil if blockarg == Q_NIL
       args = collect_args(callinfo)
       target = pop_stack
-      method = find_method(target, callinfo.mid)
-      ret = dispatch_method(target, method, args, blockarg)
+      mid = callinfo.mid
+      method = find_method_unchecked(target, mid)
+      ret = dispatch_method(target, mid, method, args, blockarg)
       push_stack(ret) unless ret.nil? || ret == Q_UNDEF
     end
 
@@ -561,9 +562,10 @@ module GarnetRuby
       callinfo = insn.arguments[0]
       args = collect_args(callinfo)
       target = pop_stack
-      method = find_method(target, callinfo.mid)
+      mid = callinfo.mid
+      method = find_method_unchecked(target, mid)
       block = IseqBlock.new(control_frame.environment, control_frame.self_value, callinfo.block_iseq)
-      ret = dispatch_method(target, method, args, block)
+      ret = dispatch_method(target, mid, method, args, block)
       push_stack(ret) unless ret.nil? || ret == Q_UNDEF
     end
 
@@ -581,7 +583,7 @@ module GarnetRuby
       args = collect_args(callinfo)
       target = control_frame.self_value
       method = find_super_method(target, control_frame.method_entry.method_object)
-      ret = dispatch_method(target, method, args, block)
+      ret = dispatch_method(target, method.called_id, method, args, block)
       push_stack(ret) unless ret.nil? || ret == Q_UNDEF
     end
 
@@ -778,13 +780,13 @@ module GarnetRuby
     end
 
     def rb_call(recv, mid, *args)
-      method = find_method(recv, mid)
-      dispatch_method(recv, method, args)
+      method = find_method_unchecked(recv, mid)
+      dispatch_method(recv, mid, method, args)
     end
 
     def rb_call_with_block(recv, mid, block, *args)
-      method = find_method(recv, mid)
-      dispatch_method(recv, method, args, block)
+      method = find_method_unchecked(recv, mid)
+      dispatch_method(recv, mid, method, args, block)
     end
 
     def rb_check_funcall(recv, mid, *args)
@@ -808,16 +810,16 @@ module GarnetRuby
       klass = me.defined_class
       klass = klass.super_class
       id = me.called_id
-      me = find_method(recv, id, klass)
+      me = find_method_unchecked(recv, id, klass)
 
-      dispatch_method(recv, me, args)
+      dispatch_method(recv, id, me, args)
     end
 
     def rb_block_call(recv, mid, *args, &block)
       control_frame = current_control_frame
-      method = find_method(recv, mid)
+      method = find_method_unchecked(recv, mid)
       block = BuiltInBlock.new(control_frame.environment, control_frame.self_value, &block)
-      dispatch_method(recv, method, args, block)
+      dispatch_method(recv, mid, method, args, block)
     rescue GarnetThrow::Break => e
       e.value if e.cfp.nil?
     end
@@ -880,7 +882,12 @@ module GarnetRuby
       find_method(target, me.called_id, sup)
     end
 
-    def dispatch_method(target, method, args, block=nil)
+    def dispatch_method(target, mid, method, args, block=nil)
+      if method.nil? || method.undefined?
+        method = find_method_unchecked(target, :method_missing)
+        args.unshift(RSymbol.from(mid))
+      end
+
       method.definition.dispatch(self, target, method, args, block)
     end
 

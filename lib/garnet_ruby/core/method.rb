@@ -81,15 +81,22 @@ module GarnetRuby
     attr_reader :original_method
 
     def initialize(original_method)
-      @original_method = original_method.definition.is_a?(AliasMethodDef) ? original_method.definition.original_method : original_method
+      @original_method = if original_method.definition.is_a?(AliasMethodDef)
+                           original_method.definition.original_method
+                         else
+                           original_method
+                         end
+
     end
 
     def arity
       original_method.arity
     end
 
-    def dispatch(vm, target, method, args, block=nil)
-      vm.dispatch_method(target, method.definition.original_method, args, block)
+    def dispatch(vm, target, method, args, block = nil)
+      om = method.definition.original_method
+      mid = om.called_id
+      vm.dispatch_method(target, mid, om, args, block)
     end
   end
 

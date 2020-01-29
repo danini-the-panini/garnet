@@ -153,7 +153,9 @@ module GarnetRuby
           rb_raise(eTypeError, "can't call unbound method; bind first")
         end
         block = VM.instance.current_control_frame.block
-        VM.instance.dispatch_method(m.recv, m.method_entry, args, block)
+        me = m.method_entry
+        mid = me.called_id
+        VM.instance.dispatch_method(m.recv, mid, me, args, block)
       end
 
       def method_arity(m)
