@@ -445,8 +445,13 @@ module GarnetRuby
 
       klass = control_frame.environment.lexical_scope.klass
       definition = ISeqMethodDef.new(method_iseq, control_frame.environment)
-      method = Core.method_entry_create(mid, klass, :public, definition)
+      scope_visi = control_frame.environment.scope_visi
+      method = Core.method_entry_create(mid, klass, scope_visi.method_visi, definition)
       klass.method_table[mid] = method
+
+      if scope_visi.module_func
+        Core.mod_modfunc(klass, mid_sym)
+      end
 
       push_stack(mid_sym)
     end
@@ -969,10 +974,10 @@ module GarnetRuby
       klass
     end
 
-    def set_visibility(visi)
+    def set_visibility(visi, modfunc = nil)
       scope_visi = previous_control_frame.environment.scope_visi
-      scope_visi.method_visi = visi
-      # TODO: module_func?
+      scope_visi.method_visi = visi unless visi.nil?
+      scope_visi.module_func = modfunc unless modfunc.nil?
     end
 
     def get_local_env(level)

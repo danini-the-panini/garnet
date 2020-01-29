@@ -10,7 +10,11 @@ module GarnetRuby
       end
 
       def scope_visibility_set(visi)
-        VM.instance.set_visibility(visi)
+        VM.instance.set_visibility(visi, nil)
+      end
+
+      def scope_module_func_set
+        VM.instance.set_visibility(:priovate, true)
       end
 
       def export_method(klass, name, visi)
@@ -129,8 +133,12 @@ module GarnetRuby
           rb_raise(eTypeError, 'module_function must be called for modules')
         end
 
-        # TODO: scope_module_func_set
-        # TODO: set visibility private
+        if args.empty?
+          scope_module_func_set
+          return mdl
+        end
+
+        set_method_visibility(mdl, :private, *args)
 
         args.each do |arg|
           m = mdl

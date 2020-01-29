@@ -17,7 +17,7 @@ module GarnetRuby
     def next_scope
       lexical_scope.next_scope
     end
-    
+
     def klass
       lexical_scope.klass
     end
