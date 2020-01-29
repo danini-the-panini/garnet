@@ -411,10 +411,8 @@ module GarnetRuby
       case node[0]
       when :lasgn
         add_set_local(node[1])
-        add_instruction(:pop)
       when :iasgn
         add_instruction(:set_instance_variable, node[1])
-        add_instruction(:pop)
       when :attrasgn
         compile(node[1])
         argc, flags = compile_call_args(node)
@@ -422,16 +420,21 @@ module GarnetRuby
         argc += 1
         add_instruction(:send_without_block, CallInfo.new(node[2], argc, flags))
         add_instruction(:pop)
-        add_instruction(:pop)
       when :gasgn
         add_instruction(:set_global, node[1])
         add_instruction(:pop)
       when :cvdecl, :cvasgn
         add_instruction(:set_class_variable, node[1])
-        add_instruction(:pop)
       when :masgn
         compile_masgn_body(node)
+      when :cdecl, :const
+        id = compile_const_base(node[1])
+        add_instruction(:swap)
+        add_instruction(:set_constant, id)
+      else
+        raise "UNKNOWN ASSIGNMENT: #{node}"
       end
+      add_instruction(:pop)
     end
 
     def compile_hash_elements(nodes)
