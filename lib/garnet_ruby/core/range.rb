@@ -193,7 +193,7 @@ module GarnetRuby
       end
 
       def range_values(range)
-        if obj_is_kind_of(range, cRange)
+        if rtest(obj_is_kind_of(range, cRange))
           return range.st, range.ed, range.excl
 
           # TODO: check against ArithSeq ??

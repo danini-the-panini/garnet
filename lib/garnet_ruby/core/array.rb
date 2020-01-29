@@ -509,6 +509,57 @@ module GarnetRuby
         ary
       end
 
+      def ary_fill(ary, *args)
+        item = Q_UNDEF
+        beg = 0
+        len = 0
+
+        not_range = false
+        if rb_block_given?
+          arg1, arg2 = args
+          args << Q_UNDEF # hackish
+        else
+          item, arg1, arg2 = args
+        end
+        arg1 ||= Q_NIL
+        arg2 ||= Q_NIL
+        case args.length
+        when 1
+          beg = 0
+          len = ary.len
+        when 2
+          r, beg, len = range_beg_len(arg1, ary.len, 1)
+          not_range = true unless r == Q_TRUE
+        when 3
+          not_range = true
+        end
+        if not_range
+          beg = arg1 == Q_NIL ? 0 : num2long(arg1)
+          if beg.negative?
+            beg = ary.len + beg
+            beg = 0 if beg.negative?
+          end
+          len = arg2 == Q_NIL ? ary.len - beg : num2long(arg2)
+        end
+        return ary if len.negative?
+
+        ed = beg + len
+        ary_mem_clear(ary, ary.len, ed - ary.len) if ary.len < ed
+
+        if item == Q_UNDEF
+          (beg...ed).each do |i|
+            v = rb_yield(RPrimitive.from(i))
+            break if i >= ary.len
+
+            ary.array_value[i] = v
+          end
+        else
+          ary_mem_fill(ary, beg, len, item)
+        end
+
+        ary
+      end
+
       def ary_cmp(ary1, ary2)
         ary2 = ary2.check_array_type
         return Q_NIL if ary2 == Q_NIL
@@ -960,6 +1011,7 @@ module GarnetRuby
       rb_define_method(cArray, :transpose, &method(:ary_transpose))
       rb_define_method(cArray, :replace, &method(:ary_replace))
       rb_define_method(cArray, :clear, &method(:ary_clear))
+      rb_define_method(cArray, :fill, &method(:ary_fill))
       rb_define_method(cArray, :include?, &method(:ary_includes))
       rb_define_method(cArray, :<=>, &method(:ary_cmp))
 
