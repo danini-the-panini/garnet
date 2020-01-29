@@ -1,12 +1,13 @@
 module GarnetRuby
   class RHash < RObject
-    attr_accessor :table, :ifnone, :proc_default
+    attr_accessor :table, :ifnone, :proc_default, :compare_by_id
 
     def initialize(klass, flags)
       super(klass, flags)
       @table = {}
       @ifnone = Q_NIL
       @proc_default = false
+      @compare_by_id = false
     end
 
     def type
@@ -68,7 +69,7 @@ module GarnetRuby
       if entry
         entry.value = value
       else
-        entries << RHash::Entry.new(k, value)
+        entries << entry_class.new(k, value)
       end
     end
 
@@ -79,7 +80,7 @@ module GarnetRuby
       if entry
         entry.value = value
       else
-        entries << RHash::Entry.new(key, value)
+        entries << entry_class.new(key, value)
       end
     end
 
@@ -88,6 +89,17 @@ module GarnetRuby
       entries = table[hash] ||= []
       entry, = entries.delete_if { |e| e.key_eql?(key) }
       entry
+    end
+
+    def rehash
+      # TODO: change hash function based on ident
+      table.transform_values! do |v|
+        v.map { |e| entry_class.new(e.key, e.value) }
+      end
+    end
+
+    def entry_class
+      compare_by_id ? IdentEntry : Entry
     end
 
     class Entry
@@ -105,6 +117,12 @@ module GarnetRuby
 
       def key_eql?(k)
         Core.rtest(Core.rb_funcall(key, :eql?, k))
+      end
+    end
+
+    class IdentEntry < Entry
+      def key_eql?(k)
+        k == key
       end
     end
   end
@@ -466,6 +484,16 @@ module GarnetRuby
         end
         Q_FALSE
       end
+
+      def hash_compare_by_id(hash)
+        hash.compare_by_id = true
+        hash.rehash
+        hash
+      end
+
+      def hash_compare_by_id_p(hash)
+        hash.compare_by_id ? Q_TRUE : Q_FALSE
+      end
     end
 
     def self.init_hash
@@ -516,6 +544,9 @@ module GarnetRuby
       rb_define_method(cHash, :has_value?, &method(:hash_has_value))
       rb_define_method(cHash, :key?, &method(:hash_has_key))
       rb_define_method(cHash, :value?, &method(:hash_has_value))
+
+      rb_define_method(cHash, :compare_by_identity, &method(:hash_compare_by_id))
+      rb_define_method(cHash, :compare_by_identity?, &method(:hash_compare_by_id_p))
     end
   end
 end
