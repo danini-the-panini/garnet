@@ -25,6 +25,16 @@ module GarnetRuby
       rescue SystemCallError => e
         rb_raise(@syserr_tbl[e.errno], e.message)
       end
+
+      def dir_s_exist(_, fname)
+        tmp = fname.check_convert_type_with_id(File, 'IO', :to_io)
+        if tmp != Q_NIL
+          Dir.exist?(tmp.file_value) ? Q_TRUE : Q_FALSE
+        else
+          file = rb_get_path(file)
+          Dir.exist?(file.string_value) ? Q_TRUE : Q_FALSE
+        end
+      end
     end
 
     def self.init_dir
@@ -34,6 +44,7 @@ module GarnetRuby
       rb_define_singleton_method(cDir, :delete, &method(:dir_s_rmdir))
 
       rb_define_singleton_method(cDir, :[], &method(:dir_s_aref))
+      rb_define_singleton_method(cDir, :exist?, &method(:dir_s_exist))
     end
   end
 end

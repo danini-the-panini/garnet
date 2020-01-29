@@ -474,6 +474,31 @@ module GarnetRuby
         ary
       end
 
+      def ary_transpose(ary)
+        elen = -1
+        result = nil
+
+        alen = ary.len
+        return ary_dup(ary) if alen.zero?
+
+        alen.times do |i|
+          tmp = ary.array_value[i].to_array_type
+          if elen.negative?
+            elen = tmp.len
+            result = RArray.from([])
+            elen.times do |j|
+              result.array_value[j] = RArray.from([])
+            end
+          elsif elen != tmp.len
+            rb_raise(eIndexError, "element size differs (#{tmp.len} should be #{elen})")
+          end
+          elen.times do |j|
+            result.array_value[j].array_value[i] = tmp.array_value[j]
+          end
+        end
+        result
+      end
+
       def ary_replace(copy, orig)
         copy.array_value.replace(orig.array_value.dup)
         copy
@@ -908,6 +933,7 @@ module GarnetRuby
       rb_define_method(cArray, :filter!, &method(:ary_select_bang))
       rb_define_method(cArray, :delete_if, &method(:ary_delete_if))
       rb_define_method(cArray, :reject!, &method(:ary_reject_bang))
+      rb_define_method(cArray, :transpose, &method(:ary_transpose))
       rb_define_method(cArray, :replace, &method(:ary_replace))
       rb_define_method(cArray, :clear, &method(:ary_clear))
       rb_define_method(cArray, :include?, &method(:ary_includes))

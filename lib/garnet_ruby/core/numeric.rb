@@ -443,7 +443,12 @@ module GarnetRuby
 
       def int_xor(x, y)
         return fix_xor(x, y) if fixnum?(x)
+
         Q_NIL
+      end
+
+      def int_aref(num, arg)
+        RPrimitive.from(num.value[num2long(arg)])
       end
 
       def int_lshift(x, y)
@@ -736,6 +741,7 @@ module GarnetRuby
       rb_define_method(cInteger, :&, &method(:int_and))
       rb_define_method(cInteger, :|, &method(:int_or))
       rb_define_method(cInteger, :'^', &method(:int_xor))
+      rb_define_method(cInteger, :[], &method(:int_aref))
 
       rb_define_method(cInteger, :<<, &method(:int_lshift))
       rb_define_method(cInteger, :>>, &method(:int_rshift))

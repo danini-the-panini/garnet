@@ -169,7 +169,7 @@ module GarnetRuby
 
         hash = hash_alloc(klass)
         hash_bulk_insert(hash, *args)
-        return hash
+        hash
       end
 
       def table_copy(table)
@@ -178,6 +178,13 @@ module GarnetRuby
           new_table[k] = v.map { |e| RHash::Entry.new(e.key, e.value) }
         end
         new_table
+      end
+
+      def hash_dup(hash)
+        ret = hash_alloc_flags(hash.klass, hash.flags, hash.ifnone)
+        ret.table = table_copy(hash.table)
+        rb_copy_generic_ivar(ret, hash)
+        ret
       end
 
       def hash_bulk_insert(hash, *args)
@@ -360,6 +367,20 @@ module GarnetRuby
         hash
       end
 
+      def hash_each_value(hash)
+        hash.entries.each do |e|
+          rb_yield(e.value)
+        end
+        hash
+      end
+
+      def hash_each_key(hash)
+        hash.entries.each do |e|
+          rb_yield(e.key)
+        end
+        hash
+      end
+
       def hash_keys(hash)
         RArray.from(hash.entries.map(&:key))
       end
@@ -435,6 +456,10 @@ module GarnetRuby
         hash
       end
 
+      def hash_merge(hash, *args)
+        hash_update(hash_dup(hash), *args)
+      end
+
       def hash_has_value(hash, value)
         hash.entries.each do |entry|
           return Q_TRUE if rb_equal(entry.value, value) == Q_TRUE
@@ -469,6 +494,8 @@ module GarnetRuby
       rb_define_method(cHash, :length, &method(:hash_size))
       rb_define_method(cHash, :empty?, &method(:hash_empty_p))
 
+      rb_define_method(cHash, :each_value, &method(:hash_each_value))
+      rb_define_method(cHash, :each_key, &method(:hash_each_key))
       rb_define_method(cHash, :each_pair, &method(:hash_each_pair))
       rb_define_method(cHash, :each, &method(:hash_each_pair))
 
@@ -481,6 +508,7 @@ module GarnetRuby
       rb_define_method(cHash, :invert, &method(:hash_invert))
       rb_define_method(cHash, :update, &method(:hash_update))
       rb_define_method(cHash, :merge!, &method(:hash_update))
+      rb_define_method(cHash, :merge, &method(:hash_merge))
 
       rb_define_method(cHash, :include?, &method(:hash_has_key))
       rb_define_method(cHash, :member?, &method(:hash_has_key))
