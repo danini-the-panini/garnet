@@ -94,7 +94,14 @@ module GarnetRuby
         name = args.first.obj_as_string.string_value
         # TODO: more args
 
-        RString.from(IO::read(name))
+        RString.from(IO.read(name))
+      end
+
+      def io_s_binread(_, *args)
+        name = args.first.obj_as_string.string_value
+        # TODO: more args
+
+        RString.from(IO.binread(name))
       end
 
       def rb_printf(*args)
@@ -180,7 +187,7 @@ module GarnetRuby
       rb_define_singleton_method(cIO, :foreach, &method(:TODO_not_implemented))
       rb_define_singleton_method(cIO, :readlines, &method(:TODO_not_implemented))
       rb_define_singleton_method(cIO, :read, &method(:io_s_read))
-      rb_define_singleton_method(cIO, :binread, &method(:TODO_not_implemented))
+      rb_define_singleton_method(cIO, :binread, &method(:io_s_binread))
       rb_define_singleton_method(cIO, :write, &method(:TODO_not_implemented))
       rb_define_singleton_method(cIO, :binwrite, &method(:TODO_not_implemented))
       rb_define_singleton_method(cIO, :select, &method(:TODO_not_implemented))
