@@ -10,6 +10,20 @@ module GarnetRuby
         RString.from(Dir.pwd)
       end
 
+      def dir_s_mkdir(_, *args)
+        path, vmode = args
+        mode = if args.length == 2
+                 num2long(vmode)
+               else
+                 0777
+               end
+
+        path = check_dirname(path)
+        Dir.mkdir(path.string_value, mode)
+
+        RPrimitive.from(0)
+      end
+
       def dir_s_rmdir(obj, dir)
         dir = check_dirname(dir)
 
@@ -41,7 +55,10 @@ module GarnetRuby
       @cDir = rb_define_class(:Dir, cObject)
 
       rb_define_singleton_method(cDir, :pwd, &method(:dir_s_getwd))
+      rb_define_singleton_method(cDir, :mkdir, &method(:dir_s_mkdir))
+      rb_define_singleton_method(cDir, :rmdir, &method(:dir_s_rmdir))
       rb_define_singleton_method(cDir, :delete, &method(:dir_s_rmdir))
+      rb_define_singleton_method(cDir, :unlink, &method(:dir_s_rmdir))
 
       rb_define_singleton_method(cDir, :[], &method(:dir_s_aref))
       rb_define_singleton_method(cDir, :exist?, &method(:dir_s_exist))
