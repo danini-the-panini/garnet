@@ -28,6 +28,17 @@ module GarnetRuby
 
       new(Core.cThread, [], value)
     end
+
+    def thread_aref(key)
+      id = Core.check_id(key)
+      thread_value[id]
+    end
+
+    def thread_aset(key, value)
+      id = Core.check_id(key)
+      thread_value[id] = value
+      value
+    end
   end
 
   module Core
@@ -41,6 +52,8 @@ module GarnetRuby
       @cThread = rb_define_class(:Thread)
 
       rb_define_singleton_method(cThread, :current, &method(:thread_s_current))
+      rb_define_method(cThread, :[], &:thread_aref)
+      rb_define_method(cThread, :[]=, &:thread_aset)
     end
   end
 end
