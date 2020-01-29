@@ -94,6 +94,27 @@ module GarnetRuby
         ary
       end
 
+      def enum_flat_map(obj)
+        # TODO: return enumerator
+
+        vm = VM.instance
+        block = vm.caller_environment.block
+
+        ary = RArray.from([])
+        rb_block_call(obj, :each) do |x|
+          i = vm.execute_block(block, [x], 1)
+          tmp = i.check_array_type
+          if tmp == Q_NIL
+            ary_push(ary, i)
+          else
+            ary.array_value.concat(tmp.array_value)
+          end
+          Q_NIL
+        end
+
+        ary
+      end
+
       def enum_partition(obj)
         # TODO: return enumerator
         
@@ -218,7 +239,7 @@ module GarnetRuby
       rb_define_method(mEnumerable, :reject, &method(:TODO_not_implemented))
       rb_define_method(mEnumerable, :collect, &method(:enum_collect))
       rb_define_method(mEnumerable, :map, &method(:enum_collect))
-      rb_define_method(mEnumerable, :flat_map, &method(:TODO_not_implemented))
+      rb_define_method(mEnumerable, :flat_map, &method(:enum_flat_map))
       rb_define_method(mEnumerable, :collect_concat, &method(:TODO_not_implemented))
       rb_define_method(mEnumerable, :inject, &method(:enum_inject))
       rb_define_method(mEnumerable, :reduce, &method(:enum_inject))
