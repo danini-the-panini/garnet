@@ -27,12 +27,12 @@ module GarnetRuby
       end
 
       def dir_s_exist(_, fname)
-        tmp = fname.check_convert_type_with_id(File, 'IO', :to_io)
+        tmp = fname.rb_check_convert_type_with_id(File, 'IO', :to_io)
         if tmp != Q_NIL
           Dir.exist?(tmp.file_value) ? Q_TRUE : Q_FALSE
         else
-          file = rb_get_path(file)
-          Dir.exist?(file.string_value) ? Q_TRUE : Q_FALSE
+          fname = rb_get_path(fname)
+          Dir.exist?(fname.string_value) ? Q_TRUE : Q_FALSE
         end
       end
     end
