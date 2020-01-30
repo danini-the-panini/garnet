@@ -90,6 +90,20 @@ module GarnetRuby
         RIO.new(klass, [], nil)
       end
 
+      def io_s_open(klass, *args)
+        io = rb_class_new_instance(klass, *args)
+
+        if rb_block_given?
+          begin
+            return rb_yield(io)
+          ensure
+            io.io_close
+          end
+        end
+
+        io
+      end
+
       def io_s_read(_, *args)
         name = args.first.obj_as_string.string_value
         # TODO: more args
@@ -180,7 +194,7 @@ module GarnetRuby
 
       rb_define_alloc_func(cIO, &method(:io_alloc))
       rb_define_singleton_method(cIO, :new, &method(:TODO_not_implemented))
-      rb_define_singleton_method(cIO, :open, &method(:TODO_not_implemented))
+      rb_define_singleton_method(cIO, :open, &method(:io_s_open))
       rb_define_singleton_method(cIO, :sysopen, &method(:TODO_not_implemented))
       rb_define_singleton_method(cIO, :for_fd, &method(:TODO_not_implemented))
       rb_define_singleton_method(cIO, :popen, &method(:TODO_not_implemented))
