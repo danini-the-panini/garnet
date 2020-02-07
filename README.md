@@ -6,6 +6,7 @@ Ruby written in Ruby.
 
 1. Clone the repo
 2. `exe/garnet -e 'puts "Hello, world"'`
+3. Use the `-d` flag for debug output
 
 ## Contributing
 
