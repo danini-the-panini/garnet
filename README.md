@@ -5,7 +5,7 @@ Ruby written in Ruby.
 ## How to run it:
 
 1. Clone the repo
-2. `exe/garnet -e 'puts "Hello, world"'
+2. `exe/garnet -e 'puts "Hello, world"'`
 
 ## Contributing
 
