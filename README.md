@@ -2,13 +2,10 @@
 
 Ruby written in Ruby.
 
-## Installation
+## How to run it:
 
-    $ gem install garnet_ruby
-
-## Usage
-
-    $ garnet program.rb
+1. Clone the repo
+2. `exe/garnet -e 'puts "Hello, world"'
 
 ## Contributing
 
