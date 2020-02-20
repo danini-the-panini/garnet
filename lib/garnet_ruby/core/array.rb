@@ -792,15 +792,17 @@ module GarnetRuby
         end
 
         return ary if i.nil? # already flat
+
         rb_raise(eArgError, 'tried to flatten recursive array') if tmp == ary
 
         result = RArray.new(nil, [], ary.array_value[0, i])
 
         stack = [ary, i + 1]
 
-        memo = RHash.from({})
-        hash_aset(memo, ary, Q_TRUE)
-        hash_aset(memo, tmp, Q_TRUE)
+        memo = {}
+        memo[ary.object_id] = true
+        memo[tmp.object_id] = true
+        modified = false
 
         ary = tmp
         i = 0
@@ -820,10 +822,11 @@ module GarnetRuby
             if tmp == Q_NIL
               ary_push(result, elt)
             else
-              if rtest(hash_has_key(memo, tmp))
+              modified = true
+              if memo.key?(tmp.object_id)
                 rb_raise(eArgError, 'tried to flatten recursive array')
               end
-              hash_aset(memo, tmp, Q_TRUE)
+              memo[tmp.object_id] = true
               stack << ary
               stack << i
               ary = tmp
@@ -833,12 +836,12 @@ module GarnetRuby
 
           break if stack.empty?
 
-          hash_delete_entry(memo, ary)
+          memo.delete(ary.object_id)
           ary, i = stack.pop(2)
         end
 
         result.klass = ary.klass.real
-        result
+        [result, modified]
       end
 
       def ary_flatten(ary, *args)
@@ -849,13 +852,25 @@ module GarnetRuby
           return ary_dup(ary) if level.zero?
         end
 
-        result = flatten_array(ary, level)
+        result, = flatten_array(ary, level)
         return ary_dup(ary) if result == ary
 
         result
       end
 
       def ary_flatten_bang(ary, *args)
+        level = -1
+
+        lv = args.length == 1 ? args[0] : Q_NIL
+        level = num2long(lv) if lv != Q_NIL
+        return Q_NIL if level.zero?
+
+        result, mod = flatten_array(ary, level)
+        return Q_NIL unless mod
+
+        ary_replace(ary, result)
+
+        ary
       end
 
       def ary_any(ary, *args)
