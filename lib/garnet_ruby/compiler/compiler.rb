@@ -320,13 +320,16 @@ module GarnetRuby
         nodes = chunks.slice!(0)[1]
         array_from_nodes(nodes)
       end
-      chunks.each do |splat, n|
+      chunks.each do |splat, chunk_nodes|
         if splat
-          compile(n[0][1])
+          chunk_nodes.each do |n|
+            compile(n[1])
+            add_instruction(:concat_array)
+          end
         else
-          array_from_nodes(n)
+          array_from_nodes(chunk_nodes)
+          add_instruction(:concat_array)
         end
-        add_instruction(:concat_array)
       end
     end
 
