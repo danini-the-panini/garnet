@@ -44,16 +44,18 @@ module GarnetRuby
       block.arity
     end
 
-    def dispatch(vm, target, method, args, block=nil)
+    def dispatch(vm, target, method, args, block_block=nil)
       env = Environment.new(target.klass, nil)
       env.method_entry = env
       env.method_object = method
-      control_frame = ControlFrame.new(target, nil, env, block)
+      control_frame = ControlFrame.new(target, nil, env, block_block)
       vm.push_control_frame(control_frame)
       begin
-        ret = method.definition.block.call(target, *args)
+        ret = block.call(target, *args)
       rescue GarnetThrow => e
         vm.handle_rescue_throw(e)
+      rescue ArgumentError => e
+        Core.rb_raise(Core.eArgError, e.message)
       end
       vm.pop_control_frame if vm.current_control_frame == control_frame
       ret
