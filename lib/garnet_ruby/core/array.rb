@@ -210,7 +210,7 @@ module GarnetRuby
           return args[1]
         end
 
-        result, beg, len = range_beg_len(range, ary.len, 1)
+        result, beg, len = range_beg_len(args[0], ary.len, 1)
         if rtest(result)
           ary_splice(ary, beg, len, args.last.ary_to_ary)
           return args.last
