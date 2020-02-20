@@ -1,5 +1,9 @@
 module GarnetRuby
   module Core
+    # TODO: could be different on 32-bit system
+    LONG_MAX = 9223372036854775807
+    LONG_MIN = -9223372036854775808
+
     class << self
       def fixnum?(value)
         value.numeric? && value.type?(Integer)
@@ -16,7 +20,13 @@ module GarnetRuby
           rb_raise(eTypeError, 'no implicit conversion from nil to integer')
         end
 
-        return val.value if fixnum?(val)
+        if fixnum?(val)
+          v = val.value
+          if v > LONG_MAX || v < LONG_MIN
+            rb_raise(eRangeError, "bignum too big to convert into `long'")
+          end
+          return v
+        end
         return val.value.to_i if val.type?(Float)
 
         num2long(rb_to_int(val))
