@@ -1,6 +1,6 @@
 module GarnetRuby
   class RRange < RObject
-    attr_reader :st, :ed, :excl
+    attr_accessor :st, :ed, :excl
 
     def initialize(klass, flags, st, ed, excl)
       super(klass, flags)
@@ -69,6 +69,21 @@ module GarnetRuby
 
   module Core
     class << self
+      def range_alloc(klass)
+        RRange.new(klass, [], nil, nil, nil)
+      end
+
+      def range_initialize(range, beg, ed, exclude_end = Q_FALSE)
+        if !fixnum?(beg) || !fixnum?(ed) && ed != Q_NIL
+          v = rb_funcall(beg, :<=>, ed)
+          rb_raise(eArgError, 'bad value for range') if v == Q_NIL
+        end
+
+        range.excl = exclude_end
+        range.st = beg
+        range.ed = ed
+      end
+
       def range_eqq(range, val)
         ret = range.include_internal(val)
         return ret unless ret == Q_UNDEF
@@ -235,14 +250,17 @@ module GarnetRuby
 
       def out_of_range(beg, ed, excl, err=1)
         return if err.zero?
+
         rb_raise(eRangeError, "#{beg}#{excl ? '...' : '..'}#{ed} out of range")
       end
     end
 
     def self.init_range
       @cRange = rb_define_class(:Range, cObject)
+      rb_define_alloc_func(cRange, &method(:range_alloc))
       cRange.include_module(mEnumerable)
 
+      rb_define_method(cRange, :initialize, &method(:range_initialize))
       rb_define_method(cRange, :===, &method(:range_eqq))
       rb_define_method(cRange, :each, &method(:range_each))
       rb_define_method(cRange, :begin, &method(:range_begin))
