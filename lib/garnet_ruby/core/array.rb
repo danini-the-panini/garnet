@@ -163,8 +163,21 @@ module GarnetRuby
         ary_aref1(ary, args[0])
       end
 
-      def ary_splice(ary, beg, len, rpl)
-        ary.array_value[beg, len] = rpl.array_value
+      def ary_splice(ary, beg, len, replacement)
+        rb_raise(eIndexError, "negative length (#{len})") if len.negative?
+        olen = ary.len
+        if beg.negative?
+          beg += olen
+          if beg.negative?
+            rb_raise(eIndexError, "index #{beg - olen} too small for array; minimum: #{-olen}")
+          end
+        end
+
+        if beg >= olen
+          ary_mem_clear(ary, olen, beg - olen)
+        end
+
+        ary.array_value[beg, len] = replacement.array_value
       end
 
       def ary_mem_clear(ary, beg, size)
